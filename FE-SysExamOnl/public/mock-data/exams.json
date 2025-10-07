@@ -1,0 +1,82 @@
+[
+  {
+    "id": "exam-001",
+    "name": "Cấu trúc dữ liệu và giải thuật",
+    "nameEn": "Data Structures and Algorithms",
+    "duration": 5400,
+    "totalQuestions": 50,
+    "violationThreshold": 3,
+    "requireFullscreen": true,
+    "tabSwitchThreshold": 5
+  },
+  {
+    "id": "exam-002",
+    "name": "Cơ sở dữ liệu",
+    "nameEn": "Database Systems",
+    "duration": 5400,
+    "totalQuestions": 50,
+    "violationThreshold": 3,
+    "requireFullscreen": true,
+    "tabSwitchThreshold": 5
+  },
+  {
+    "id": "exam-003",
+    "name": "Lập trình hướng đối tượng",
+    "nameEn": "Object-Oriented Programming",
+    "duration": 5400,
+    "totalQuestions": 45,
+    "violationThreshold": 3,
+    "requireFullscreen": true,
+    "tabSwitchThreshold": 5
+  },
+  {
+    "id": "exam-004",
+    "name": "Mạng máy tính",
+    "nameEn": "Computer Networks",
+    "duration": 5400,
+    "totalQuestions": 40,
+    "violationThreshold": 3,
+    "requireFullscreen": true,
+    "tabSwitchThreshold": 5
+  },
+  {
+    "id": "exam-005",
+    "name": "Hệ điều hành",
+    "nameEn": "Operating Systems",
+    "duration": 5400,
+    "totalQuestions": 45,
+    "violationThreshold": 3,
+    "requireFullscreen": true,
+    "tabSwitchThreshold": 5
+  },
+  {
+    "id": "exam-007",
+    "name": "Trí tuệ nhân tạo",
+    "nameEn": "Artificial Intelligence",
+    "duration": 5400,
+    "totalQuestions": 40,
+    "violationThreshold": 3,
+    "requireFullscreen": true,
+    "tabSwitchThreshold": 5
+  },
+  {
+    "id": "exam-008",
+    "name": "An toàn thông tin",
+    "nameEn": "Information Security",
+    "duration": 5400,
+    "totalQuestions": 40,
+    "violationThreshold": 3,
+    "requireFullscreen": true,
+    "tabSwitchThreshold": 5
+  },
+  {
+    "id": "exam-006",
+    "name": "Phân tích và thiết kế hệ thống thông tin",
+    "nameEn": "System Analysis and Design",
+    "duration": 5400,
+    "totalQuestions": 40,
+    "violationThreshold": 3,
+    "requireFullscreen": true,
+    "tabSwitchThreshold": 5
+  }
+]
