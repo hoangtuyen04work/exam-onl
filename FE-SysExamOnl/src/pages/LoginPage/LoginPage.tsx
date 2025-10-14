@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom'
 import { authenticateUser } from '../../api/mock-api'
 import { useDispatch } from 'react-redux'
 import { loginSuccess } from '../../store/slices/authSlice'
+import { FcGoogle } from 'react-icons/fc'
+import { PiMicrosoftTeamsLogoFill } from 'react-icons/pi'
 
 export default function LoginPage() {
   const [studentId, setStudentId] = useState('')
@@ -48,10 +50,10 @@ export default function LoginPage() {
         backgroundImage: "url('https://examonline.in/wp-content/uploads/2021/06/Secure-Exam-Browser-2048x1245.png')"
       }}
     >
-      <div className='bg-white/95 shadow-2xl border-4 border-blue-600 rounded-2xl w-full max-w-md p-8 backdrop-blur-sm'>
+      <div className='bg-white/95 shadow-2xl border-4 border-blue-600 rounded-2xl w-full max-w-md p-8 m-12 backdrop-blur-sm'>
         <div className='flex flex-col items-center mb-6'>
           <img src='https://actvn.edu.vn/Images/actvn_big_icon.png' alt='Logo' className='w-16 h-16 mb-3' />
-          <h1 className='text-center font-semibold text-gray-800'>CỤC QUẢN LÝ CHẤT LƯỢNG</h1>
+          <h1 className='text-center font-semibold text-gray-800'>Phòng Khảo thí & Đảm bảo chất lượng đào tạo</h1>
           <p className='text-blue-800 font-bold text-lg'>Phần Mềm Thi Thử Nghiệm</p>
           <p className='text-gray-500 text-sm'>(dành cho thí sinh)</p>
         </div>
@@ -101,11 +103,26 @@ export default function LoginPage() {
             >
               {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
+
+            {/* O2Auth */}
+            <div className='mt-2 flex flex-col items-center'>
+              <p className='text-sm text-gray-500 mb-2'>Hoặc đăng nhập bằng</p>
+              <div className='flex gap-3'>
+                <button className='flex items-center gap-2 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition'>
+                  <FcGoogle size={20} />
+                  <span>Google</span>
+                </button>
+
+                <button className='flex items-center gap-2 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition text-blue-700'>
+                  <PiMicrosoftTeamsLogoFill size={20} />
+                  <span>Microsoft</span>
+                </button>
+              </div>
+            </div>
           </form>
         </div>
 
         <div className='mt-8 text-center text-xs text-gray-500 space-y-2'>
-          <p>Tải ứng dụng SafeWebBrowser</p>
           <p className='text-gray-400'>© HV KTMM – Thực tập cơ sở</p>
         </div>
 
