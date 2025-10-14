@@ -16,18 +16,28 @@ export default function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: async () => {
+      // Hardcode tài khoản giáo viên: giaovien/giaovien
+      if (studentId === 'giaovien' && password === 'giaovien') {
+        return {
+          id: 't-1',
+          studentId: 'GV001',
+          name: 'Giáo viên',
+          role: 'teacher',
+          token: 'fake-jwt-' + Math.random().toString(36).slice(2)
+        }
+      }
+      // Mặc định: xác thực thí sinh từ mock-data
       const user = await authenticateUser(studentId, password)
       return user
     },
     onSuccess: (user) => {
       dispatch(loginSuccess(user))
       toast.success(`Chào mừng ${user.name || 'bạn'}!`)
-      if (user.role === 'student') navigate('/student')
-      else if (user.role === 'admin') navigate('/admin')
-      else navigate('/')
+      if (user.role === 'teacher') navigate('/teacher')
+      else navigate('/student')
     },
     onError: () => {
-      toast.error('Mã thí sinh hoặc mật khẩu không đúng!')
+      toast.error('Thông tin đăng nhập không đúng!')
     }
   })
 
