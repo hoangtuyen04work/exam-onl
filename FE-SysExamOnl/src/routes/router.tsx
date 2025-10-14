@@ -3,6 +3,7 @@ import LoginPage from '../pages/LoginPage'
 import ErrorPage from '../components/ErrorPage'
 import StudentLayout from '../layouts/StudentLayout'
 import StudentDashboard from '../pages/Student/Dashboard'
+import Exam from '../components/Exam'
 
 const routerConfig = createBrowserRouter([
   {
@@ -14,12 +15,12 @@ const routerConfig = createBrowserRouter([
     element: <StudentLayout />,
     children: [
       {
-        index: true, // /student
+        index: true,
         element: <StudentDashboard />
       },
       {
-        path: 'exam-info' // /student/exam-info
-        // element: <ExamInfo />
+        path: 'exam/:id',
+        element: <Exam />
       },
       {
         path: 'result' // /student/result

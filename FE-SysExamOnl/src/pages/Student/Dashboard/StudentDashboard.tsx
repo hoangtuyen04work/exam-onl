@@ -24,7 +24,7 @@ export default function StudentDashboard() {
   })
 
   const handleStartExam = (examId: any) => {
-    navigate(`/exam/${examId}`)
+    navigate(`/student/exam/${examId}`)
   }
 
   if (isLoading) {

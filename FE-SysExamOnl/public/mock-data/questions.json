@@ -1,0 +1,539 @@
+{
+  "exam-001": [
+    {
+      "id": 1,
+      "type": "multiple-choice",
+      "question": "Độ phức tạp thời gian của thuật toán sắp xếp nổi bọt (Bubble Sort) trong trường hợp xấu nhất là:",
+      "options": {
+        "A": "O(n)",
+        "B": "O(n log n)",
+        "C": "O(n²)",
+        "D": "O(log n)"
+      },
+      "correctAnswer": "C",
+      "explanation": "Bubble Sort có độ phức tạp O(n²) trong trường hợp xấu nhất do phải so sánh và hoán đổi từng cặp phần tử."
+    },
+    {
+      "id": 2,
+      "type": "multiple-choice",
+      "question": "Cấu trúc dữ liệu nào sau đây hoạt động theo nguyên tắc FIFO (First-In-First-Out)?",
+      "options": {
+        "A": "Stack",
+        "B": "Queue",
+        "C": "Tree",
+        "D": "Graph"
+      },
+      "correctAnswer": "B",
+      "explanation": "Queue hoạt động theo nguyên tắc FIFO - phần tử vào trước sẽ ra trước."
+    },
+    {
+      "id": 3,
+      "type": "multiple-choice",
+      "passage": "Xét bài toán tìm kiếm nhị phân (Binary Search) trên mảng đã sắp xếp. Thuật toán này chia đôi mảng tìm kiếm sau mỗi bước cho đến khi tìm thấy phần tử hoặc xác định phần tử không tồn tại.",
+      "question": "Điều kiện tiên quyết để áp dụng thuật toán tìm kiếm nhị phân là gì?",
+      "options": {
+        "A": "Mảng phải có kích thước chẵn",
+        "B": "Mảng phải được sắp xếp",
+        "C": "Mảng chỉ chứa số nguyên",
+        "D": "Mảng không có phần tử trùng lặp"
+      },
+      "correctAnswer": "B",
+      "explanation": "Binary Search yêu cầu mảng phải được sắp xếp để có thể chia đôi khoảng tìm kiếm."
+    },
+    {
+      "id": 4,
+      "type": "multiple-choice",
+      "question": "Trong cây nhị phân tìm kiếm (BST), thao tác chèn một phần tử mới có độ phức tạp trung bình là:",
+      "options": {
+        "A": "O(1)",
+        "B": "O(n)",
+        "C": "O(log n)",
+        "D": "O(n log n)"
+      },
+      "correctAnswer": "C",
+      "explanation": "Trong BST cân bằng, độ phức tạp trung bình cho thao tác chèn là O(log n)."
+    },
+    {
+      "id": 5,
+      "type": "code-analysis",
+      "question": "Cho đoạn code sau, hãy xác định độ phức tạp thời gian:\n\nfor (int i = 0; i < n; i++) {\n    for (int j = 0; j < n; j++) {\n        printf(\"%d \", i * j);\n    }\n}",
+      "options": {
+        "A": "O(n)",
+        "B": "O(n log n)",
+        "C": "O(n²)",
+        "D": "O(2^n)"
+      },
+      "correctAnswer": "C",
+      "explanation": "Đoạn code có 2 vòng lặp lồng nhau, mỗi vòng chạy n lần, nên độ phức tạp là O(n²)."
+    }
+  ],
+  "exam-002": [
+    {
+      "id": 1,
+      "type": "multiple-choice",
+      "question": "Khóa chính (Primary Key) trong cơ sở dữ liệu quan hệ có đặc điểm gì?",
+      "options": {
+        "A": "Có thể chứa giá trị NULL",
+        "B": "Có thể trùng lặp giữa các bản ghi",
+        "C": "Xác định duy nhất mỗi bản ghi trong bảng",
+        "D": "Chỉ có thể là một cột duy nhất"
+      },
+      "correctAnswer": "C",
+      "explanation": "Primary Key đảm bảo tính duy nhất cho mỗi bản ghi trong bảng."
+    },
+    {
+      "id": 2,
+      "type": "multiple-choice",
+      "question": "Dạng chuẩn nào yêu cầu mọi thuộc tính không khóa phải phụ thuộc đầy đủ vào khóa chính?",
+      "options": {
+        "A": "Dạng chuẩn 1 (1NF)",
+        "B": "Dạng chuẩn 2 (2NF)",
+        "C": "Dạng chuẩn 3 (3NF)",
+        "D": "Dạng chuẩn Boyce-Codd (BCNF)"
+      },
+      "correctAnswer": "B",
+      "explanation": "Dạng chuẩn 2 (2NF) yêu cầu mọi thuộc tính không khóa phải phụ thuộc đầy đủ vào khóa chính."
+    },
+    {
+      "id": 3,
+      "type": "sql-query",
+      "question": "Câu lệnh SQL nào sau đây sẽ chọn tất cả khách hàng có tên bắt đầu bằng chữ 'A'?",
+      "options": {
+        "A": "SELECT * FROM customers WHERE name = 'A%'",
+        "B": "SELECT * FROM customers WHERE name LIKE 'A%'",
+        "C": "SELECT * FROM customers WHERE name STARTWITH 'A'",
+        "D": "SELECT * FROM customers WHERE name MATCH 'A*'"
+      },
+      "correctAnswer": "B",
+      "explanation": "Toán tử LIKE với ký tự '%' được sử dụng để so khớp mẫu trong SQL."
+    },
+    {
+      "id": 4,
+      "type": "multiple-choice",
+      "question": "Giao dịch (Transaction) trong cơ sở dữ liệu có tính chất ACID, trong đó chữ 'A' viết tắt cho:",
+      "options": {
+        "A": "Availability",
+        "B": "Atomicity",
+        "C": "Accuracy",
+        "D": "Automation"
+      },
+      "correctAnswer": "B",
+      "explanation": "A trong ACID là Atomicity - tính nguyên tử, đảm bảo giao dịch hoàn thành hoàn toàn hoặc không hoàn thành."
+    },
+    {
+      "id": 5,
+      "type": "multiple-choice",
+      "question": "Chỉ mục (Index) trong cơ sở dữ liệu được sử dụng chủ yếu để:",
+      "options": {
+        "A": "Tăng dung lượng lưu trữ",
+        "B": "Giảm thời gian truy vấn",
+        "C": "Tăng tính bảo mật",
+        "D": "Đơn giản hóa cấu trúc bảng"
+      },
+      "correctAnswer": "B",
+      "explanation": "Index giúp tăng tốc độ truy vấn bằng cách tạo cấu trúc dữ liệu tối ưu cho việc tìm kiếm."
+    }
+  ],
+  "exam-003": [
+    {
+      "id": 1,
+      "type": "multiple-choice",
+      "question": "Tính chất nào sau đây KHÔNG phải là một trong bốn tính chất cơ bản của lập trình hướng đối tượng?",
+      "options": {
+        "A": "Tính đóng gói (Encapsulation)",
+        "B": "Tính kế thừa (Inheritance)",
+        "C": "Tính đa hình (Polymorphism)",
+        "D": "Tính tuần tự (Sequential)"
+      },
+      "correctAnswer": "D",
+      "explanation": "4 tính chất cơ bản của OOP là: Đóng gói, Kế thừa, Đa hình và Trừu tượng."
+    },
+    {
+      "id": 2,
+      "type": "multiple-choice",
+      "question": "Trong Java, từ khóa 'abstract' được sử dụng để:",
+      "options": {
+        "A": "Khai báo một lớp cụ thể",
+        "B": "Khai báo một phương thức hoặc lớp trừu tượng",
+        "C": "Xác định một hằng số",
+        "D": "Chỉ định quyền truy cập private"
+      },
+      "correctAnswer": "B",
+      "explanation": "Từ khóa 'abstract' dùng để khai báo lớp trừu tượng hoặc phương thức trừu tượng."
+    },
+    {
+      "id": 3,
+      "type": "code-analysis",
+      "question": "Xét đoạn code C++ sau:\n\nclass Base {\npublic:\n    virtual void show() { cout << \"Base\"; }\n};\nclass Derived : public Base {\npublic:\n    void show() { cout << \"Derived\"; }\n};\n\nBase* b = new Derived();\nb->show();\n\nKết quả in ra sẽ là:",
+      "options": {
+        "A": "Base",
+        "B": "Derived",
+        "C": "Lỗi biên dịch",
+        "D": "BaseDerived"
+      },
+      "correctAnswer": "B",
+      "explanation": "Với phương thức virtual, hàm show() của lớp Derived sẽ được gọi (tính đa hình)."
+    },
+    {
+      "id": 4,
+      "type": "multiple-choice",
+      "question": "Interface trong Java khác với Abstract Class ở chỗ:",
+      "options": {
+        "A": "Interface có thể chứa phương thức implemented",
+        "B": "Interface chỉ chứa phương thức abstract và hằng số",
+        "C": "Abstract Class không thể kế thừa",
+        "D": "Interface có constructor"
+      },
+      "correctAnswer": "B",
+      "explanation": "Interface chỉ chứa phương thức abstract và hằng số, trong khi Abstract Class có thể chứa phương thức implemented."
+    },
+    {
+      "id": 5,
+      "type": "multiple-choice",
+      "question": "Design Pattern nào sau đây thuộc nhóm Creational Patterns?",
+      "options": {
+        "A": "Adapter",
+        "B": "Observer",
+        "C": "Singleton",
+        "D": "Strategy"
+      },
+      "correctAnswer": "C",
+      "explanation": "Singleton là Creational Pattern, đảm bảo một lớp chỉ có một instance duy nhất."
+    }
+  ],
+  "exam-004": [
+    {
+      "id": 1,
+      "type": "multiple-choice",
+      "question": "Giao thức nào hoạt động ở tầng Transport trong mô hình OSI?",
+      "options": {
+        "A": "HTTP",
+        "B": "TCP",
+        "C": "IP",
+        "D": "Ethernet"
+      },
+      "correctAnswer": "B",
+      "explanation": "TCP và UDP là các giao thức hoạt động ở tầng Transport."
+    },
+    {
+      "id": 2,
+      "type": "multiple-choice",
+      "question": "Địa chỉ IPv4 có độ dài bao nhiêu bit?",
+      "options": {
+        "A": "32 bit",
+        "B": "64 bit",
+        "C": "128 bit",
+        "D": "256 bit"
+      },
+      "correctAnswer": "A",
+      "explanation": "Địa chỉ IPv4 có độ dài 32 bit, thường được biểu diễn dưới dạng 4 octet."
+    },
+    {
+      "id": 3,
+      "type": "multiple-choice",
+      "question": "Thiết bị mạng nào hoạt động ở tầng Data Link?",
+      "options": {
+        "A": "Router",
+        "B": "Switch",
+        "C": "Hub",
+        "D": "Repeater"
+      },
+      "correctAnswer": "B",
+      "explanation": "Switch hoạt động ở tầng Data Link (lớp 2), sử dụng địa chỉ MAC để chuyển tiếp frame."
+    },
+    {
+      "id": 4,
+      "type": "multiple-choice",
+      "question": "Giao thức DNS sử dụng cổng nào mặc định?",
+      "options": {
+        "A": "TCP 80",
+        "B": "UDP 53",
+        "C": "TCP 25",
+        "D": "UDP 161"
+      },
+      "correctAnswer": "B",
+      "explanation": "DNS sử dụng cổng UDP 53 cho các truy vấn thông thường và TCP 53 cho zone transfer."
+    },
+    {
+      "id": 5,
+      "type": "multiple-choice",
+      "question": "Subnet mask 255.255.255.0 tương đương với ký hiệu CIDR nào?",
+      "options": {
+        "A": "/16",
+        "B": "/24",
+        "C": "/32",
+        "D": "/8"
+      },
+      "correctAnswer": "B",
+      "explanation": "Subnet mask 255.255.255.0 có 24 bit network, tương đương với /24 trong ký hiệu CIDR."
+    }
+  ],
+  "exam-005": [
+    {
+      "id": 1,
+      "type": "multiple-choice",
+      "question": "Thuật toán định thời CPU nào có thể gây ra hiện tượng 'starvation'?",
+      "options": {
+        "A": "Round Robin",
+        "B": "First-Come-First-Served",
+        "C": "Shortest Job First",
+        "D": "Multilevel Queue"
+      },
+      "correctAnswer": "C",
+      "explanation": "Shortest Job First có thể gây starvation cho các tiến trình dài nếu liên tục có tiến trình ngắn hơn đến."
+    },
+    {
+      "id": 2,
+      "type": "multiple-choice",
+      "question": "Trong quản lý bộ nhớ, kỹ thuật 'paging' khác với 'segmentation' ở điểm:",
+      "options": {
+        "A": "Paging chia bộ nhớ thành các đoạn kích thước cố định",
+        "B": "Segmentation chia bộ nhớ thành các trang kích thước cố định",
+        "C": "Paging chia bộ nhớ thành các trang kích thước cố định",
+        "D": "Segmentation không cần bảng ánh xạ"
+      },
+      "correctAnswer": "C",
+      "explanation": "Paging chia bộ nhớ thành các trang kích thước cố định, segmentation chia thành các đoạn kích thước thay đổi."
+    },
+    {
+      "id": 3,
+      "type": "multiple-choice",
+      "question": "Tình trạng 'deadlock' xảy ra khi nào?",
+      "options": {
+        "A": "Một tiến trình chiếm hết CPU",
+        "B": "Các tiến trình chờ đợi lẫn nhau mà không tiến triển",
+        "C": "Bộ nhớ bị phân mảnh",
+        "D": "Hệ thống quá tải"
+      },
+      "correctAnswer": "B",
+      "explanation": "Deadlock xảy ra khi một tập các tiến trình chờ đợi tài nguyên mà tiến trình khác đang giữ."
+    },
+    {
+      "id": 4,
+      "type": "multiple-choice",
+      "question": "System call nào sau đây dùng để tạo tiến trình con trong Unix/Linux?",
+      "options": {
+        "A": "exec()",
+        "B": "fork()",
+        "C": "create()",
+        "D": "spawn()"
+      },
+      "correctAnswer": "B",
+      "explanation": "Hàm fork() được sử dụng để tạo một tiến trình con trong Unix/Linux."
+    },
+    {
+      "id": 5,
+      "type": "multiple-choice",
+      "question": "Trình điều khiển thiết bị (Device Driver) hoạt động ở chế độ nào?",
+      "options": {
+        "A": "User mode",
+        "B": "Kernel mode",
+        "C": "Safe mode",
+        "D": "Real mode"
+      },
+      "correctAnswer": "B",
+      "explanation": "Device driver chạy trong kernel mode để có quyền truy cập trực tiếp vào phần cứng."
+    }
+  ],
+  "exam-006": [
+    {
+      "id": 1,
+      "type": "multiple-choice",
+      "question": "Giai đoạn nào trong vòng đời phát triển hệ thống tập trung vào việc xác định yêu cầu của người dùng?",
+      "options": {
+        "A": "Thiết kế",
+        "B": "Phân tích",
+        "C": "Triển khai",
+        "D": "Bảo trì"
+      },
+      "correctAnswer": "B",
+      "explanation": "Giai đoạn phân tích tập trung vào thu thập và xác định yêu cầu của người dùng."
+    },
+    {
+      "id": 2,
+      "type": "multiple-choice",
+      "question": "Sơ đồ nào sau đây được sử dụng để mô hình hóa luồng dữ liệu trong hệ thống?",
+      "options": {
+        "A": "Use Case Diagram",
+        "B": "Data Flow Diagram",
+        "C": "Entity Relationship Diagram",
+        "D": "Sequence Diagram"
+      },
+      "correctAnswer": "B",
+      "explanation": "Data Flow Diagram (DFD) được sử dụng để mô hình hóa luồng dữ liệu trong hệ thống."
+    },
+    {
+      "id": 3,
+      "type": "multiple-choice",
+      "question": "Trong mô hình hóa dữ liệu, mối quan hệ 'many-to-many' thường được giải quyết bằng:",
+      "options": {
+        "A": "Thêm khóa ngoại vào một bảng",
+        "B": "Tạo bảng trung gian",
+        "C": "Sử dụng khóa chính phức hợp",
+        "D": "Tách thành hai mối quan hệ one-to-many"
+      },
+      "correctAnswer": "B",
+      "explanation": "Mối quan hệ many-to-many được giải quyết bằng cách tạo bảng trung gian (junction table)."
+    },
+    {
+      "id": 4,
+      "type": "multiple-choice",
+      "question": "Phương pháp phát triển hệ thống nào nhấn mạnh việc phát triển lặp đi lặp lại?",
+      "options": {
+        "A": "Waterfall",
+        "B": "Agile",
+        "C": "V-model",
+        "D": "Spiral"
+      },
+      "correctAnswer": "B",
+      "explanation": "Phương pháp Agile nhấn mạnh phát triển lặp đi lặp lại qua các sprint."
+    },
+    {
+      "id": 5,
+      "type": "multiple-choice",
+      "question": "Công cụ nào sau đây thường được sử dụng để tạo mô hình UML?",
+      "options": {
+        "A": "Visual Paradigm",
+        "B": "Microsoft Word",
+        "C": "Adobe Photoshop",
+        "D": "AutoCAD"
+      },
+      "correctAnswer": "A",
+      "explanation": "Visual Paradigm là một trong những công cụ phổ biến để tạo mô hình UML."
+    }
+  ],
+  "exam-007": [
+    {
+      "id": 1,
+      "type": "multiple-choice",
+      "question": "Thuật toán học máy nào thuộc loại 'unsupervised learning'?",
+      "options": {
+        "A": "Linear Regression",
+        "B": "K-Means Clustering",
+        "C": "Support Vector Machine",
+        "D": "Decision Tree"
+      },
+      "correctAnswer": "B",
+      "explanation": "K-Means Clustering là thuật toán unsupervised learning, không cần dữ liệu labeled."
+    },
+    {
+      "id": 2,
+      "type": "multiple-choice",
+      "question": "Trong mạng neural, hàm kích hoạt (activation function) ReLU được định nghĩa là:",
+      "options": {
+        "A": "f(x) = 1 / (1 + e^(-x))",
+        "B": "f(x) = max(0, x)",
+        "C": "f(x) = tanh(x)",
+        "D": "f(x) = x"
+      },
+      "correctAnswer": "B",
+      "explanation": "ReLU (Rectified Linear Unit) được định nghĩa là f(x) = max(0, x)."
+    },
+    {
+      "id": 3,
+      "type": "multiple-choice",
+      "question": "Kỹ thuật nào được sử dụng để tránh overfitting trong mạng neural?",
+      "options": {
+        "A": "Tăng số lượng layer",
+        "B": "Dropout",
+        "C": "Tăng learning rate",
+        "D": "Giảm kích thước batch"
+      },
+      "correctAnswer": "B",
+      "explanation": "Dropout là kỹ thuật regularization giúp tránh overfitting bằng cách tắt ngẫu nhiên một số neuron."
+    },
+    {
+      "id": 4,
+      "type": "multiple-choice",
+      "question": "Thuật toán nào sau đây được sử dụng cho bài toán classification?",
+      "options": {
+        "A": "K-Nearest Neighbors",
+        "B": "Linear Regression",
+        "C": "K-Means",
+        "D": "Principal Component Analysis"
+      },
+      "correctAnswer": "A",
+      "explanation": "K-Nearest Neighbors có thể được sử dụng cho cả classification và regression."
+    },
+    {
+      "id": 5,
+      "type": "multiple-choice",
+      "question": "Thước đo nào phù hợp để đánh giá model trong bài toán classification mất cân bằng lớp?",
+      "options": {
+        "A": "Accuracy",
+        "B": "F1-Score",
+        "C": "Mean Squared Error",
+        "D": "R-squared"
+      },
+      "correctAnswer": "B",
+      "explanation": "F1-Score phù hợp cho bài toán mất cân bằng lớp vì nó kết hợp precision và recall."
+    }
+  ],
+  "exam-008": [
+    {
+      "id": 1,
+      "type": "multiple-choice",
+      "question": "Kỹ thuật mã hóa nào sau đây là đối xứng (symmetric)?",
+      "options": {
+        "A": "RSA",
+        "B": "AES",
+        "C": "ECC",
+        "D": "DSA"
+      },
+      "correctAnswer": "B",
+      "explanation": "AES là thuật toán mã hóa đối xứng, sử dụng cùng một khóa cho mã hóa và giải mã."
+    },
+    {
+      "id": 2,
+      "type": "multiple-choice",
+      "question": "Tấn công nào khai thác lỗ hổng XSS (Cross-Site Scripting)?",
+      "options": {
+        "A": "SQL Injection",
+        "B": "Chèn mã JavaScript độc hại",
+        "C": "DDoS",
+        "D": "Man-in-the-Middle"
+      },
+      "correctAnswer": "B",
+      "explanation": "XSS khai thác bằng cách chèn mã JavaScript độc hại vào trang web."
+    },
+    {
+      "id": 3,
+      "type": "multiple-choice",
+      "question": "Giao thức nào cung cấp bảo mật cho kết nối web?",
+      "options": {
+        "A": "HTTP",
+        "B": "HTTPS",
+        "C": "FTP",
+        "D": "SMTP"
+      },
+      "correctAnswer": "B",
+      "explanation": "HTTPS cung cấp bảo mật thông qua mã hóa TLS/SSL."
+    },
+    {
+      "id": 4,
+      "type": "multiple-choice",
+      "question": "Phần mềm độc hại nào tự sao chép và lây lan qua mạng?",
+      "options": {
+        "A": "Virus",
+        "B": "Worm",
+        "C": "Trojan",
+        "D": "Ransomware"
+      },
+      "correctAnswer": "B",
+      "explanation": "Worm tự sao chép và lây lan qua mạng mà không cần sự can thiệp của người dùng."
+    },
+    {
+      "id": 5,
+      "type": "multiple-choice",
+      "question": "Phương pháp xác thực nào sử dụng 2 yếu tố: mật khẩu và thiết bị vật lý?",
+      "options": {
+        "A": "Single Sign-On",
+        "B": "Two-Factor Authentication",
+        "C": "Biometric Authentication",
+        "D": "Certificate-based Authentication"
+      },
+      "correctAnswer": "B",
+      "explanation": "Two-Factor Authentication yêu cầu 2 yếu tố xác thực khác nhau, thường là mật khẩu và thiết bị vật lý."
+    }
+  ]
+}
