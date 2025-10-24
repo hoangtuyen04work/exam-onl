@@ -36,3 +36,37 @@ export async function fetchExams() {
   const response = await fetch('/mock-data/exams.json')
   return response.json()
 }
+
+export async function fetchQuestions2(examId: string) {
+  const response = await fetch('/mock-data/questions.json')
+  const data = await response.json()
+  return data[examId] || []
+}
+
+export interface Question {
+  id: number
+  type: string
+  passage?: string
+  question: string
+  options: Record<string, string>
+  correctAnswer: string
+  explanation?: string
+}
+
+export async function fetchQuestions(examId: string): Promise<Question[]> {
+  try {
+    const response = await fetch('/mock-data/questions.json')
+    if (!response.ok) {
+      throw new Error('Không thể tải dữ liệu câu hỏi')
+    }
+    const allQuestions = await response.json()
+    const questions = allQuestions[examId]
+
+    if (!questions) {
+      throw new Error(`Không tìm thấy đề thi với ID: ${examId}`)
+    }
+    return questions
+  } catch (error) {
+    throw new Error(`Lỗi khi tải đề thi: ${(error as Error).message}`)
+  }
+}
