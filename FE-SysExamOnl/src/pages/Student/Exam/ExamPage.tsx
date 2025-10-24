@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import { useQuery } from '@tanstack/react-query'
-import { Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { Clock, CheckCircle, AlertCircle, Maximize2 } from 'lucide-react'
 import { fetchExams } from '../../../api/mock-api'
+import { useFullScreen } from '../../../hooks/useFullScreen'
 
 export default function ExamPage() {
   const { examId } = useParams()
@@ -17,6 +18,7 @@ export default function ExamPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<{ [key: string]: string }>({})
   const [timeLeft, setTimeLeft] = useState(3600) // 60 phút = 3600 giây
+  const [isExamStarted, setIsExamStarted] = useState(false)
 
   const { data: exams, isLoading } = useQuery({
     queryKey: ['exams'],
@@ -25,48 +27,22 @@ export default function ExamPage() {
 
   const exam = exams?.find((e: any) => e.id === examId)
 
-  useEffect(() => {
-    if (!user) {
-      toast.warning('Vui lòng đăng nhập trước!')
-      navigate('/login')
-      return
+  // Fullscreen logic
+  const handleEndExamForced = useCallback(() => {
+    if (isExamStarted) {
+      setIsExamStarted(false)
+      toast.error('Bạn đã thoát chế độ toàn màn hình — bài thi kết thúc!')
+      setTimeout(() => navigate('/student'), 1500)
     }
+  }, [isExamStarted, navigate])
 
-    if (!exam) {
-      toast.error('Không tìm thấy bài thi!')
-      navigate('/student')
-      return
-    }
+  const { requestFullscreen, exitFullscreen } = useFullScreen({
+    onExit: handleEndExamForced,
+    enabled: true,
+    requiredFullscreen: true
+  })
 
-    // Timer countdown
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleSubmitExam()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [user, exam, navigate])
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const handleAnswerChange = (questionId: string, answer: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: answer
-    }))
-  }
-
-  const handleSubmitExam = () => {
+  const handleSubmitExam = useCallback(() => {
     const totalQuestions = exam?.questions?.length || 0
     const answeredQuestions = Object.keys(answers).length
     const unansweredQuestions = totalQuestions - answeredQuestions
@@ -82,7 +58,73 @@ export default function ExamPage() {
     const score = Math.floor((answeredQuestions / totalQuestions) * 100)
     
     toast.success(`Bạn đã hoàn thành bài thi! Điểm: ${score}/100`)
+    setIsExamStarted(false)
+    exitFullscreen()
     navigate('/student')
+  }, [exam, answers, exitFullscreen, navigate])
+
+  useEffect(() => {
+    if (!user) {
+      toast.warning('Vui lòng đăng nhập trước!')
+      navigate('/login')
+      return
+    }
+
+    if (!exam) {
+      toast.error('Không tìm thấy bài thi!')
+      navigate('/student')
+      return
+    }
+
+    // Timer countdown - chỉ chạy khi đã bắt đầu thi
+    let timer: number | null = null
+    
+    if (isExamStarted) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            handleSubmitExam()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    }
+
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [user, exam, navigate, isExamStarted, handleSubmitExam])
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const handleAnswerChange = (questionId: string, answer: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: answer
+    }))
+  }
+
+  const handleStartExam = async () => {
+    const success = await requestFullscreen()
+    if (success) {
+      setIsExamStarted(true)
+      toast.success('Bắt đầu làm bài thi!')
+    } else {
+      toast.error('Trình duyệt chặn chế độ toàn màn hình. Hãy cho phép fullscreen thủ công hoặc thử lại.')
+    }
+  }
+
+  const handleExitExam = async () => {
+    setIsExamStarted(false)
+    await exitFullscreen()
+    navigate('/student')
+    toast.info('Bạn đã chủ động kết thúc/thoát khỏi bài thi.')
   }
 
   const handleNextQuestion = () => {
@@ -126,6 +168,62 @@ export default function ExamPage() {
     )
   }
 
+  // Màn hình bắt đầu thi
+  if (!isExamStarted) {
+    return (
+      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+        <div className='bg-white rounded-xl shadow-lg p-8 max-w-2xl mx-4'>
+          <div className='text-center mb-8'>
+            <h1 className='text-3xl font-bold text-gray-800 mb-4'>{exam.name}</h1>
+            <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6'>
+              <h2 className='text-lg font-semibold text-blue-800 mb-2'>Thông tin bài thi</h2>
+              <div className='grid grid-cols-2 gap-4 text-sm text-blue-700'>
+                <div>
+                  <span className='font-medium'>Thời gian:</span> {Math.floor(exam.duration / 60)} phút
+                </div>
+                <div>
+                  <span className='font-medium'>Số câu hỏi:</span> {exam.totalQuestions}
+                </div>
+                <div>
+                  <span className='font-medium'>Thí sinh:</span> {user?.name}
+                </div>
+                <div>
+                  <span className='font-medium'>Mã thí sinh:</span> {user?.studentId}
+                </div>
+              </div>
+            </div>
+            
+            <div className='bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6'>
+              <h3 className='font-semibold text-yellow-800 mb-2'>⚠️ Lưu ý quan trọng</h3>
+              <ul className='text-sm text-yellow-700 text-left space-y-1'>
+                <li>• Bài thi sẽ chạy ở chế độ toàn màn hình</li>
+                <li>• Không được thoát khỏi chế độ toàn màn hình trong quá trình thi</li>
+                <li>• Thời gian thi sẽ được tính từ khi bắt đầu</li>
+                <li>• Hãy đảm bảo kết nối internet ổn định</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className='flex justify-center space-x-4'>
+            <button
+              onClick={() => navigate('/student')}
+              className='bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition'
+            >
+              Quay lại
+            </button>
+            <button
+              onClick={handleStartExam}
+              className='bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition flex items-center space-x-2'
+            >
+              <Maximize2 className='w-4 h-4' />
+              <span>Bắt đầu thi</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const currentQ = exam.questions?.[currentQuestion]
   const totalQuestions = exam.questions?.length || 0
 
@@ -143,6 +241,12 @@ export default function ExamPage() {
               <Clock className='w-5 h-5' />
               <span className='font-mono text-lg font-semibold'>{formatTime(timeLeft)}</span>
             </div>
+            <button
+              onClick={handleExitExam}
+              className='bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center space-x-2 mr-2'
+            >
+              <span>Thoát thi</span>
+            </button>
             <button
               onClick={handleSubmitExam}
               className='bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2'
