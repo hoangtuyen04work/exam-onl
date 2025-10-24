@@ -8,6 +8,7 @@ import QuestionBank from '../pages/Teacher/Questions/QuestionBank'
 import Grading from '../pages/Teacher/Results/Grading'
 import StudentList from '../pages/Teacher/Students/StudentList'
 import StudentDashboard from '../pages/Student/Dashboard'
+import ExamPage from '../pages/Student/Exam'
 
 export default function AppRoutes() {
   return (
@@ -24,6 +25,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['student']}>
             <StudentDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/exam/:examId"
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <ExamPage />
           </ProtectedRoute>
         }
       />

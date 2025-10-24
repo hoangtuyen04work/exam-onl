@@ -7,7 +7,38 @@
     "totalQuestions": 50,
     "violationThreshold": 3,
     "requireFullscreen": true,
-    "tabSwitchThreshold": 5
+    "tabSwitchThreshold": 5,
+    "questions": [
+      {
+        "id": "q1",
+        "question": "Cấu trúc dữ liệu nào sau đây có thể được sử dụng để triển khai hàng đợi (queue)?",
+        "type": "multiple-choice",
+        "options": [
+          "A. Stack",
+          "B. Array",
+          "C. Linked List",
+          "D. Cả B và C đều đúng"
+        ],
+        "correctAnswer": "D. Cả B và C đều đúng"
+      },
+      {
+        "id": "q2",
+        "question": "Độ phức tạp thời gian của thuật toán sắp xếp nổi bọt (bubble sort) trong trường hợp xấu nhất là:",
+        "type": "multiple-choice",
+        "options": [
+          "A. O(n)",
+          "B. O(n log n)",
+          "C. O(n²)",
+          "D. O(log n)"
+        ],
+        "correctAnswer": "C. O(n²)"
+      },
+      {
+        "id": "q3",
+        "question": "Hãy giải thích sự khác biệt giữa cấu trúc dữ liệu Stack và Queue. Cho ví dụ cụ thể về ứng dụng của mỗi loại.",
+        "type": "essay"
+      }
+    ]
   },
   {
     "id": "exam-002",
