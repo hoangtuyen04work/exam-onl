@@ -8,9 +8,10 @@ import QuestionBank from '../pages/Teacher/Questions/QuestionBank'
 import Grading from '../pages/Teacher/Results/Grading'
 import StudentList from '../pages/Teacher/Students/StudentList'
 import StudentDashboard from '../pages/Student/Dashboard'
-import ExamPage from '../pages/Student/Exam'
+import ExamPage from '../pages/Student/Exam/ExamPage'
+import ErrorPage from '../components/ErrorPage'
 
-export default function AppRoutes() {
+export default function AppRouter() {
   return (
     <Routes>
       {/* Trang mặc định: chuyển sang /login */}
@@ -88,7 +89,7 @@ export default function AppRoutes() {
       />
 
       {/* 404 */}
-      <Route path="*" element={<div style={{ padding: 24 }}>404 - Không tìm thấy trang</div>} />
+      <Route path="*" element={<ErrorPage />} />
     </Routes>
   )
 }

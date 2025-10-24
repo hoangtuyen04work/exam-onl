@@ -11,6 +11,9 @@ export default function ExamPage() {
   const { examId } = useParams()
   const navigate = useNavigate()
   const user = useSelector((state: any) => state.auth.user)
+  
+  console.log('ExamPage loaded with examId:', examId)
+  console.log('User:', user)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<{ [key: string]: string }>({})
   const [timeLeft, setTimeLeft] = useState(3600) // 60 phút = 3600 giây

@@ -6,8 +6,6 @@ import { useNavigate } from 'react-router-dom'
 import { authenticateUser } from '../../api/mock-api'
 import { useDispatch } from 'react-redux'
 import { loginSuccess } from '../../store/slices/authSlice'
-import { FcGoogle } from 'react-icons/fc'
-import { PiMicrosoftTeamsLogoFill } from 'react-icons/pi'
 
 export default function LoginPage() {
   const [studentId, setStudentId] = useState('')
@@ -114,21 +112,6 @@ export default function LoginPage() {
               {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
 
-            {/* O2Auth */}
-            <div className='mt-2 flex flex-col items-center'>
-              <p className='text-sm text-gray-500 mb-2'>Hoặc đăng nhập bằng</p>
-              <div className='flex gap-3'>
-                <button className='flex items-center gap-2 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition'>
-                  <FcGoogle size={20} />
-                  <span>Google</span>
-                </button>
-
-                <button className='flex items-center gap-2 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition text-blue-700'>
-                  <PiMicrosoftTeamsLogoFill size={20} />
-                  <span>Microsoft</span>
-                </button>
-              </div>
-            </div>
           </form>
         </div>
 
