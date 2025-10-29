@@ -1,37 +1,33 @@
-import { useState, useMemo } from 'react'
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import axios from 'axios'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { useDispatch } from 'react-redux'
-import { loginSuccess } from '../../store/slices/authSlice'
+// import { useDispatch } from 'react-redux'
+import { ArrowLeft } from 'lucide-react'
 
-// Type definitions
-interface LoginResponse {
-  token: string
-  name?: string
-  role: 'teacher' | 'student'
+interface RegisterPayload {
+  email: string
+  password: string
+  roleId?: number
 }
 
 interface ApiErrorResponse {
-  message: string
+  message?: string
 }
 
-interface LoginPayload {
-  email: string
-  password: string
-  roleId?: string | number
-}
-
-export default function LoginPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const [fullName, setFullName] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [roleId, setRoleId] = useState<string | number | ''>('')
   const navigate = useNavigate()
-  const dispatch = useDispatch()
+  // const dispatch = useDispatch()
 
-  // Lấy role đã chọn (RoleSelectPage lưu vào localStorage)
+  // Use a dedicated axios instance so Authorization from defaults is not sent
+  const authAxios = useMemo(() => axios.create(), [])
+
   const selectedRole = useMemo(() => {
     try {
       const raw = localStorage.getItem('selectedRole')
@@ -41,71 +37,65 @@ export default function LoginPage() {
     }
   }, [])
 
-  const loginMutation = useMutation<LoginResponse, Error, void>({
+  useEffect(() => {
+    // Không gọi roles nữa, chỉ sử dụng selectedRole từ localStorage
+    if (selectedRole?.id !== undefined && selectedRole?.id !== null) {
+      setRoleId(selectedRole.id)
+    }
+  }, [selectedRole])
+
+  const registerMutation = useMutation<void, Error, void>({
     mutationFn: async () => {
+      const payload: RegisterPayload = { email, password }
+      if (roleId !== '') payload.roleId = Number(roleId)
       try {
-        // gửi kèm roleId nếu đã chọn
-        const payload: LoginPayload = { email, password }
-        if (selectedRole?.id) payload.roleId = selectedRole.id
-        const { data } = await axios.post(
-          'http://192.120.4.105:8888/exam-online-system/api/auth/login',
+        setIsSubmitting(true)
+        const { data } = await authAxios.post(
+          'http://192.120.4.105:8888/exam-online-system/api/auth/register',
           payload,
           { headers: { 'Content-Type': 'application/json' } }
         )
-        // Chuẩn hoá theo backend: có thể trả về { data: {...} } hoặc trực tiếp {...}
+        // Lưu userId để verify email (theo spec mẫu)
         const raw = (data && data.data) ? data.data : data
-        const token = raw?.token ?? ''
-        const name = raw?.name ?? raw?.fullName ?? raw?.username
-        const roleId = raw?.roleId ?? selectedRole?.id
-        const roleName = raw?.roleName ?? selectedRole?.name
-
-        // Chuẩn hoá role về 'teacher' | 'student'
-        const norm = (roleName || '').toString().toLowerCase()
-        let role: 'teacher' | 'student'
-        if (norm.includes('teach')) role = 'teacher'
-        else if (norm.includes('student')) role = 'student'
-        else if (Number(roleId) === 1 || String(roleId) === 'TEACHER') role = 'teacher'
-        else role = 'student'
-
-        // Lưu token
-        if (token) {
-          localStorage.setItem('authToken', token)
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        const userId = raw?.userId
+        if (userId !== undefined && userId !== null) {
+          localStorage.setItem('pendingVerification', JSON.stringify({ userId, roleId: Number(roleId), roleName: selectedRole?.name || '' }))
         }
-
-        const normalized: LoginResponse = { token, name, role }
-        return normalized
+        return
       } catch (err: unknown) {
         const msg =
           axios.isAxiosError(err) && err.response?.data?.message
             ? (err.response.data as ApiErrorResponse).message
-            : err instanceof Error ? err.message : 'Đăng nhập thất bại'
-        throw new Error(msg)
+            : err instanceof Error ? err.message : 'Đăng ký thất bại'
+        throw new Error(msg || 'Đăng ký thất bại')
+      } finally {
+        setIsSubmitting(false)
       }
     },
-    onSuccess: (user: LoginResponse) => {
-      dispatch(loginSuccess(user))
-      toast.success(`Chào mừng ${user.name || 'bạn'}!`)
-      if (user.role === 'teacher') navigate('/teacher')
-      else navigate('/student')
+    onSuccess: async () => {
+      toast.success('Đăng ký thành công! Vui lòng xác minh email')
+      const raw = localStorage.getItem('pendingVerification')
+      const parsed = raw ? JSON.parse(raw) as { userId?: number } : null
+      const userId = parsed?.userId
+      navigate('/verify-email', { state: { userId } })
     },
     onError: (error: Error) => {
-      toast.error(error?.message || 'Thông tin đăng nhập không đúng!')
+      toast.error(error?.message || 'Không thể đăng ký tài khoản')
     }
   })
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!email || !password) {
-      toast.warning('Vui lòng nhập đầy đủ thông tin!')
+      toast.warning('Vui lòng nhập email và mật khẩu')
       return
     }
-    if (!selectedRole?.id) {
-      toast.warning('Vui lòng chọn vai trò trước khi đăng nhập')
+    if (roleId === '') {
+      toast.warning('Vui lòng chọn vai trò ở bước trước')
       navigate('/role-select')
       return
     }
-    loginMutation.mutate()
+    registerMutation.mutate()
   }
 
   return (
@@ -115,7 +105,7 @@ export default function LoginPage() {
         backgroundImage: "url('https://examonline.in/wp-content/uploads/2021/06/Secure-Exam-Browser-2048x1245.png')"
       }}
     >
-      <div className='bg-white/95 shadow-2xl border-4 border-blue-600 rounded-2xl w-full max-w-md p-8 m-12 backdrop-blur-sm'>
+      <div className="bg-white/95 shadow-2xl border-4 border-blue-600 rounded-2xl w-full max-w-md p-8 mx-auto my-12 backdrop-blur-sm min-h-0">
         <button
           type='button'
           aria-label='Quay lại chọn vai trò'
@@ -138,8 +128,21 @@ export default function LoginPage() {
         </div>
 
         <div className='border border-cyan-500 rounded-lg p-6'>
-          <h2 className='text-center font-semibold mb-4'>ĐĂNG NHẬP LÀM BÀI THI</h2>
+          <h2 className='text-center font-semibold mb-4'>ĐĂNG KÝ TÀI KHOẢN</h2>
           <form onSubmit={handleSubmit} className='space-y-4'>
+            <div>
+              <label className='block text-sm font-medium mb-1'>
+                Họ và tên
+              </label>
+              <input
+                type='text'
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder='Nhập họ và tên'
+                className='w-full border border-gray-400 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500'
+              />
+            </div>
+
             <div>
               <label className='block text-sm font-medium mb-1'>
                 Email <span className='text-red-500'>*</span>
@@ -157,35 +160,26 @@ export default function LoginPage() {
               <label className='block text-sm font-medium mb-1'>
                 Mật khẩu <span className='text-red-500'>*</span>
               </label>
-              <div className='relative'>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder='Nhập mật khẩu'
-                  className='w-full border border-gray-400 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 pr-10'
-                />
-                <button
-                  type='button'
-                  className='absolute right-3 top-2.5 text-gray-500'
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
+              <input
+                type='password'
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder='Nhập mật khẩu'
+                className='w-full border border-gray-400 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500'
+              />
+          {/* Role được lấy từ bước chọn vai trò, không hiển thị selector */}
             </div>
 
             <button
               type='submit'
-              disabled={loginMutation.isPending}
+              disabled={isSubmitting || registerMutation.isPending}
               className='w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-medium'
             >
-              {loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              {registerMutation.isPending ? 'Đang đăng ký...' : 'Đăng ký'}
             </button>
-
           </form>
           <div className='text-center mt-4 text-sm'>
-            <button className='text-blue-600 underline' onClick={() => navigate('/register')}>Chưa có tài khoản? Đăng ký</button>
+            <button className='text-blue-600 underline' onClick={() => navigate('/login')}>Đã có tài khoản? Đăng nhập</button>
           </div>
         </div>
 
@@ -193,13 +187,13 @@ export default function LoginPage() {
           <p className='text-gray-400'>© HV KTMM – Thực tập cơ sở</p>
         </div>
 
-        {/* Footer */}
         <div className='mt-4 border-t border-gray-200 pt-4 text-center text-xs space-y-1 text-gray-600'>
           <p>Địa chỉ: Số 114 Chiến Thắng, Phương Liệt, Hà Nội</p>
           <p>Điện thoại: 84-24-88889999; Email: kt@actvn.edu.vn</p>
-          <p className='text-[10px] text-gray-400'>Release date: 2025-10-01T11:54:17+07:00</p>
         </div>
       </div>
     </div>
   )
 }
+
+

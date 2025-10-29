@@ -1,5 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from '../pages/LoginPage'
+import RoleSelectPage from '../pages/RoleSelectPage/RoleSelectPage'
+import RegisterPage from '../pages/RegisterPage/RegisterPage'
+import VerifyEmailPage from '../pages/VerifyEmailPage/VerifyEmailPage'
 import ProtectedRoute from '../components/Common/ProtectedRoute'
 import TeacherDashboard from '../pages/Teacher/Dashboard/TeacherDashboard'
 import ExamList from '../pages/Teacher/Exams/ExamList'
@@ -14,11 +17,20 @@ import ErrorPage from '../components/ErrorPage'
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Trang mặc định: chuyển sang /login */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Trang mặc định: chuyển sang /role-select */}
+      <Route path="/" element={<Navigate to="/role-select" replace />} />
 
       {/* Trang đăng nhập */}
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Đăng ký tài khoản */}
+      <Route path="/register" element={<RegisterPage />} />
+
+      {/* Xác minh email */}
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+      {/* Chọn vai trò trước khi đăng nhập */}
+      <Route path="/role-select" element={<RoleSelectPage />} />
 
       {/* Student Routes */}
       <Route
