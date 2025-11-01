@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import axiosClient from '../../api/axiosClient'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 
@@ -19,31 +19,42 @@ export default function RoleSelectPage() {
     const fetchRoles = async () => {
       setLoading(true)
       try {
-        const res = await axios.get(
-          'http://192.120.4.105:8888/exam-online-system/api/roles'
-        )
+        // Chỉ gọi /roles (baseURL đã chứa /api)
+        const res = await axiosClient.get('/roles')
+
         if (!mounted) return
-        // Hỗ trợ cả 2 dạng: { data: Role[] } hoặc Role[]
+
         type ApiRole = Partial<Role> & {
           roleId?: string | number
           roleName?: string
         }
+
         const listRaw: ApiRole[] = Array.isArray(res.data?.data)
           ? (res.data.data as ApiRole[])
           : Array.isArray(res.data)
             ? (res.data as ApiRole[])
             : []
-        // Chuẩn hoá: đảm bảo mỗi role có id và name
+
         const normalized: Role[] = listRaw.map((item, idx) => {
-          // Ưu tiên dùng roleId, roleName từ API
           const id = item?.roleId ?? item?.id ?? idx
           const name = item?.roleName ?? item?.name ?? `Role ${idx + 1}`
           const code = item?.code
           return { id, name, code }
         })
+
         setRoles(normalized)
-      } catch {
-        toast.error('Không load được danh sách vai trò')
+      } catch (err) {
+        const status = (err as { response?: { status?: number } })?.response?.status
+        if (status === 401 || status === 403) {
+          const fallback = [
+            { id: 1, name: 'Teacher', code: 'TEACHER' },
+            { id: 2, name: 'Student', code: 'STUDENT' }
+          ]
+          setRoles(fallback)
+          toast.info('Không truy cập được roles (401/403). Dùng danh sách mặc định.')
+        } else {
+          toast.error('Không load được danh sách vai trò')
+        }
       } finally {
         if (mounted) setLoading(false)
       }
@@ -76,7 +87,6 @@ export default function RoleSelectPage() {
           <img src='https://actvn.edu.vn/Images/actvn_big_icon.png' alt='Logo' className='w-16 h-16 mb-3' />
           <h1 className='text-center font-semibold text-gray-800'>Phòng Khảo thí & Đảm bảo chất lượng đào tạo</h1>
           <p className='text-blue-800 font-bold text-lg'>Phần Mềm Thi Thử Nghiệm</p>
-          
         </div>
 
         <div className='border border-cyan-500 rounded-lg p-6'>

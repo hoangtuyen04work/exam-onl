@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import axios from 'axios'
+import axiosClient from '../../api/axiosClient.ts'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -8,6 +8,10 @@ import { ArrowLeft } from 'lucide-react'
 interface VerifyPayload {
   code: string
   userId: number
+}
+
+interface VerifyLocationState {
+  userId?: number
 }
 
 export default function VerifyEmailPage() {
@@ -33,16 +37,17 @@ export default function VerifyEmailPage() {
     }
   }, [])
 
-  const userId: number | undefined = (location.state as any)?.userId ?? storedPending?.userId
+  const locationState = (location.state ?? null) as unknown as VerifyLocationState | null
+  const userId: number | undefined = locationState?.userId ?? storedPending?.userId
 
-  const authAxios = useMemo(() => axios.create(), [])
+  const authAxios = useMemo(() => axiosClient, [])
 
   const verifyMutation = useMutation<void, Error, void>({
     mutationFn: async () => {
       if (!userId || !code) throw new Error('Thiếu mã xác minh hoặc userId')
       const payload: VerifyPayload = { code, userId }
       await authAxios.post(
-        'http://192.120.4.105:8888/exam-online-system/api/auth/verify-email',
+        '/auth/verify-email',
         payload,
         { headers: { 'Content-Type': 'application/json' } }
       )

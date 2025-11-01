@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import axiosClient from '../../api/axiosClient.ts'
 import { useDispatch } from 'react-redux'
 import { loginSuccess } from '../../store/slices/authSlice'
 
@@ -47,8 +48,8 @@ export default function LoginPage() {
         // gửi kèm roleId nếu đã chọn
         const payload: LoginPayload = { email, password }
         if (selectedRole?.id) payload.roleId = selectedRole.id
-        const { data } = await axios.post(
-          'http://192.120.4.105:8888/exam-online-system/api/auth/login',
+        const { data } = await axiosClient.post(
+          '/auth/login',
           payload,
           { headers: { 'Content-Type': 'application/json' } }
         )
@@ -70,7 +71,7 @@ export default function LoginPage() {
         // Lưu token
         if (token) {
           localStorage.setItem('authToken', token)
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
         }
 
         const normalized: LoginResponse = { token, name, role }

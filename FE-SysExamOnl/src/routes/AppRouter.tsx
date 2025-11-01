@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from '../pages/LoginPage'
 import RoleSelectPage from '../pages/RoleSelectPage/RoleSelectPage'
@@ -5,16 +6,33 @@ import RegisterPage from '../pages/RegisterPage/RegisterPage'
 import VerifyEmailPage from '../pages/VerifyEmailPage/VerifyEmailPage'
 import ProtectedRoute from '../components/Common/ProtectedRoute'
 import TeacherDashboard from '../pages/Teacher/Dashboard/TeacherDashboard'
-import ExamList from '../pages/Teacher/Exams/ExamList'
-import CreateExam from '../pages/Teacher/Exams/CreateExam'
-import QuestionBank from '../pages/Teacher/Questions/QuestionBank'
-import Grading from '../pages/Teacher/Results/Grading'
-import StudentList from '../pages/Teacher/Students/StudentList'
 import StudentDashboard from '../pages/Student/Dashboard'
 import ExamPage from '../pages/Student/Exam/ExamPage'
 import ErrorPage from '../components/ErrorPage'
+import HomeTab from '../pages/Teacher/Dashboard/Tabs/HomeTab'
+import ExamList from '../pages/Teacher/Dashboard/Tabs/ExamsTab'
+import QuestionBank from '../pages/Teacher/Dashboard/Tabs/BanksTab'
+import StudentList from '../pages/Teacher/Dashboard/Tabs/StudentsTab'
+import CreateEditExam from '../pages/Teacher/Exams/CreateEditExam'
+import axiosClient from '../api/axiosClient'
+import { useDispatch } from 'react-redux'
+import { loginSuccess } from '../store/slices/authSlice'
 
 export default function AppRouter() {
+  const dispatch = useDispatch()
+
+  // ✅ Khi app load lại, tự khôi phục token và user info từ localStorage
+  useEffect(() => {
+    const token = localStorage.getItem('authToken')
+    const role = localStorage.getItem('role')
+    const name = localStorage.getItem('name')
+
+    if (token) {
+      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      dispatch(loginSuccess({ token, role, name }))
+    }
+  }, [dispatch])
+
   return (
     <Routes>
       {/* Trang mặc định: chuyển sang /role-select */}
@@ -29,7 +47,7 @@ export default function AppRouter() {
       {/* Xác minh email */}
       <Route path="/verify-email" element={<VerifyEmailPage />} />
 
-      {/* Chọn vai trò trước khi đăng nhập */}
+      {/* Chọn vai trò */}
       <Route path="/role-select" element={<RoleSelectPage />} />
 
       {/* Student Routes */}
@@ -58,47 +76,15 @@ export default function AppRouter() {
             <TeacherDashboard />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/teacher/exams"
-        element={
-          <ProtectedRoute allowedRoles={['teacher']}>
-            <ExamList />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/exams/create"
-        element={
-          <ProtectedRoute allowedRoles={['teacher']}>
-            <CreateExam />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/questions"
-        element={
-          <ProtectedRoute allowedRoles={['teacher']}>
-            <QuestionBank />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/results"
-        element={
-          <ProtectedRoute allowedRoles={['teacher']}>
-            <Grading />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/teacher/students"
-        element={
-          <ProtectedRoute allowedRoles={['teacher']}>
-            <StudentList />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<HomeTab />} />                       {/* /teacher */}
+        <Route path="exams" element={<ExamList />} />               {/* /teacher/exams */}
+        <Route path="exams/create" element={<CreateEditExam />} />  {/* /teacher/exams/create */}
+        <Route path="exams/:examId/edit" element={<CreateEditExam />} /> {/* /teacher/exams/:examId/edit */}
+        <Route path="questions" element={<QuestionBank />} />       {/* /teacher/questions */}
+        <Route path="students" element={<StudentList />} />         {/* /teacher/students */}
+        <Route path="settings" element={<div>Settings Page</div>} />{/* /teacher/settings */}
+      </Route>
 
       {/* 404 */}
       <Route path="*" element={<ErrorPage />} />

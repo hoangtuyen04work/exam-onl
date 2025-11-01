@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
+import axiosClient from '../../api/axiosClient.ts'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 // import { useDispatch } from 'react-redux'
@@ -25,8 +26,8 @@ export default function RegisterPage() {
   const navigate = useNavigate()
   // const dispatch = useDispatch()
 
-  // Use a dedicated axios instance so Authorization from defaults is not sent
-  const authAxios = useMemo(() => axios.create(), [])
+  // Dùng axiosClient với baseURL cấu hình sẵn
+  const authAxios = useMemo(() => axiosClient, [])
 
   const selectedRole = useMemo(() => {
     try {
@@ -51,7 +52,7 @@ export default function RegisterPage() {
       try {
         setIsSubmitting(true)
         const { data } = await authAxios.post(
-          'http://192.120.4.105:8888/exam-online-system/api/auth/register',
+          '/auth/register',
           payload,
           { headers: { 'Content-Type': 'application/json' } }
         )
