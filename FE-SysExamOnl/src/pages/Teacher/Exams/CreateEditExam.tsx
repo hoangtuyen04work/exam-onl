@@ -167,7 +167,7 @@ export default function CreateEditExam() {
 
     try {
       if (isEdit) {
-        await api.put(`/teacher/exams/${examId}`, payload)
+        await api.put(`/teacher/exams/bulk-update/${examId}`, payload)
         toast.success('Lưu đề thi thành công!')
       } else {
         await api.post('/teacher/exams', payload)
