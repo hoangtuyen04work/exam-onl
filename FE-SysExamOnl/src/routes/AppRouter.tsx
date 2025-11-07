@@ -16,14 +16,17 @@ import ExamList from '../pages/Teacher/Dashboard/Tabs/ExamsTab'
 import QuestionBank from '../pages/Teacher/Dashboard/Tabs/BanksTab'
 import StudentList from '../pages/Teacher/Dashboard/Tabs/StudentsTab'
 import CreateEditExam from '../pages/Teacher/Exams/CreateEditExam'
+import ExamSessionsList from '../pages/Teacher/Dashboard/Tabs/ExamSessionsList'
+
 import axiosClient from '../api/axiosClient'
 import { useDispatch } from 'react-redux'
 import { loginSuccess } from '../store/slices/authSlice'
+import ExamSessionDetail from '../pages/Teacher/Dashboard/Tabs/ESListUser'
+import ExamSubmissionDetail from '../pages/Teacher/Dashboard/Tabs/ExamSubmissionDetail'
 
 export default function AppRouter() {
   const dispatch = useDispatch()
 
-  // ✅ Khi app load lại, tự khôi phục token và user info từ localStorage
   useEffect(() => {
     const token = localStorage.getItem('authToken')
     const role = localStorage.getItem('role')
@@ -37,19 +40,13 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      {/* Trang mặc định: chuyển sang /role-select */}
+      {/* Trang mặc định */}
       <Route path='/' element={<Navigate to='/role-select' replace />} />
 
-      {/* Trang đăng nhập */}
+      {/* Auth */}
       <Route path='/login' element={<LoginPage />} />
-
-      {/* Đăng ký tài khoản */}
       <Route path='/register' element={<RegisterPage />} />
-
-      {/* Xác minh email */}
       <Route path='/verify-email' element={<VerifyEmailPage />} />
-
-      {/* Chọn vai trò */}
       <Route path='/role-select' element={<RoleSelectPage />} />
 
       {/* Student Routes */}
@@ -95,14 +92,16 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<HomeTab />} /> {/* /teacher */}
-        <Route path='exams' element={<ExamList />} /> {/* /teacher/exams */}
-        <Route path='exams/create' element={<CreateEditExam />} /> {/* /teacher/exams/create */}
-        <Route path='exams/:examId/edit' element={<CreateEditExam />} /> {/* /teacher/exams/:examId/edit */}
-        <Route path='questions' element={<QuestionBank />} /> {/* /teacher/questions */}
-        <Route path='students' element={<StudentList />} /> {/* /teacher/students */}
+        <Route index element={<HomeTab />} />
+        <Route path='exams' element={<ExamList />} />
+        <Route path='exams/create' element={<CreateEditExam />} />
+        <Route path='exams/:examId/edit' element={<CreateEditExam />} />
+        <Route path='questions' element={<QuestionBank />} />
+        <Route path='students' element={<StudentList />} />
         <Route path='settings' element={<div>Settings Page</div>} />
-        {/* /teacher/settings */}
+        <Route path='exam-sessions/list' element={<ExamSessionsList />} />
+        <Route path='exam-sessions/detail' element={<ExamSessionDetail />} />
+        <Route path='exam-sessions/submission' element={<ExamSubmissionDetail />} />
       </Route>
 
       {/* 404 */}

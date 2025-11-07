@@ -16,6 +16,7 @@ interface ExamItem {
 
 export default function ExamsTab() {
   const [list, setList] = useState<ExamItem[]>([])
+  const [listExamUser, setListExamUser] = useState<ExamItem[]>([])
   const [loading, setLoading] = useState(true)
   const [modalData, setModalData] = useState<{ link: string; code: string } | null>(null)
   const navigate = useNavigate()
@@ -55,7 +56,45 @@ export default function ExamsTab() {
     fetchExams()
   }, [navigate])
 
- 
+ const handleListExam = async (examSessionId: number | string) => {
+  console.log('🚀 Bắt đầu gọi API với examSessionId:', examSessionId); // ← Log TRƯỚC await
+
+  try {
+    const res = await axiosClient.get(`/teacher/exam-sessions/search`);
+    const listUsers = Array.isArray(res.data.items)
+     ? res.data.items.map((item:any)=> ({
+        id : item.examSessionId ?? '',
+        code: item.code ?? '',
+        inviteLink: item.invitelink ??'',
+        name : item.name ?? '',
+        owner: item.ownerName ?? '',
+        start :item.startAt ?? '',
+     })) : []
+     setListExamUser(listUsers);
+   console.log('✅ API trả về:', listUsers); // ← Log SAU khi có dữ liệu
+
+    // Xử lý dữ liệu chuẩn
+    const assignedExams = res.data.items || []; // ← Luôn là array từ Spring Page
+    
+    if (assignedExams.length === 0) {
+      console.log('ℹ️  Chưa có đề nào được giao');
+      toast.info('Chưa có đề thi nào được giao cho phiên này');
+      return;
+    }
+
+    // Set state hoặc xử lý tiếp
+    
+
+  } catch (err: any) {
+    console.error('❌ Lỗi API:', err.response?.data || err.message);
+    toast.error('Không tải được danh sách đề đã giao');
+  }
+};
+
+
+
+
+
   const handleCreateSession = async (examId: number | string) => {
   try {
     const duration = 60 // phút
@@ -156,6 +195,20 @@ export default function ExamsTab() {
                 >
                   ✏️ Sửa
                 </button>
+                <button
+  onClick={() => {
+    if (!exam.id) {
+      toast.error('Không tìm thấy ID đề thi!')
+      return
+    }
+    navigate('/teacher/exam-sessions/list', {
+      state: { examId: exam.id }
+    })
+  }}
+  className="text-blue-600 hover:underline text-xs font-medium"
+>
+  Các đề đã giao
+</button>
                 <button
                   onClick={() => handleCreateSession(exam.id)}
                   className="text-gray-600 hover:underline text-xs"
