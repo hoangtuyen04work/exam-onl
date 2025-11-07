@@ -94,7 +94,8 @@ export default function ExamSubmissionDetail() {
     } finally {
       setSending(false)
     }
-  }
+}
+//hello
 
   const getAnswerIcon = (correct: boolean, selected: boolean) => {
     if (selected && correct) return <CheckCircle className="w-4 h-4 text-green-600" />
