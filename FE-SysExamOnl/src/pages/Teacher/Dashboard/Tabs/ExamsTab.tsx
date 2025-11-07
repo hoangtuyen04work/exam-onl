@@ -55,31 +55,42 @@ export default function ExamsTab() {
     fetchExams()
   }, [navigate])
 
+ 
   const handleCreateSession = async (examId: number | string) => {
-    try {
-      const payload = {
-        examId: Number(examId),
-        name: 'Phiên thi tự động',
-        description: 'Tạo từ giao diện giáo viên',
-        durationMinutes: 60,
-        expiredAt: new Date(Date.now() + 3600 * 1000).toISOString(),
-        createdAt: new Date().toISOString()
-      }
+  try {
+    const duration = 60 // phút
+    const now = new Date()
+    
+    // Lấy offset timezone (VD: +7h = -420 phút)
+    const timezoneOffsetMs = now.getTimezoneOffset() * 60000
 
-      const res = await axiosClient.post('/teacher/exam-sessions', payload)
-      console.log('Exam session created:', res.data)
+    // Chuyển sang UTC đúng chuẩn
+    const startAt = new Date(now.getTime() - timezoneOffsetMs)
+    const expiredAt = new Date(startAt.getTime() + duration * 60 * 1000)
 
-      if (res.data?.data) {
-        const { inviteLink, code } = res.data.data
-        setModalData({ link: inviteLink, code })
-        toast.success('Tạo phiên thi thành công!')
-      } else {
-        toast.error('Không nhận được dữ liệu từ server!')
-      }
-    } catch (err) {
-      toast.error('Không thể tạo phiên thi!')
+    const payload = {
+      examId: Number(examId),
+      name: 'Phiên thi tự động',
+      description: 'Tạo từ giao diện giáo viên',
+      durationMinutes: duration,
+      startAt: startAt.toISOString(),
+      expiredAt: expiredAt.toISOString()
     }
+
+    const res = await axiosClient.post('/teacher/exam-sessions', payload)
+    console.log('Exam session created:', res.data)
+
+    if (res.data?.data) {
+      const { inviteLink, code } = res.data.data
+      setModalData({ link: inviteLink, code })
+      toast.success('Tạo phiên thi thành công!')
+    } else {
+      toast.error('Không nhận được dữ liệu từ server!')
+    }
+  } catch (err) {
+    toast.error('Không thể tạo phiên thi!')
   }
+}
 
   return (
     <div className="p-6">
