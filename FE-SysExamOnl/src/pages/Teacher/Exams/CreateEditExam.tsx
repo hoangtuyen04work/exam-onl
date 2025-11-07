@@ -144,40 +144,60 @@ export default function CreateEditExam() {
   }
 
   const handleSubmit = async () => {
-    if (!validateBeforeSave()) return
-    setIsSaving(true)
+  if (!validateBeforeSave()) return
+  setIsSaving(true)
 
-    const startAt = new Date().toISOString()
-    const expiredAt = new Date(Date.now() + durationMinutes * 60000).toISOString()
-
-    const payload = {
-      name: name.trim(),
-      description: description.trim(),
-      durationMinutes,
-      startAt,
-      expiredAt,
-      questions: questions.map((q, index) => ({
-        ...q,
-        orderColumn: index,
-        shuffleQuestions: true
-      }))
-    }
-
-    try {
-      if (isEdit) {
-        await api.put(`/teacher/exams/bulk-update/${examId}`, payload)
-        toast.success('Lưu đề thi thành công!')
-      } else {
-        await api.post('/teacher/exams', payload)
-        toast.success('Tạo đề thi thành công!')
-      }
-      setTimeout(() => navigate('/teacher/exams'), 800)
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || 'Thao tác thất bại!')
-    } finally {
-      setIsSaving(false)
-    }
+  const payloadBase = {
+    name: name.trim(),
+    description: description.trim(),
+    questions: questions.map((q, index) => ({
+      ...q,
+      orderColumn: index,
+      shuffleQuestions: true
+    }))
   }
+
+  try {
+    if (isEdit) {
+  const payload = {
+    name,
+    description,
+
+    questions: questions.map((q, index) => ({
+      questionId: q.id ?? q.questionId, // 👈 thêm id cũ vào
+      content: q.content,
+      point: q.point ?? 0,
+      orderColumn: index,
+      shuffleAnswers: true,
+      shuffleQuestions: true,
+      difficulty: q.difficulty || 'EASY',
+      explanation: q.explanation || '',
+      answers: q.answers.map((a) => ({
+        answerId: a.id ?? a.answerId, // 👈 thêm id cũ vào
+        content: a.content,
+        correct: a.correct
+      }))
+    }))
+  }
+
+  await api.put(`/teacher/exams/bulk-update/${examId}`, payload)
+  console.log('Payload gửi đi:', payload)
+  toast.success('Lưu đề thi thành công!')
+    } else {
+      // POST KHÔNG bao gồm các trường thời gian hoặc duration
+      await api.post('/teacher/exams', payloadBase)
+      toast.success('Tạo đề thi thành công!')
+    }
+
+    setTimeout(() => navigate('/teacher/exams'), 800)
+  } catch (err: any) {
+    console.error('API error:', err?.response?.data || err)
+    toast.error(err?.response?.data?.message || err?.message || 'Thao tác thất bại!')
+  } finally {
+    setIsSaving(false)
+  }
+}
+
 
   const handleDelete = async () => {
     if (!examId) return toast.error('Không xác định được ID đề thi!')
