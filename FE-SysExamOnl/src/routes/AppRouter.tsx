@@ -23,6 +23,7 @@ import { useDispatch } from 'react-redux'
 import { loginSuccess } from '../store/slices/authSlice'
 import ExamSessionDetail from '../pages/Teacher/Dashboard/Tabs/ESListUser'
 import ExamSubmissionDetail from '../pages/Teacher/Dashboard/Tabs/ExamSubmissionDetail'
+import StudentLayout from '../layouts/StudentLayout'
 
 export default function AppRouter() {
   const dispatch = useDispatch()
@@ -54,34 +55,15 @@ export default function AppRouter() {
         path='/student'
         element={
           <ProtectedRoute allowedRoles={['student']}>
-            <StudentDashboard />
+            <StudentLayout />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path='/exam/:examId'
-        element={
-          <ProtectedRoute allowedRoles={['student']}>
-            <ExamPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/student/join'
-        element={
-          <ProtectedRoute allowedRoles={['student']}>
-            <JoinExam />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/exam/:examId/result'
-        element={
-          <ProtectedRoute allowedRoles={['student']}>
-            <ResultPage />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<StudentDashboard />} />
+        <Route path='exam/join/:examId' element={<ExamPage />} />
+        <Route path='exam/join' element={<JoinExam />} />
+        <Route path='exam/:examSessionId/result' element={<ResultPage />} />
+      </Route>
 
       {/* Teacher Routes */}
       <Route
