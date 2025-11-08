@@ -154,8 +154,8 @@ export default function ExamsTab() {
         name: 'Phiên thi tùy chỉnh',
         description: 'Tạo từ giao diện giáo viên',
         durationMinutes: durationMin,
-        startAt: start.toISOString(),
-        expiredAt: end.toISOString()
+        startAt: startAt,
+        expiredAt: expiredAt
       }
 
       const res = await axiosClient.post('/teacher/exam-sessions', payload)
@@ -176,21 +176,21 @@ export default function ExamsTab() {
   const formatDateTime = (iso: string) => format(new Date(iso), 'dd/MM/yyyy HH:mm')
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Danh sách đề thi</h2>
+    <div className='p-6'>
+      <div className='flex items-center justify-between mb-6'>
+        <h2 className='text-xl font-bold'>Danh sách đề thi</h2>
 
-        <div className="flex gap-3">
+        <div className='flex gap-3'>
           <button
             onClick={() => navigate('/teacher/exams/create')}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition"
+            className='bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition'
           >
             + Tạo đề thi
           </button>
 
           <button
             onClick={() => navigate('/teacher/questions')}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition"
+            className='bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition'
           >
             + Tạo từ ngân hàng
           </button>
@@ -198,32 +198,30 @@ export default function ExamsTab() {
       </div>
 
       {loading ? (
-        <div className="text-center py-8">Đang tải...</div>
+        <div className='text-center py-8'>Đang tải...</div>
       ) : list.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 italic">Chưa có đề thi nào.</div>
+        <div className='text-center py-8 text-gray-500 italic'>Chưa có đề thi nào.</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+        <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5'>
           {list.map((exam) => (
             <div
               key={exam.id}
-              className="relative bg-white border rounded-xl shadow-sm hover:shadow-lg transition-all p-4 flex flex-col justify-between"
+              className='relative bg-white border rounded-xl shadow-sm hover:shadow-lg transition-all p-4 flex flex-col justify-between'
               style={{ aspectRatio: '3/4', transform: 'scale(0.95)' }}
             >
               <div>
-                <h3 className="text-base font-semibold text-blue-700 line-clamp-2">{exam.name}</h3>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-3">
-                  {exam.description || 'Không có mô tả.'}
-                </p>
+                <h3 className='text-base font-semibold text-blue-700 line-clamp-2'>{exam.name}</h3>
+                <p className='text-xs text-gray-500 mt-1 line-clamp-3'>{exam.description || 'Không có mô tả.'}</p>
 
-                <div className="text-[11px] text-gray-500 mt-2">
+                <div className='text-[11px] text-gray-500 mt-2'>
                   🧩 {exam.numberQuestions} câu — ⏱ {exam.durationMinutes} phút
                 </div>
-                <div className="text-[11px] text-gray-400">
+                <div className='text-[11px] text-gray-400'>
                   📅 {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN') : '—'}
                 </div>
               </div>
 
-              <div className="flex justify-between items-center mt-3">
+              <div className='flex justify-between items-center mt-3'>
                 <button
                   onClick={() => {
                     if (!exam.id) {
@@ -232,23 +230,21 @@ export default function ExamsTab() {
                     }
                     navigate(`/teacher/exams/${exam.id}/edit`)
                   }}
-                  className="text-blue-600 hover:underline text-xs font-medium"
+                  className='text-blue-600 hover:underline text-xs font-medium'
                 >
                   ✏️ Sửa
                 </button>
 
                 <button
-                  onClick={() =>
-                    navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })
-                  }
-                  className="text-blue-600 hover:underline text-xs font-medium"
+                  onClick={() => navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })}
+                  className='text-blue-600 hover:underline text-xs font-medium'
                 >
                   Các đề đã giao
                 </button>
 
                 <button
                   onClick={() => openTimeModal(exam.id)}
-                  className="text-green-600 hover:underline text-xs font-medium"
+                  className='text-green-600 hover:underline text-xs font-medium'
                 >
                   📤 Giao đề
                 </button>
@@ -260,45 +256,39 @@ export default function ExamsTab() {
 
       {/* Modal chọn thời gian */}
       {showTimeModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Thiết lập phiên thi</h3>
+        <div className='fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm'>
+          <div className='bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md'>
+            <h3 className='text-lg font-semibold text-gray-800 mb-4'>Thiết lập phiên thi</h3>
 
-            <div className="space-y-4">
+            <div className='space-y-4'>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Thời gian bắt đầu
-                </label>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>Thời gian bắt đầu</label>
                 <input
-                  type="datetime-local"
+                  type='datetime-local'
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
                   min={new Date().toISOString().slice(0, 16)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none'
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Thời gian kết thúc
-                </label>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>Thời gian kết thúc</label>
                 <input
-                  type="datetime-local"
+                  type='datetime-local'
                   value={expiredAt}
                   onChange={(e) => setExpiredAt(e.target.value)}
                   min={startAt || new Date().toISOString().slice(0, 16)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none'
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Thời gian làm bài (phút)
-                </label>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>Thời gian làm bài (phút)</label>
                 <select
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none'
                 >
                   {DURATIONS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -309,36 +299,30 @@ export default function ExamsTab() {
               </div>
 
               {startAt && expiredAt && (
-                <div className="text-sm p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="font-medium text-amber-800">
+                <div className='text-sm p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+                  <p className='font-medium text-amber-800'>
                     Thời gian mở phiên:{' '}
-                    {Math.floor((new Date(expiredAt).getTime() - new Date(startAt).getTime()) / 60000)}{' '}
-                    phút
+                    {Math.floor((new Date(expiredAt).getTime() - new Date(startAt).getTime()) / 60000)} phút
                   </p>
-                  <p className="text-amber-700 text-xs mt-1">Thời gian làm bài: {duration} phút</p>
+                  <p className='text-amber-700 text-xs mt-1'>Thời gian làm bài: {duration} phút</p>
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowTimeModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
+            <div className='flex justify-end gap-3 mt-6'>
+              <button onClick={() => setShowTimeModal(false)} className='px-4 py-2 text-gray-600 hover:text-gray-800'>
                 Hủy
               </button>
               <button
                 onClick={handleCreateSession}
                 disabled={creating}
                 className={`px-5 py-2 rounded-lg font-medium transition flex items-center gap-2 ${
-                  creating
-                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700'
+                  creating ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'
                 }`}
               >
                 {creating ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
                     Đang tạo...
                   </>
                 ) : (
@@ -352,56 +336,54 @@ export default function ExamsTab() {
 
       {/* Modal kết quả */}
       {modalData && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-white/30 backdrop-blur-sm">
-          <div className="bg-white/90 border border-gray-200 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
-              🎉 Phiên thi được tạo thành công!
-            </h3>
+        <div className='fixed inset-0 flex items-center justify-center z-50 bg-white/30 backdrop-blur-sm'>
+          <div className='bg-white/90 border border-gray-200 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4'>
+            <h3 className='text-lg font-semibold text-gray-800 mb-4 text-center'>🎉 Phiên thi được tạo thành công!</h3>
 
-            <div className="space-y-3 text-sm">
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="font-medium text-gray-700">Tên phiên:</p>
-                <p className="text-gray-900">{modalData.name}</p>
+            <div className='space-y-3 text-sm'>
+              <div className='bg-gray-50 p-3 rounded-lg'>
+                <p className='font-medium text-gray-700'>Tên phiên:</p>
+                <p className='text-gray-900'>{modalData.name}</p>
               </div>
 
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="font-medium text-gray-700">Link tham gia:</p>
+              <div className='bg-blue-50 p-3 rounded-lg'>
+                <p className='font-medium text-gray-700'>Link tham gia:</p>
                 <a
                   href={modalData.inviteLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-600 hover:underline break-all text-xs"
+                  target='_blank'
+                  rel='noreferrer'
+                  className='text-blue-600 hover:underline break-all text-xs'
                 >
                   {modalData.inviteLink}
                 </a>
               </div>
 
-              <div className="bg-green-50 p-3 rounded-lg">
-                <p className="font-medium text-gray-700">Mã tham gia:</p>
-                <p className="font-mono text-lg text-green-700 bg-green-100 px-3 py-1 rounded inline-block">
+              <div className='bg-green-50 p-3 rounded-lg'>
+                <p className='font-medium text-gray-700'>Mã tham gia:</p>
+                <p className='font-mono text-lg text-green-700 bg-green-100 px-3 py-1 rounded inline-block'>
                   {modalData.code}
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="bg-purple-50 p-2 rounded">
-                  <p className="font-medium text-gray-600">Mở lúc:</p>
-                  <p className="text-purple-800">{formatDateTime(modalData.startAt)}</p>
+              <div className='grid grid-cols-2 gap-3 text-xs'>
+                <div className='bg-purple-50 p-2 rounded'>
+                  <p className='font-medium text-gray-600'>Mở lúc:</p>
+                  <p className='text-purple-800'>{formatDateTime(modalData.startAt)}</p>
                 </div>
-                <div className="bg-orange-50 p-2 rounded">
-                  <p className="font-medium text-gray-600">Đóng lúc:</p>
-                  <p className="text-orange-800">{formatDateTime(modalData.expiredAt)}</p>
+                <div className='bg-orange-50 p-2 rounded'>
+                  <p className='font-medium text-gray-600'>Đóng lúc:</p>
+                  <p className='text-orange-800'>{formatDateTime(modalData.expiredAt)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 flex justify-center gap-3">
+            <div className='mt-6 flex justify-center gap-3'>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(modalData.inviteLink)
                   toast.success('Đã copy link!')
                 }}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm"
+                className='px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm'
               >
                 Copy Link
               </button>
@@ -410,13 +392,13 @@ export default function ExamsTab() {
                   navigator.clipboard.writeText(modalData.code)
                   toast.success('Đã copy mã!')
                 }}
-                className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm"
+                className='px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm'
               >
                 Copy Mã
               </button>
               <button
                 onClick={() => setModalData(null)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm"
+                className='px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm'
               >
                 Đóng
               </button>
