@@ -25,13 +25,12 @@ export default function CreateEditExam() {
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [durationMinutes, setDurationMinutes] = useState(60)
+  const [durationMinutes, setDurationMinutes] = useState(60) // Giữ mặc định 60 phút
   const [questions, setQuestions] = useState<Question[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Khi tạo mới — thêm 1 câu mặc định
   useEffect(() => {
     if (!isEdit) {
       setQuestions([
@@ -53,7 +52,6 @@ export default function CreateEditExam() {
     }
   }, [isEdit])
 
-  // Khi chỉnh sửa — load đề thi
   useEffect(() => {
     const fetch = async () => {
       if (!isEdit) return
@@ -75,7 +73,6 @@ export default function CreateEditExam() {
     fetch()
   }, [examId, isEdit, navigate])
 
-  // Cập nhật dữ liệu
   const addQuestion = () => {
     setQuestions([
       ...questions,
@@ -146,42 +143,61 @@ export default function CreateEditExam() {
     return true
   }
 
-  // Lưu đề thi – ĐÃ SỬA: dùng startAt, expiredAt
   const handleSubmit = async () => {
-    if (!validateBeforeSave()) return
-    setIsSaving(true)
+  if (!validateBeforeSave()) return
+  setIsSaving(true)
 
-    const startAt = new Date().toISOString()
-    const expiredAt = new Date(Date.now() + durationMinutes * 60000).toISOString()
-
-    const payload = {
-      name: name.trim(),
-      description: description.trim(),
-      durationMinutes,
-      startAt,      // ĐÚNG TÊN TRƯỜNG
-      expiredAt,    // ĐÚNG TÊN TRƯỜNG
-      questions: questions.map((q, index) => ({
-        ...q,
-        orderColumn: index,
-        shuffleQuestions: true
-      }))
-    }
-
-    try {
-      if (isEdit) {
-        await api.put(`/teacher/exams/bulk-update/${examId}`, payload)
-        toast.success('Lưu đề thi thành công!')
-      } else {
-        await api.post('/teacher/exams', payload)
-        toast.success('Tạo đề thi thành công!')
-      }
-      setTimeout(() => navigate('/teacher/exams'), 800)
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || 'Thao tác thất bại!')
-    } finally {
-      setIsSaving(false)
-    }
+  const payloadBase = {
+    name: name.trim(),
+    description: description.trim(),
+    questions: questions.map((q, index) => ({
+      ...q,
+      orderColumn: index,
+      shuffleQuestions: true
+    }))
   }
+
+  try {
+    if (isEdit) {
+  const payload = {
+    name,
+    description,
+
+    questions: questions.map((q, index) => ({
+      questionId: q.id ?? q.questionId, // 👈 thêm id cũ vào
+      content: q.content,
+      point: q.point ?? 0,
+      orderColumn: index,
+      shuffleAnswers: true,
+      shuffleQuestions: true,
+      difficulty: q.difficulty || 'EASY',
+      explanation: q.explanation || '',
+      answers: q.answers.map((a) => ({
+        answerId: a.id ?? a.answerId, // 👈 thêm id cũ vào
+        content: a.content,
+        correct: a.correct
+      }))
+    }))
+  }
+
+  await api.put(`/teacher/exams/bulk-update/${examId}`, payload)
+  console.log('Payload gửi đi:', payload)
+  toast.success('Lưu đề thi thành công!')
+    } else {
+      // POST KHÔNG bao gồm các trường thời gian hoặc duration
+      await api.post('/teacher/exams', payloadBase)
+      toast.success('Tạo đề thi thành công!')
+    }
+
+    setTimeout(() => navigate('/teacher/exams'), 800)
+  } catch (err: any) {
+    console.error('API error:', err?.response?.data || err)
+    toast.error(err?.response?.data?.message || err?.message || 'Thao tác thất bại!')
+  } finally {
+    setIsSaving(false)
+  }
+}
+
 
   const handleDelete = async () => {
     if (!examId) return toast.error('Không xác định được ID đề thi!')
@@ -270,24 +286,6 @@ export default function CreateEditExam() {
               rows={3}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-
-          {/* Thời lượng làm bài */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Thời lượng (phút)
-            </label>
-            <select
-              value={durationMinutes}
-              onChange={(e) => setDurationMinutes(Number(e.target.value))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-            >
-              {[15, 30, 45, 60, 90, 120].map((d) => (
-                <option key={d} value={d}>
-                  {d} phút
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
