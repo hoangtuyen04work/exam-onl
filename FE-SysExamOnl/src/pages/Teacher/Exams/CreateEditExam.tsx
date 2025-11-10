@@ -20,18 +20,17 @@ interface Question {
 
 export default function CreateEditExam() {
   const { examId } = useParams<{ examId?: string }>()
-  console.log("Exam ID:", examId)
   const navigate = useNavigate()
   const isEdit = Boolean(examId)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [durationMinutes, setDurationMinutes] = useState(60) // Giữ mặc định 60 phút
   const [questions, setQuestions] = useState<Question[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // ✅ Khi tạo mới đề thi — tự thêm 1 câu hỏi với 4 đáp án (chỉ 1 đúng)
   useEffect(() => {
     if (!isEdit) {
       setQuestions([
@@ -42,7 +41,7 @@ export default function CreateEditExam() {
           explanation: '',
           shuffleAnswers: true,
           answers: [
-            { content: '', correct: true }, // chỉ 1 đúng
+            { content: '', correct: true },
             { content: '', correct: false },
             { content: '', correct: false },
             { content: '', correct: false }
@@ -53,7 +52,6 @@ export default function CreateEditExam() {
     }
   }, [isEdit])
 
-  // ✅ Khi chỉnh sửa đề thi
   useEffect(() => {
     const fetch = async () => {
       if (!isEdit) return
@@ -63,6 +61,7 @@ export default function CreateEditExam() {
         const data = res.data?.data ?? res.data
         setName(data?.name ?? '')
         setDescription(data?.description ?? '')
+        setDurationMinutes(data?.durationMinutes ?? 60)
         setQuestions(Array.isArray(data?.questions) ? data.questions : [])
       } catch (err: any) {
         toast.error(err?.response?.data?.message || 'Không tải được đề thi')
@@ -74,7 +73,6 @@ export default function CreateEditExam() {
     fetch()
   }, [examId, isEdit, navigate])
 
-  // ✅ Thêm / sửa / xóa câu hỏi, đáp án
   const addQuestion = () => {
     setQuestions([
       ...questions,
@@ -106,21 +104,16 @@ export default function CreateEditExam() {
     setQuestions(copy)
   }
 
-  // ✅ Chỉ 1 đáp án đúng
- const setCorrectAnswer = (qIndex: number, aIndex: number) => {
-  setQuestions(prev => {
-    const copy = [...prev];
-    copy[qIndex] = {
-      ...copy[qIndex],
-      answers: copy[qIndex].answers.map((ans, i) => ({
+  const setCorrectAnswer = (qIndex: number, aIndex: number) => {
+    setQuestions(prev => {
+      const copy = [...prev]
+      copy[qIndex].answers = copy[qIndex].answers.map((ans, i) => ({
         ...ans,
-        correct: i === aIndex, 
-      })),
-    };
-    return copy;
-  });
-};
-
+        correct: i === aIndex
+      }))
+      return copy
+    })
+  }
 
   const addAnswer = (qIndex: number) => {
     const copy = [...questions]
@@ -150,42 +143,65 @@ export default function CreateEditExam() {
     return true
   }
 
-  // ✅ Lưu đề thi
   const handleSubmit = async () => {
-    if (!validateBeforeSave()) return
-    setIsSaving(true)
+  if (!validateBeforeSave()) return
+  setIsSaving(true)
 
-    const payload = {
-      name: name.trim(),
-      description: description.trim(),
-      questions: questions.map((q, index) => ({
-        ...q,
-        orderColumn: index,
-        shuffleQuestions: true
-      }))
-    }
-
-    try {
-      if (isEdit) {
-        await api.put(`/teacher/exams/bulk-update/${examId}`, payload)
-        toast.success('Lưu đề thi thành công!')
-      } else {
-        await api.post('/teacher/exams', payload)
-        toast.success('Tạo đề thi thành công!')
-      }
-      setTimeout(() => navigate('/teacher/exams'), 800)
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || 'Thao tác thất bại!')
-    } finally {
-      setIsSaving(false)
-    }
+  const payloadBase = {
+    name: name.trim(),
+    description: description.trim(),
+    questions: questions.map((q, index) => ({
+      ...q,
+      orderColumn: index,
+      shuffleQuestions: true
+    }))
   }
 
-  // ✅ Xóa bài kiểm tra
+  try {
+    if (isEdit) {
+  const payload = {
+    name,
+    description,
+
+    questions: questions.map((q, index) => ({
+      questionId: q.id ?? q.questionId, // 👈 thêm id cũ vào
+      content: q.content,
+      point: q.point ?? 0,
+      orderColumn: index,
+      shuffleAnswers: true,
+      shuffleQuestions: true,
+      difficulty: q.difficulty || 'EASY',
+      explanation: q.explanation || '',
+      answers: q.answers.map((a) => ({
+        answerId: a.id ?? a.answerId, // 👈 thêm id cũ vào
+        content: a.content,
+        correct: a.correct
+      }))
+    }))
+  }
+
+  await api.put(`/teacher/exams/bulk-update/${examId}`, payload)
+  console.log('Payload gửi đi:', payload)
+  toast.success('Lưu đề thi thành công!')
+    } else {
+      // POST KHÔNG bao gồm các trường thời gian hoặc duration
+      await api.post('/teacher/exams', payloadBase)
+      toast.success('Tạo đề thi thành công!')
+    }
+
+    setTimeout(() => navigate('/teacher/exams'), 800)
+  } catch (err: any) {
+    console.error('API error:', err?.response?.data || err)
+    toast.error(err?.response?.data?.message || err?.message || 'Thao tác thất bại!')
+  } finally {
+    setIsSaving(false)
+  }
+}
+
+
   const handleDelete = async () => {
     if (!examId) return toast.error('Không xác định được ID đề thi!')
     if (!window.confirm('Bạn có chắc muốn xóa bài kiểm tra này không?')) return
-
     setIsDeleting(true)
     try {
       await api.delete(`/teacher/exams/${examId}`)
@@ -299,9 +315,7 @@ export default function CreateEditExam() {
                     type="number"
                     step="0.1"
                     value={q.point}
-                    onChange={(e) =>
-                      updateQuestion(qIndex, 'point', parseFloat(e.target.value || '0'))
-                    }
+                    onChange={(e) => updateQuestion(qIndex, 'point', parseFloat(e.target.value || '0'))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   />
                 </div>
@@ -339,7 +353,7 @@ export default function CreateEditExam() {
                           checked={a.correct}
                           onChange={() => setCorrectAnswer(qIndex, aIndex)}
                         />
-                        <span className="text-sm">✔</span>
+                        <span className="text-sm">Check</span>
                       </label>
                       {q.answers.length > 2 && (
                         <button

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getExamById, updateExam, ExamDetail } from '../../../api/examApi'
+import { getExamById, updateExam, ExamDetail } from '../../../../api/examApi'
 import { toast } from 'react-toastify'
 
 export default function ExamDetailPage() {

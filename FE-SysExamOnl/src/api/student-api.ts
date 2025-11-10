@@ -56,6 +56,7 @@ export async function joinExam(code: string) {
 
 export async function doExam(examSessionId: number) {
   const { data } = await axiosClient.post(`/student/exam/${examSessionId}/do`)
+  console.log('doExam response data:', data)
   return data as { code: number; message: string; success: boolean; data: DoExamResponseData }
 }
 
