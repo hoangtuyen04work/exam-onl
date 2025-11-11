@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axiosClient from '../../../../api/axiosClient'
 import { toast } from 'react-toastify'
@@ -41,6 +41,51 @@ export default function ExamsTab() {
   const [loading, setLoading] = useState(true)
   const [modalData, setModalData] = useState<SessionResult | null>(null)
   const [listExamUser, setListExamUser] = useState<ExamItem[]>([])
+
+  // import/export refs & handlers
+  const fileInputRefExam = useRef<HTMLInputElement | null>(null)
+
+  const triggerImportExam = () => {
+    fileInputRefExam.current?.click()
+  }
+
+  const handleImportExam = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await axiosClient.post('/teacher/exams/import', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      const imported = res.data?.imported ?? 0
+      toast.success(`Import thành công ${imported} câu hỏi`)
+      // reload list (simple approach)
+      window.location.reload()
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err?.response?.data?.message || 'Import thất bại')
+    } finally {
+      if (fileInputRefExam.current) fileInputRefExam.current.value = ''
+    }
+  }
+
+  const handleExportExam = async () => {
+    try {
+      const res = await axiosClient.get('/teacher/exams/export', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(res.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'exams.xlsx'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err?.response?.data?.message || 'Export thất bại')
+    }
+  }
 
   // Modal chọn thời gian giao đề
   const [showTimeModal, setShowTimeModal] = useState(false)
@@ -424,6 +469,33 @@ export default function ExamsTab() {
           </div>
         </div>
       )}
+
+      {/* hidden file input for exams import */}
+      <input
+        ref={fileInputRefExam}
+        type="file"
+        accept=".xlsx,.xls"
+        className="hidden"
+        onChange={handleImportExam}
+      />
+
+      {/* fixed import/export buttons bottom-right */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        <button
+          onClick={triggerImportExam}
+          className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md text-sm"
+          title="Import đề thi từ Excel"
+        >
+          Import
+        </button>
+        <button
+          onClick={handleExportExam}
+          className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md text-sm"
+          title="Export các đề thi ra Excel"
+        >
+          Export
+        </button>
+      </div>
     </div>
   )
 }

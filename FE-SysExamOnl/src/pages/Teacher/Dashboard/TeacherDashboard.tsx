@@ -1,19 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import axiosClient from '../../../api/axiosClient'
-import { getBanks } from '../../../api/bankApi'
-import { mockExams } from '../../../data/mockData'
-import { toast } from 'react-toastify'
-import { Home, FileText, Database, Users, Settings } from "lucide-react"
+import { Home, FileText, Database, Users, Settings, LogOut, User } from "lucide-react"
 
 export default function TeacherDashboard() {
   const navigate = useNavigate()
   const location = useLocation()
 
   const [showMenu, setShowMenu] = useState(false)
-  const dropdownRef = useRef(null)
-  const menuRef = useRef(null)
-  const buttonRefs = useRef({})
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
   const [connectorLeft, setConnectorLeft] = useState(0)
 
   const teacherName = localStorage.getItem('teacherName') || 'Giáo viên'
@@ -26,32 +22,36 @@ export default function TeacherDashboard() {
     { key: "/teacher/settings", icon: Settings, label: "Cài đặt" }
   ]
 
-  // ✅ Xác định tab đang active theo key dài nhất → tránh Home bị active sai
+  // Xác định tab active chính xác theo key dài nhất
   const activeTabKey = [...tabs]
     .sort((a, b) => b.key.length - a.key.length)
     .find(t => location.pathname.startsWith(t.key))?.key
 
+  // Cập nhật vị trí highlight
   useEffect(() => {
     const updatePos = () => {
       const menuEl = menuRef.current
-      const activeBtn = buttonRefs.current[activeTabKey]
+      const activeBtn = buttonRefs.current[activeTabKey || '']
       if (!menuEl || !activeBtn) return
 
       const menuRect = menuEl.getBoundingClientRect()
       const btnRect = activeBtn.getBoundingClientRect()
-
       const centerX = btnRect.left + btnRect.width / 2
       setConnectorLeft(centerX - menuRect.left)
     }
 
-    setTimeout(updatePos, 50)
+    const timer = setTimeout(updatePos, 50)
     window.addEventListener('resize', updatePos)
-    return () => window.removeEventListener('resize', updatePos)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', updatePos)
+    }
   }, [activeTabKey])
 
+  // Đóng menu khi click outside
   useEffect(() => {
-    const handleClickOutside = (e: any) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowMenu(false)
       }
     }
@@ -61,90 +61,132 @@ export default function TeacherDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('token')
+    localStorage.removeItem('teacherName')
     navigate('/login')
   }
 
   return (
-    <div className="bg-blue-400 min-h-screen flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col overflow-hidden">
+      {/* Header với hiệu ứng glassmorphism */}
+      <header className="relative bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/20 px-6 py-4">
+        <div className="flex items-center justify-between">
 
-      {/* Header */}
-      <div className="bg-blue-400 px-6 py-3 flex items-center justify-between relative">
-        <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/teacher')}>
-          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold">A</div>
-          <div>
-            <div className="text-lg font-semibold text-white">Exam System</div>
-            <div className="text-xs text-blue-100">Quản lý giáo viên</div>
-          </div>
-        </div>
-
-        <div className="w-[1px] h-8 bg-white/40 mx-6"></div>
-
-        {/* Navigation */}
-        <div className="flex-1 flex justify-center relative">
-          <div ref={menuRef} className="flex gap-6 relative pb-4">
-
-            {/* Vòng tròn highlight */}
-            <div
-              className="absolute transition-all duration-300 z-10 rounded-full"
-              style={{
-                width: 64,
-                height: 64,
-                top: -6,
-                left: connectorLeft - 32,
-                backgroundColor: "white",
-                boxShadow: "0 3px 12px rgba(0,0,0,0.25)",
-              }}
-            ></div>
-
-            {/* Icons */}
-            {tabs.map(tab => {
-              const Icon = tab.icon
-              const isActive = activeTabKey === tab.key
-
-              return (
-                <button
-                  key={tab.key}
-                  ref={el => buttonRefs.current[tab.key] = el}
-                  onClick={() => navigate(tab.key)}
-                  className={`relative z-20 w-14 h-14 flex items-center justify-center rounded-full transition-all duration-300
-                    ${isActive
-                      ? "text-blue-600 scale-110 font-semibold"
-                      : "text-blue-100 hover:text-white hover:scale-105"}`}
-                >
-                  <Icon size={28} />
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Avatar + Menu */}
-        <div className="flex items-center gap-3 relative" ref={dropdownRef}>
-          <div className="text-right mr-2 hidden sm:block">
-            <div className="text-sm font-medium text-white">{teacherName}</div>
-            <div className="text-xs text-blue-100">Giáo viên</div>
-          </div>
-
-          <button onClick={() => setShowMenu(prev => !prev)} className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border border-white">
-            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(teacherName)}&background=random&rounded=true`} alt="avatar" />
-          </button>
-
-          {showMenu && (
-            <div className="absolute right-0 top-12 w-48 bg-white shadow-lg rounded-md border py-2 z-50">
-              <button onClick={() => navigate('/teacher/settings')} className="dropdown-item">Hồ sơ cá nhân</button>
-              <div className="border-t my-1" />
-              <button onClick={handleLogout} className="dropdown-item text-red-600">Đăng xuất</button>
+          {/* Logo */}
+          <div 
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => navigate('/teacher')}
+          >
+            <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform">
+              A
             </div>
-          )}
-        </div>
-      </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Exam System</h1>
+              <p className="text-xs text-gray-500">Bảng điều khiển giáo viên</p>
+            </div>
+          </div>
 
-      {/* Main content */}
-      <main className="flex-1 m-[10px] relative z-10">
-        <div className="rounded-2xl shadow-md p-8 w-full min-h-[calc(100vh-120px)] bg-gray-100 border transition-all duration-500">
+          {/* Navigation Tabs */}
+          <nav className="flex-1 flex justify-center">
+            <div ref={menuRef} className="flex gap-1 bg-white/60 backdrop-blur-md rounded-full px-3 py-2 shadow-inner border border-white/40">
+
+              {/* Highlight Circle */}
+              <div
+                className="absolute z-10 transition-all duration-300 ease-out"
+                style={{
+                  width: 48,
+                  height: 48,
+                  top: '50%',
+                  left: connectorLeft - 24,
+                  transform: 'translateY(-50%)',
+                }}
+              >
+                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full shadow-lg opacity-90 scale-110"></div>
+              </div>
+
+              {/* Tab Buttons */}
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                const isActive = activeTabKey === tab.key
+
+                return (
+                  <button
+                    key={tab.key}
+                    ref={el => buttonRefs.current[tab.key] = el}
+                    onClick={() => navigate(tab.key)}
+                    className={`relative z-20 flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-300 group
+                      ${isActive 
+                        ? "text-white font-bold" 
+                        : "text-gray-600 hover:text-indigo-600"
+                      }`}
+                  >
+                    <Icon size={22} className="transition-transform group-hover:scale-110" />
+                    <span className={`text-[10px] mt-1 font-medium transition-all ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      {tab.label.split(' ')[0]}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </nav>
+
+          {/* User Menu */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowMenu(prev => !prev)}
+              className="flex items-center gap-3 p-2 rounded-full hover:bg-white/60 transition-all group"
+            >
+              <div className="text-right hidden lg:block">
+                <p className="text-sm font-semibold text-gray-700">{teacherName}</p>
+                <p className="text-xs text-gray-500">Giáo viên</p>
+              </div>
+              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-indigo-200 group-hover:ring-indigo-400 transition-all">
+                <img 
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(teacherName)}&background=6366f1&color=fff&bold=true`} 
+                  alt="avatar" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div className="absolute right-0 top-14 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="font-semibold text-gray-800">{teacherName}</p>
+                  <p className="text-xs text-gray-500">giáo viên</p>
+                </div>
+                <button
+                  onClick={() => { navigate('/teacher/settings'); setShowMenu(false); }}
+                  className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-indigo-50 flex items-center gap-3 transition-colors"
+                >
+                  <User size={16} />
+                  Hồ sơ cá nhân
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2.5 text-left text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-medium"
+                >
+                  <LogOut size={16} />
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 p-6 md:p-8 lg:p-10 min-h-[calc(100vh-140px)] transition-all duration-300">
           <Outlet />
         </div>
       </main>
+
+      {/* Optional: Floating background decoration */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-indigo-300/30 to-purple-300/30 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-gradient-to-tl from-blue-300/30 to-indigo-300/30 rounded-full blur-3xl"></div>
+      </div>
     </div>
   )
 }
