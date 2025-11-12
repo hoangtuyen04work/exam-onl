@@ -1,132 +1,335 @@
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { CheckCircle, XCircle, Clock, Award, FileCheck } from 'lucide-react'
-
-interface ExamResult {
-  totalScore: number
-  correctCount: number
-  wrongCount: number
-  submittedAt: string
-  status: string
-  timeSpent?: number
-}
+import { useNavigate, useParams } from 'react-router-dom'
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  FileText,
+  Loader2,
+  ChevronRight,
+  MessageSquare,
+  BookOpen,
+  ChevronDown
+} from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import axiosClient from '../../../api/axiosClient'
+import { toLocalStringISO } from '../../../utils/utils'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
+import type { ExamResult } from '../../../types/exam.type'
 
 export default function ResultPage() {
-  const location = useLocation()
+  const { examSessionId } = useParams<{ examSessionId: string }>()
   const navigate = useNavigate()
-  const { examId } = useParams()
-  const result = (location.state as any)?.result as ExamResult | undefined
 
-  function toLocalStringISO(iso?: string) {
-    if (!iso) return ''
-    try {
-      return new Date(iso).toLocaleString('vi-VN', { timeZone: 'Asia/Bangkok' })
-    } catch {
-      return iso
-    }
+  const {
+    data: result,
+    isLoading,
+    isError
+  } = useQuery<ExamResult>({
+    queryKey: ['examResult', examSessionId],
+    queryFn: async (): Promise<ExamResult> => {
+      if (!examSessionId) throw new Error('Exam session ID không hợp lệ')
+      const { data } = await axiosClient.get(`/student/exam/result/${examSessionId}`)
+      if (!data.success) throw new Error(data.message || 'Không lấy được kết quả')
+      return data.data as ExamResult
+    },
+    enabled: !!examSessionId,
+    staleTime: 1000 * 60 * 5
+  })
+
+  const [openExplanationId, setOpenExplanationId] = useState<number | null>(null)
+
+  const toggleQuestion = (questionId: number) => {
+    setOpenExplanationId(openExplanationId === questionId ? null : questionId)
   }
 
-  function formatTimeSpent(seconds?: number) {
-    if (!seconds) return 'N/A'
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
-
-    const parts = []
-    if (hours > 0) parts.push(`${hours} giờ`)
-    if (minutes > 0) parts.push(`${minutes} phút`)
-    if (secs > 0 || parts.length === 0) parts.push(`${secs} giây`)
-
-    return parts.join(' ')
-  }
-
-  if (!result) {
+  if (isLoading) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50'>
-        <div className='text-center'>
-          <XCircle className='w-16 h-16 text-red-500 mx-auto mb-4' />
-          <h2 className='text-xl font-semibold text-gray-800 mb-2'>Không tìm thấy kết quả</h2>
-          <p className='text-gray-600 mb-4'>Không có dữ liệu kết quả. Vui lòng truy cập từ trang làm bài thi.</p>
-          <button
-            onClick={() => navigate('/student')}
-            className='bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700'
-          >
-            Quay lại trang chủ
-          </button>
-        </div>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className='text-indigo-500'
+        >
+          <Loader2 className='w-10 h-10 animate-spin' />
+        </motion.div>
       </div>
     )
   }
 
-  const total = result.correctCount + result.wrongCount
-  const score = total > 0 ? ((result.correctCount / total) * 10).toFixed(2) : '0.00'
+  if (isError || !result) {
+    return (
+      <div className='min-h-screen flex items-center justify-center bg-gray-50 p-4'>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className='text-center max-w-md bg-white p-10 rounded-xl shadow-lg border border-gray-100'
+        >
+          <XCircle className='w-16 h-16 text-rose-500 mx-auto mb-4' />
+          <h2 className='text-2xl font-light text-gray-800 mb-2'>Không tìm thấy kết quả</h2>
+          <p className='text-gray-500 mb-6 font-light'>Vui lòng đảm bảo bạn có quyền truy cập hoặc ID phiên hợp lệ.</p>
+          <button
+            onClick={() => navigate('/student')}
+            className='bg-gray-800 text-white px-6 py-2 rounded-lg font-normal hover:bg-gray-700 transition-colors shadow-md'
+          >
+            Quay lại trang chủ
+          </button>
+        </motion.div>
+      </div>
+    )
+  }
+
+  const totalQuestions = result.questions.length
+  const correctCount = result.questions.filter((q) => q.answers.some((a) => a.correct && a.selected)).length
+  const wrongCount = totalQuestions - correctCount
+  const score = totalQuestions > 0 ? ((correctCount / totalQuestions) * 10).toFixed(2) : '0.00'
+  const percentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0
+
+  const statusColor = percentage >= 70 ? 'text-emerald-500' : percentage >= 50 ? 'text-amber-500' : 'text-rose-500'
+  const statusGradient = percentage >= 70 ? '#10b981' : percentage >= 50 ? '#f59e0b' : '#f43f5e'
 
   return (
-    <div className='min-h-screen bg-gray-50 py-12'>
-      <div className='max-w-3xl mx-auto px-4'>
-        <div className='bg-white rounded-xl shadow-lg overflow-hidden'>
-          {/* Header */}
-          <div className='bg-blue-600 px-6 py-8 text-center text-white'>
-            <CheckCircle className='w-16 h-16 mx-auto mb-4' />
-            <h1 className='text-3xl font-bold mb-2'>Đã nộp bài thành công!</h1>
-            <p className='text-blue-100'>Cảm ơn bạn đã hoàn thành bài thi</p>
+    <div className='min-h-screen bg-gray-50 py-10 px-4'>
+      <div className='max-w-4xl mx-auto'>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className='bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100/80'
+        >
+          <div className='bg-white border-b border-gray-100 px-6 pt-10 pb-8 text-center relative'>
+            <div className='relative z-10'>
+              <BookOpen className='w-8 h-8 text-indigo-500 mx-auto mb-3' />
+              <h1 className='text-3xl font-bold text-gray-900 mb-1 tracking-wide'>KẾT QUẢ BÀI THI</h1>
+              <p className='text-gray-500 text-lg font-normal'>{result.examSessionName}</p>
+            </div>
           </div>
 
-          {/* Score Section */}
+          <div className='px-6 py-8 flex flex-col items-center md:flex-row md:justify-around md:items-center border-b border-gray-100'>
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, type: 'spring' }}
+              className='relative w-36 h-36 mb-6 md:mb-0'
+            >
+              <svg className='w-36 h-36 transform -rotate-90'>
+                <circle
+                  cx='72'
+                  cy='72'
+                  r='65'
+                  stroke='currentColor'
+                  strokeWidth='10'
+                  fill='none'
+                  className='text-gray-200'
+                />
+                <motion.circle
+                  cx='72'
+                  cy='72'
+                  r='65'
+                  stroke={statusGradient}
+                  strokeWidth='10'
+                  fill='none'
+                  strokeDasharray={`${2 * Math.PI * 65}`}
+                  strokeDashoffset={`${2 * Math.PI * 65 * (1 - percentage / 100)}`}
+                  initial={{ strokeDashoffset: 2 * Math.PI * 65 }}
+                  animate={{ strokeDashoffset: 2 * Math.PI * 65 * (1 - percentage / 100) }}
+                  transition={{ duration: 1.5, ease: 'easeOut' }}
+                  className={`drop-shadow-sm ${statusColor}`}
+                  style={{ strokeLinecap: 'round' }}
+                />
+              </svg>
+              <div className='absolute inset-0 flex flex-col items-center justify-center'>
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 1, type: 'spring' }}
+                  className={`text-4xl font-semibold ${statusColor}`}
+                >
+                  {score}
+                </motion.span>
+                <span className='text-sm text-gray-400 -mt-1 font-light'>/10</span>
+              </div>
+            </motion.div>
+
+            <div className='grid grid-cols-3 gap-6 w-full max-w-sm'>
+              {[
+                {
+                  icon: CheckCircle,
+                  label: 'Đúng',
+                  value: correctCount,
+                  color: 'text-emerald-600',
+                  bg: 'bg-emerald-50'
+                },
+                { icon: XCircle, label: 'Sai', value: wrongCount, color: 'text-rose-600', bg: 'bg-rose-50' },
+                { icon: FileText, label: 'Tổng', value: totalQuestions, color: 'text-indigo-600', bg: 'bg-indigo-50' }
+              ].map((stat, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + i * 0.1 }}
+                  className={`${stat.bg} rounded-lg p-3 text-center transition-all border border-gray-100`}
+                >
+                  <stat.icon className={`w-6 h-6 ${stat.color} mx-auto mb-1`} />
+                  <p className='text-sm text-gray-500 font-light'>{stat.label}</p>
+                  <p className={`text-xl font-medium ${stat.color} mt-0.5`}>{stat.value}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div className='px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between text-sm text-gray-500 font-light'>
+            <div className='flex items-center gap-2'>
+              <Clock className='w-4 h-4' />
+              <span>Thời gian nộp:</span>
+            </div>
+            <span className='text-gray-700 font-normal'>{toLocalStringISO(result.submittedAt)}</span>
+          </div>
+
+          <AnimatePresence>
+            {result.teacherOverallFeedback && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className='px-6 py-5 bg-indigo-50 border-l-4 border-indigo-400 text-gray-800'
+              >
+                <div className='flex items-start gap-3'>
+                  <MessageSquare className='w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5' />
+                  <div>
+                    <p className='font-normal text-indigo-700 mb-1'>Phản hồi chung từ Giáo viên:</p>
+                    <p className='text-sm font-light leading-relaxed'>{result.teacherOverallFeedback}</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className='px-6 py-8'>
-            <div className='text-center mb-8'>
-              <div className='inline-flex items-center justify-center'>
-                <Award className='w-8 h-8 text-yellow-500 mr-2' />
-                <div className='text-5xl font-bold text-gray-800'>{score}/10</div>
-              </div>
-              <p className='text-gray-500 mt-2'>Điểm số của bạn</p>
+            <div className='space-y-4'>
+              {' '}
+              {result.questions.map((q, idx) => {
+                const isCorrect = q.answers.some((a) => a.correct && a.selected)
+                const isExpanded = openExplanationId === q.questionId
+                const questionBorder = isCorrect ? 'border-emerald-200' : 'border-rose-200'
+                const questionBg = isCorrect ? 'bg-emerald-50/50' : 'bg-rose-50/50'
+
+                return (
+                  <motion.div
+                    key={q.questionId}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.04 }}
+                    className={`rounded-xl border-2 transition-all shadow-md ${questionBorder}`}
+                  >
+                    <button
+                      className={`w-full flex items-start justify-between p-4 text-left transition-colors ${isExpanded ? questionBg : 'hover:bg-gray-50/50'}`}
+                      onClick={() => toggleQuestion(q.questionId)}
+                    >
+                      <div className='flex items-start gap-3 flex-grow'>
+                        <span
+                          className={`text-base font-normal ${isCorrect ? 'text-emerald-500' : 'text-rose-500'} flex-shrink-0 pt-0.5`}
+                        >
+                          {isCorrect ? <CheckCircle className='w-5 h-5' /> : <XCircle className='w-5 h-5' />}
+                        </span>
+                        <div className='flex-grow'>
+                          <span className='bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full inline-block mb-1'>
+                            Câu {idx + 1}
+                          </span>
+                          <p className='text-base font-light text-gray-800 leading-relaxed'>{q.content}</p>
+                        </div>
+                      </div>
+
+                      <motion.div
+                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                        className='flex-shrink-0 ml-2 pt-1'
+                      >
+                        <ChevronDown className='w-5 h-5 text-gray-500' />
+                      </motion.div>
+                    </button>
+
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className={`p-4 border-t ${questionBorder} space-y-3 ${questionBg}`}
+                        >
+                          <div className='space-y-2'>
+                            {q.answers.map((a) => {
+                              const answerStyle = a.correct
+                                ? 'bg-emerald-100/80 border-emerald-400 text-emerald-900 ring-1 ring-emerald-400'
+                                : a.selected
+                                  ? 'bg-rose-100/80 border-rose-400 text-rose-900 ring-1 ring-rose-400'
+                                  : 'bg-white border-gray-200 text-gray-700'
+
+                              return (
+                                <div
+                                  key={a.answerId}
+                                  className={`flex items-center p-3 rounded-lg text-sm font-light border transition-all ${answerStyle}`}
+                                >
+                                  <span className='flex-grow'>{a.content}</span>
+                                  {a.correct && (
+                                    <span className='ml-2 text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-medium'>
+                                      Đúng
+                                    </span>
+                                  )}
+                                  {a.selected && !a.correct && (
+                                    <span className='ml-2 text-xs bg-rose-500 text-white px-2 py-0.5 rounded-full font-medium'>
+                                      Bạn chọn
+                                    </span>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+
+                          {(q.explanation || q.teacherFeedback) && (
+                            <div className='mt-3 p-4 bg-white/80 rounded-lg shadow-inner text-gray-700 space-y-2 border border-gray-100'>
+                              {q.explanation && (
+                                <p className='text-sm'>
+                                  <strong className='text-indigo-600 font-medium'>Giải thích:</strong>{' '}
+                                  <span className='font-light'>{q.explanation}</span>
+                                </p>
+                              )}
+                              {q.teacherFeedback && (
+                                <p className='text-sm border-t pt-2 border-gray-100'>
+                                  <strong className='text-indigo-600 font-medium'>Phản hồi GV:</strong>{' '}
+                                  <span className='font-light'>{q.teacherFeedback}</span>
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )
+              })}
             </div>
+          </div>
 
-            {/* Stats Grid */}
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-8'>
-              <div className='bg-gray-50 rounded-lg p-6'>
-                <div className='flex items-start'>
-                  <FileCheck className='w-6 h-6 text-blue-500 mr-3 mt-1' />
-                  <div>
-                    <div className='text-gray-500 text-sm mb-1'>Số câu đúng</div>
-                    <div className='text-2xl font-semibold text-gray-800'>
-                      {result.correctCount}/{total}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className='bg-gray-50 rounded-lg p-6'>
-                <div className='flex items-start'>
-                  <Clock className='w-6 h-6 text-blue-500 mr-3 mt-1' />
-                  <div>
-                    <div className='text-gray-500 text-sm mb-1'>Thời gian làm bài</div>
-                    <div className='text-2xl font-semibold text-gray-800'>{formatTimeSpent(result.timeSpent)}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className='bg-gray-50 rounded-lg p-6 md:col-span-2'>
-                <div className='flex items-start'>
-                  <CheckCircle className='w-6 h-6 text-green-500 mr-3 mt-1' />
-                  <div>
-                    <div className='text-gray-500 text-sm mb-1'>Thời gian nộp bài</div>
-                    <div className='text-2xl font-semibold text-gray-800'>{toLocalStringISO(result.submittedAt)}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className='flex justify-center space-x-4'>
+          <div className='p-6 pt-0'>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className='text-center border-t pt-6 border-gray-100'
+            >
               <button
                 onClick={() => navigate('/student')}
-                className='bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition'
+                className='group inline-flex items-center gap-2 bg-gray-800 text-white px-7 py-3 rounded-full font-normal text-base hover:bg-gray-700 transition-all duration-300 shadow-lg'
               >
-                Quay lại trang chủ
+                <span className='font-light'>Quay lại trang chủ</span>
+                <ChevronRight className='w-5 h-5 group-hover:translate-x-1 transition-transform' />
               </button>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   )

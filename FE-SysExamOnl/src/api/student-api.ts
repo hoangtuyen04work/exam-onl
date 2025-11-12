@@ -1,33 +1,32 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axiosClient from './axiosClient'
 
+// src/api/student-api.ts
 export interface JoinResponseData {
   examSessionId: number
-  examName: string
+  name: string
+  description?: string
   durationMinutes: number
-  timeStart?: string
-  timeEnd?: string
-  studentStatus?: string
-  startedAt?: string
+  state: 'NOT_OPEN' | 'OPENING' | 'JOINED' | 'CLOSED'
 }
 
-export interface DoExamQuestionAnswer {
+export interface AnswerContentResponse {
   answerId: number
   content: string
+  selected: boolean
 }
 
-export interface DoExamQuestion {
+export interface QuestionContentResponse {
   questionId: number
   content: string
-  point: number
-  difficulty: string
-  answers: DoExamQuestionAnswer[]
+  answers: AnswerContentResponse[]
 }
 
 export interface DoExamResponseData {
+  status: 'IN_PROGRESS' | 'COMPLETED'
   examSessionId: number
-  examName: string
-  durationMinutes: number
-  questions: DoExamQuestion[]
+  name: string
+  questions: QuestionContentResponse[]
 }
 
 export interface SubmitPayload {
@@ -35,44 +34,84 @@ export interface SubmitPayload {
   questions: Array<{ questionId: number; answerId: number }>
 }
 
-export interface SubmitFinalResponse {
-  examSessionStudentId: number
-  totalScore: number
-  correctCount: number
-  wrongCount: number
-  submittedAt: string
-  status: string
-}
-
 export interface ExitPayload {
   examSessionStudentId: number
   eventTime: string
 }
 
-export async function joinExam(code: string) {
-  const { data } = await axiosClient.post('/student/exam/join', { code })
-  return data as { code: number; message: string; success: boolean; data: JoinResponseData }
+export const studentApi = {
+  joinExam: async (
+    code: string
+  ): Promise<{
+    success: boolean
+    data: JoinResponseData
+    message?: string
+  }> => {
+    const { data } = await axiosClient.post('/student/exam/join', { code: code.trim() })
+    return data as { code: number; message: string; success: boolean; data: JoinResponseData }
+  },
+
+  doExam: async (
+    examSessionId: number
+  ): Promise<{
+    success: boolean
+    data: DoExamResponseData
+    message?: string
+  }> => {
+    const { data } = await axiosClient.post(`/student/exam/${examSessionId}/do`)
+    return data
+  },
+
+  submitExam: async (state: 'DRAFT' | 'FINAL', payload: SubmitPayload) => {
+    const { data } = await axiosClient.post(`/student/exam/submit?state=${state}`, payload)
+    return data
+  },
+
+  exitEvent: async (payload: ExitPayload) => {
+    await axiosClient.post('/student/exam/exit', payload)
+  }
 }
 
-export async function doExam(examSessionId: number) {
-  const { data } = await axiosClient.post(`/student/exam/${examSessionId}/do`)
-  console.log('doExam response data:', data)
-  return data as { code: number; message: string; success: boolean; data: DoExamResponseData }
+export interface ExamSearchResponse {
+  items: Array<{
+    examSessionId: number
+    examName: string
+    submittedAt: string
+    score?: number
+  }>
+  page: number
+  size: number
+  total: number
+  totalPages: number
 }
 
-export async function submitExam(state: 'DRAFT' | 'FINAL', payload: SubmitPayload) {
-  const { data } = await axiosClient.post(`/student/exam/submit?state=${state}`, payload)
-  return data as { code: number; message: string; success: boolean; data: any }
+export const fetchCompletedExams = async (page: number, size: number): Promise<ExamSearchResponse> => {
+  try {
+    const { data } = await axiosClient.get('/student/exam/search', {
+      params: {
+        page,
+        size,
+        sort: 'submittedAt,desc'
+      }
+    })
+
+    if (data && Array.isArray(data.items)) {
+      return {
+        items: data.items,
+        page: data.page ?? page,
+        size: data.size ?? size,
+        total: data.total ?? 0,
+        totalPages: data.totalPages ?? 0
+      }
+    }
+
+    console.warn('[API] Unexpected response structure:', data)
+    return { items: [], page, size, total: 0, totalPages: 0 }
+  } catch (error: any) {
+    const msg = error?.response?.data?.message || error?.message || 'Không thể tải danh sách bài thi'
+    console.error('[API] fetchCompletedExams error:', error)
+    throw new Error(msg)
+  }
 }
 
-export async function exitEvent(payload: ExitPayload) {
-  const { data } = await axiosClient.post('/student/exam/exit', payload)
-  return data as { code: number; message: string; success: boolean; data: any }
-}
-
-export default {
-  joinExam,
-  doExam,
-  submitExam,
-  exitEvent
-}
+export default { fetchCompletedExams }
