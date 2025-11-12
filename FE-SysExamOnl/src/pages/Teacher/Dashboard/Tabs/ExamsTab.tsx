@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import axiosClient from '../../../../api/axiosClient'
 import { toast } from 'react-toastify'
 import { format } from 'date-fns'
+import { toVNISO } from '../../../../utils/utils'
 
 interface ExamItem {
   id: string | number
@@ -199,8 +200,8 @@ export default function ExamsTab() {
         name: 'Phiên thi tùy chỉnh',
         description: 'Tạo từ giao diện giáo viên',
         durationMinutes: durationMin,
-        startAt: startAt,
-        expiredAt: expiredAt
+        startAt: toVNISO(startAt),
+        expiredAt: toVNISO(expiredAt)
       }
 
       const res = await axiosClient.post('/teacher/exam-sessions', payload)
@@ -453,27 +454,21 @@ export default function ExamsTab() {
       )}
 
       {/* hidden file input for exams import */}
-      <input
-        ref={fileInputRefExam}
-        type="file"
-        accept=".xlsx,.xls"
-        className="hidden"
-        onChange={handleImportExam}
-      />
+      <input ref={fileInputRefExam} type='file' accept='.xlsx,.xls' className='hidden' onChange={handleImportExam} />
 
       {/* fixed import/export buttons bottom-right */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+      <div className='fixed bottom-6 right-6 z-50 flex flex-col gap-3'>
         <button
           onClick={triggerImportExam}
-          className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md text-sm"
-          title="Import đề thi từ Excel"
+          className='px-4 py-2 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md text-sm'
+          title='Import đề thi từ Excel'
         >
           Import
         </button>
         <button
           onClick={handleExportExam}
-          className="px-4 py-2 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md text-sm"
-          title="Export các đề thi ra Excel"
+          className='px-4 py-2 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md text-sm'
+          title='Export các đề thi ra Excel'
         >
           Export
         </button>
