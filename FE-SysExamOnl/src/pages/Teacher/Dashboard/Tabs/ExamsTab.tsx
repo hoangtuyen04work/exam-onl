@@ -160,9 +160,40 @@ export default function ExamsTab() {
   const openTimeModal = (examId: number | string) => {
     setSelectedExamId(examId)
     const now = new Date()
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-    const start = now.toISOString().slice(0, 16)
-    const end = new Date(now.getTime() + 3600 * 1000).toISOString().slice(0, 16)
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Ho_Chi_Minh', // GMT+7
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    })
+    const parts = formatter.formatToParts(now)
+    const partMap = parts.reduce((acc, part) => {
+      acc[part.type] = part.value
+      return acc
+    }, {} as Record<string, string>)
+    const year = partMap['year']
+    const month = partMap['month']
+    const day = partMap['day']
+    const hour = partMap['hour'].padStart(2, '0')
+    const minute = partMap['minute'].padStart(2, '0')
+    const start = `${year}-${month}-${day}T${hour}:${minute}`
+
+    const oneHourLater = new Date(now.getTime() + 3600 * 1000)
+    const laterParts = formatter.formatToParts(oneHourLater)
+    const laterMap = laterParts.reduce((acc, part) => {
+      acc[part.type] = part.value
+      return acc
+    }, {} as Record<string, string>)
+    const laterYear = laterMap['year']
+    const laterMonth = laterMap['month']
+    const laterDay = laterMap['day']
+    const laterHour = laterMap['hour'].padStart(2, '0')
+    const laterMinute = laterMap['minute'].padStart(2, '0')
+    const end = `${laterYear}-${laterMonth}-${laterDay}T${laterHour}:${laterMinute}`
+
     setStartAt(start)
     setExpiredAt(end)
     setDuration('60')
@@ -313,7 +344,7 @@ export default function ExamsTab() {
                   type='datetime-local'
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
+                  min={startAt} // Min là thời gian hiện tại GMT+7 (đã set ở startAt)
                   className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none'
                 />
               </div>
@@ -324,7 +355,7 @@ export default function ExamsTab() {
                   type='datetime-local'
                   value={expiredAt}
                   onChange={(e) => setExpiredAt(e.target.value)}
-                  min={startAt || new Date().toISOString().slice(0, 16)}
+                  min={startAt}
                   className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none'
                 />
               </div>
