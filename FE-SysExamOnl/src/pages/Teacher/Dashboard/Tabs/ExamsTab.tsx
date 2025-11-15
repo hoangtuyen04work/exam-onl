@@ -5,6 +5,7 @@ import axiosClient from '../../../../api/axiosClient'
 import { toast } from 'react-toastify'
 import { format } from 'date-fns'
 import { exportExams } from '../../Dashboard/import_export/exportExams'
+import { importExams } from "../../Dashboard/import_export/importExams";
 
 interface ExamItem {
   id: string | number
@@ -86,7 +87,6 @@ export default function ExamsTab() {
     fetchExams()
   }, [navigate])
 
-  // Xử lý chọn checkbox
   const toggleSelect = (examId: number | string) => {
     setSelectedExams(prev => {
       const newMap = new Map(prev)
@@ -104,7 +104,6 @@ export default function ExamsTab() {
     setSelectedExams(newMap)
   }
 
-  // Export các đề đã chọn
   const handleExportSelected = () => {
     const selectedIds: number[] = []
     const selectedNames: string[] = []
@@ -184,33 +183,58 @@ export default function ExamsTab() {
 
   return (
     <div className="p-6">
+
+      {/* Header modern */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Danh sách đề thi</h2>
+        <h2 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-500 text-transparent bg-clip-text">
+          Danh sách đề thi
+        </h2>
+
         <div className="flex gap-3">
           <button
             onClick={() => navigate('/teacher/exams/create')}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition"
+            className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow hover:shadow-xl transition-all"
           >
             + Tạo đề thi
           </button>
+
           <button
             onClick={() => navigate('/teacher/questions')}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition"
+            className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl shadow hover:shadow-xl transition-all"
           >
             + Tạo từ ngân hàng
           </button>
         </div>
       </div>
 
-      {/* Nút Export nhiều đề */}
+      {/* Import */}
+      <input
+        type="file"
+        accept=".xlsx"
+        id="importExcel"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) importExams(file);
+        }}
+      />
+
+      <button
+        onClick={() => document.getElementById("importExcel")?.click()}
+        className="px-4 py-2 bg-purple-600 text-white rounded-xl shadow hover:shadow-xl transition-all mb-4"
+      >
+        Import đề thi (.xlsx)
+      </button>
+
+      {/* Export multiple */}
       {selectedExams.size > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl shadow-sm flex items-center justify-between">
           <span className="text-sm font-medium text-blue-800">
             Đã chọn {Array.from(selectedExams.values()).filter(Boolean).length} đề thi
           </span>
           <button
             onClick={handleExportSelected}
-            className="px-4 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition"
+            className="px-4 py-1 bg-blue-600 text-white text-sm rounded-lg shadow hover:bg-blue-700 transition"
           >
             Export các đề đã chọn
           </button>
@@ -218,61 +242,69 @@ export default function ExamsTab() {
       )}
 
       {loading ? (
-        <div className="text-center py-8">Đang tải...</div>
+        <div className="text-center py-8 text-gray-500">Đang tải...</div>
       ) : list.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 italic">Chưa có đề thi nào.</div>
+        <div className="text-center py-10 text-gray-400 italic">Chưa có đề thi nào.</div>
       ) : (
-        <div className="space-y-4">
-          {/* Header với checkbox chọn tất cả */}
-          <div className="flex items-center gap-3 text-sm font-medium">
+        <>
+
+          {/* Select all */}
+          <div className="flex items-center gap-3 mb-3 text-sm font-medium">
             <input
               type="checkbox"
               checked={list.length > 0 && list.every(exam => selectedExams.get(exam.id))}
               onChange={selectAll}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+              className="w-5 h-5 accent-blue-600 rounded"
             />
             <span>Chọn tất cả</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {/* Grid modern */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {list.map((exam) => (
               <div
                 key={exam.id}
-                className="relative bg-white border rounded-xl shadow-sm hover:shadow-lg transition-all p-4 flex flex-col justify-between"
+                className="bg-white border border-gray-100 rounded-2xl shadow-md hover:shadow-xl transition-all p-5"
               >
-                <div className="flex items-start gap-2 mb-2">
+                <div className="flex items-start gap-3">
                   <input
                     type="checkbox"
                     checked={!!selectedExams.get(exam.id)}
                     onChange={() => toggleSelect(exam.id)}
-                    className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    className="w-5 h-5 accent-blue-600 rounded"
                   />
+
                   <div className="flex-1">
-                    <h3 className="text-base font-semibold text-blue-700 line-clamp-2">{exam.name}</h3>
+                    <h3 className="text-lg font-semibold text-blue-700 line-clamp-2">
+                      {exam.name}
+                    </h3>
+
                     <p className="text-xs text-gray-500 mt-1 line-clamp-2">
                       {exam.description || 'Không có mô tả.'}
                     </p>
-                    <div className="text-[11px] text-gray-500 mt-1">
+
+                    <span className="text-[11px] text-gray-500 mt-2 block">
                       {exam.numberQuestions} câu — {exam.durationMinutes} phút
-                    </div>
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-1 text-xs">
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2 text-xs mt-4">
                   <button
                     onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
                     className="text-blue-600 hover:underline font-medium"
                   >
                     Sửa
                   </button>
-                  <span className="text-gray-400">|</span>
+
                   <button
                     onClick={() => navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })}
                     className="text-blue-600 hover:underline font-medium"
                   >
                     Đã giao
                   </button>
-                  <span className="text-gray-400">|</span>
+
                   <button
                     onClick={() => openTimeModal(exam.id)}
                     className="text-green-600 hover:underline font-medium"
@@ -283,14 +315,15 @@ export default function ExamsTab() {
               </div>
             ))}
           </div>
-        </div>
+        </>
       )}
 
       {/* Modal chọn thời gian */}
       {showTimeModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
             <h3 className="text-lg font-semibold mb-4">Thiết lập phiên thi</h3>
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium">Thời gian bắt đầu</label>
@@ -299,7 +332,7 @@ export default function ExamsTab() {
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
                   min={new Date().toISOString().slice(0, 16)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -310,7 +343,7 @@ export default function ExamsTab() {
                   value={expiredAt}
                   onChange={(e) => setExpiredAt(e.target.value)}
                   min={startAt || new Date().toISOString().slice(0, 16)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -319,7 +352,7 @@ export default function ExamsTab() {
                 <select
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
                 >
                   {DURATIONS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -331,16 +364,20 @@ export default function ExamsTab() {
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowTimeModal(false)} className="px-4 py-2 text-gray-600">
+              <button
+                onClick={() => setShowTimeModal(false)}
+                className="px-4 py-2 text-gray-600"
+              >
                 Hủy
               </button>
+
               <button
                 onClick={handleCreateSession}
                 disabled={creating}
-                className={`px-5 py-2 rounded-lg font-medium transition ${
+                className={`px-5 py-2 rounded-xl text-white transition ${
                   creating
-                    ? 'bg-gray-400 text-white'
-                    : 'bg-green-600 text-white hover:bg-green-700'
+                    ? 'bg-gray-400'
+                    : 'bg-green-600 hover:bg-green-700 shadow'
                 }`}
               >
                 {creating ? 'Đang tạo...' : 'Tạo phiên'}
@@ -352,11 +389,15 @@ export default function ExamsTab() {
 
       {/* Modal kết quả */}
       {modalData && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-white/30 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/30 backdrop-blur-sm">
           <div className="bg-white border rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4">
-            <h3 className="text-lg font-semibold mb-4 text-center">Phiên thi được tạo thành công!</h3>
-            <div className="space-y-3 text-sm">
-              <div className="bg-blue-50 p-3 rounded-lg">
+            <h3 className="text-lg font-semibold mb-4 text-center">
+              Phiên thi được tạo thành công!
+            </h3>
+
+            <div className="space-y-4 text-sm">
+              
+              <div className="bg-blue-50 p-3 rounded-xl">
                 <p className="font-medium text-gray-700">Link tham gia:</p>
                 <a
                   href={modalData.inviteLink}
@@ -367,18 +408,21 @@ export default function ExamsTab() {
                   {modalData.inviteLink}
                 </a>
               </div>
-              <div className="bg-green-50 p-3 rounded-lg">
+
+              <div className="bg-green-50 p-3 rounded-xl">
                 <p className="font-medium text-gray-700">Mã tham gia:</p>
-                <p className="font-mono text-lg text-green-700 bg-green-100 px-3 py-1 rounded inline-block">
+                <p className="font-mono text-lg text-green-700 bg-green-100 px-3 py-1 rounded-xl inline-block">
                   {modalData.code}
                 </p>
               </div>
+
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="bg-purple-50 p-2 rounded">
+                <div className="bg-purple-50 p-3 rounded-xl">
                   <p className="font-medium text-gray-600">Mở lúc:</p>
                   <p className="text-purple-800">{formatDateTime(modalData.startAt)}</p>
                 </div>
-                <div className="bg-orange-50 p-2 rounded">
+
+                <div className="bg-orange-50 p-3 rounded-xl">
                   <p className="font-medium text-gray-600">Đóng lúc:</p>
                   <p className="text-orange-800">{formatDateTime(modalData.expiredAt)}</p>
                 </div>
@@ -391,22 +435,24 @@ export default function ExamsTab() {
                   navigator.clipboard.writeText(modalData.inviteLink)
                   toast.success('Đã copy link!')
                 }}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm"
+                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition text-sm"
               >
                 Copy Link
               </button>
+
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(modalData.code)
                   toast.success('Đã copy mã!')
                 }}
-                className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm"
+                className="px-4 py-2 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition text-sm"
               >
                 Copy Mã
               </button>
+
               <button
                 onClick={() => setModalData(null)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm"
+                className="px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-800 transition text-sm"
               >
                 Đóng
               </button>
