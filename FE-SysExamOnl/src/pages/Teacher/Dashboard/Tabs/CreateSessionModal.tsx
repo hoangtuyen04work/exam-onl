@@ -1,5 +1,5 @@
 // src/pages/Teacher/CreateSessionModal.tsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axiosClient from '../../../../api/axiosClient'
 import { toast } from 'react-toastify'
 
@@ -25,16 +25,27 @@ export default function CreateSessionModal({ isOpen, examId, onClose, onSuccess 
   const [duration, setDuration] = useState(60)
   const [creating, setCreating] = useState(false)
 
-  if (!isOpen) return null
+  useEffect(() => {
+    if (isOpen && (!startAt || !expiredAt)) {
+      const now = new Date()
+      const formatter = new Intl.DateTimeFormat('sv-SE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour12: false
+      })
+      const startStr = formatter.format(now).replace(' ', 'T')
+      const end = new Date(now.getTime() + 3600000)
+      const endStr = formatter.format(end).replace(' ', 'T')
+      setStartAt(startStr)
+      setExpiredAt(endStr)
+    }
+  }, [isOpen, startAt, expiredAt])
 
-  // Initialize dates
-  if (!startAt || !expiredAt) {
-    const now = new Date()
-    const start = now.toISOString().slice(0, 16)
-    const end = new Date(now.getTime() + 3600000).toISOString().slice(0, 16)
-    setStartAt(start)
-    setExpiredAt(end)
-  }
+  if (!isOpen) return null
 
   const handleCreate = async () => {
     if (!examId) return
