@@ -10,7 +10,7 @@ interface ExamItem {
   name: string
   description: string
   totalPoint: string
-  numberQuestions: number
+  numberQuestions: number   
   startTime: string
   endTime: string
   durationMinutes: number
