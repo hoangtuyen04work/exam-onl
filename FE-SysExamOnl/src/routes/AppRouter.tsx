@@ -12,7 +12,7 @@ import JoinExam from '../pages/Student/Exam/JoinExam'
 import ResultPage from '../pages/Student/Exam/ResultPage'
 import ErrorPage from '../components/ErrorPage'
 import HomeTab from '../pages/Teacher/Dashboard/Tabs/HomeTab'
-import ExamsTab from '../pages/Teacher/Dashboard/Tabs/ExamsTab'
+import ExamList from '../pages/Teacher/Dashboard/Tabs/ExamsTab'
 import QuestionBank from '../pages/Teacher/Dashboard/Tabs/BanksTab'
 import StudentList from '../pages/Teacher/Dashboard/Tabs/StudentsTab'
 import CreateEditExam from '../pages/Teacher/Exams/CreateEditExam'
@@ -75,7 +75,7 @@ export default function AppRouter() {
         }
       >
         <Route index element={<HomeTab />} />
-        <Route path='exams' element={<ExamsTab />} />
+        <Route path='exams' element={<ExamList />} />
         <Route path='exams/create' element={<CreateEditExam />} />
         <Route path='exams/:examId/edit' element={<CreateEditExam />} />
         <Route path='questions' element={<QuestionBank />} />

@@ -8,6 +8,9 @@ export default function TeacherDashboard() {
 
   const [showMenu, setShowMenu] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
+  const [connectorLeft, setConnectorLeft] = useState(0)
 
   const teacherName = localStorage.getItem('teacherName') || 'Giáo viên'
 
@@ -23,6 +26,27 @@ export default function TeacherDashboard() {
   const activeTabKey = [...tabs]
     .sort((a, b) => b.key.length - a.key.length)
     .find(t => location.pathname.startsWith(t.key))?.key
+
+  // Cập nhật vị trí highlight
+  useEffect(() => {
+    const updatePos = () => {
+      const menuEl = menuRef.current
+      const activeBtn = buttonRefs.current[activeTabKey || '']
+      if (!menuEl || !activeBtn) return
+
+      const menuRect = menuEl.getBoundingClientRect()
+      const btnRect = activeBtn.getBoundingClientRect()
+      const centerX = btnRect.left + btnRect.width / 2
+      setConnectorLeft(centerX - menuRect.left)
+    }
+
+    const timer = setTimeout(updatePos, 50)
+    window.addEventListener('resize', updatePos)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', updatePos)
+    }
+  }, [activeTabKey])
 
   // Đóng menu khi click outside
   useEffect(() => {
@@ -42,28 +66,44 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex flex-col overflow-hidden">
       {/* Header với hiệu ứng glassmorphism */}
-      <header className="bg-white/80 backdrop-blur-xl shadow-md border-b border-gray-100 px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+      <header className="relative bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/20 px-6 py-4">
+        <div className="flex items-center justify-between">
 
           {/* Logo */}
           <div 
             className="flex items-center gap-3 cursor-pointer group"
             onClick={() => navigate('/teacher')}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md group-hover:scale-105 transition-transform">
-              E
+            <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform">
+              A
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-800">Exam System</h1>
-              <p className="text-xs text-gray-500 -mt-1">Bảng điều khiển giáo viên</p>
+              <p className="text-xs text-gray-500">Bảng điều khiển giáo viên</p>
             </div>
           </div>
 
           {/* Navigation Tabs */}
-          <nav className="hidden md:flex flex-1 justify-center">
-            <div className="flex bg-gray-100/60 backdrop-blur-md rounded-full p-1 shadow-sm">
+          <nav className="flex-1 flex justify-center">
+            <div ref={menuRef} className="flex gap-1 bg-white/60 backdrop-blur-md rounded-full px-3 py-2 shadow-inner border border-white/40">
+
+              {/* Highlight Circle */}
+              <div
+                className="absolute z-10 transition-all duration-300 ease-out"
+                style={{
+                  width: 48,
+                  height: 48,
+                  top: '50%',
+                  left: connectorLeft - 24,
+                  transform: 'translateY(-50%)',
+                }}
+              >
+                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full shadow-lg opacity-90 scale-110"></div>
+              </div>
+
+              {/* Tab Buttons */}
               {tabs.map((tab) => {
                 const Icon = tab.icon
                 const isActive = activeTabKey === tab.key
@@ -71,15 +111,18 @@ export default function TeacherDashboard() {
                 return (
                   <button
                     key={tab.key}
+                    ref={el => buttonRefs.current[tab.key] = el}
                     onClick={() => navigate(tab.key)}
-                    className={`px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium transition-colors
+                    className={`relative z-20 flex flex-col items-center justify-center w-14 h-14 rounded-full transition-all duration-300 group
                       ${isActive 
-                        ? "bg-white text-indigo-700 shadow-sm" 
-                        : "text-gray-600 hover:text-indigo-600 hover:bg-white/50"
+                        ? "text-white font-bold" 
+                        : "text-gray-600 hover:text-indigo-600"
                       }`}
                   >
-                    <Icon size={18} />
-                    {tab.label}
+                    <Icon size={22} className="transition-transform group-hover:scale-110" />
+                    <span className={`text-[10px] mt-1 font-medium transition-all ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      {tab.label.split(' ')[0]}
+                    </span>
                   </button>
                 )
               })}
@@ -90,13 +133,13 @@ export default function TeacherDashboard() {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowMenu(prev => !prev)}
-              className="flex items-center gap-3 p-2 rounded-full hover:bg-gray-100 transition-all"
+              className="flex items-center gap-3 p-2 rounded-full hover:bg-white/60 transition-all group"
             >
               <div className="text-right hidden lg:block">
-                <p className="text-sm font-semibold text-gray-800">{teacherName}</p>
-                <p className="text-xs text-gray-500 -mt-1">Giáo viên</p>
+                <p className="text-sm font-semibold text-gray-700">{teacherName}</p>
+                <p className="text-xs text-gray-500">Giáo viên</p>
               </div>
-              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-indigo-200 hover:ring-indigo-400 transition-all">
+              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-indigo-200 group-hover:ring-indigo-400 transition-all">
                 <img 
                   src={`https://ui-avatars.com/api/?name=${encodeURIComponent(teacherName)}&background=6366f1&color=fff&bold=true`} 
                   alt="avatar" 
@@ -107,21 +150,21 @@ export default function TeacherDashboard() {
 
             {/* Dropdown Menu */}
             {showMenu && (
-              <div className="absolute right-0 top-14 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+              <div className="absolute right-0 top-14 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="font-semibold text-gray-800">{teacherName}</p>
-                  <p className="text-xs text-gray-500">Giáo viên</p>
+                  <p className="text-xs text-gray-500">giáo viên</p>
                 </div>
                 <button
                   onClick={() => { navigate('/teacher/settings'); setShowMenu(false); }}
-                  className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                  className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-indigo-50 flex items-center gap-3 transition-colors"
                 >
                   <User size={16} />
                   Hồ sơ cá nhân
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="w-full px-4 py-2.5 text-left text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
+                  className="w-full px-4 py-2.5 text-left text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors font-medium"
                 >
                   <LogOut size={16} />
                   Đăng xuất
@@ -130,32 +173,11 @@ export default function TeacherDashboard() {
             )}
           </div>
         </div>
-
-        {/* Mobile Nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl shadow-lg border-t border-gray-100 py-2 z-50">
-          <div className="flex justify-around">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
-              const isActive = activeTabKey === tab.key
-
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => navigate(tab.key)}
-                  className={`flex flex-col items-center p-2 flex-1 ${isActive ? 'text-indigo-600' : 'text-gray-600'}`}
-                >
-                  <Icon size={20} />
-                  <span className="text-xs mt-1">{tab.label.split(' ')[0]}</span>
-                </button>
-              )
-            })}
-          </div>
-        </nav>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-6 lg:p-8 pb-20 md:pb-8 overflow-y-auto">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 p-6 md:p-8 lg:p-10 h-full">
+      <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 p-6 md:p-8 lg:p-10 min-h-[calc(100vh-140px)] transition-all duration-300">
           <Outlet />
         </div>
       </main>
