@@ -1,267 +1,60 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import axiosClient from '../../../../api/axiosClient'
+// src/components/teacher/ExamsTab.tsx
+import React from 'react'
 import { toast } from 'react-toastify'
-import { format } from 'date-fns'
-<<<<<<< HEAD
 import { exportExams } from '../../Dashboard/import_export/exportExams'
-import { importExams } from "../../Dashboard/import_export/importExams";
-=======
-import { toVNISO } from '../../../../utils/utils'
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-
-interface ExamItem {
-  id: string | number
-  name: string
-  description: string
-  totalPoint: string
-  numberQuestions: number
-  startTime: string
-  endTime: string
-  durationMinutes: number
-}
-
-interface SessionResult {
-  examSessionId: number
-  code: string
-  inviteLink: string
-  name: string
-  description: string
-  expiredAt: string
-  startAt: string
-  ownerName: string
-}
-
-const DURATIONS = [
-  { value: 15, label: '15 phút' },
-  { value: 30, label: '30 phút' },
-  { value: 45, label: '45 phút' },
-  { value: 60, label: '60 phút' },
-  { value: 90, label: '90 phút' },
-  { value: 120, label: '120 phút' }
-]
+import { importExams } from '../../Dashboard/import_export/importExams'
+import { useExamsTab, DURATIONS } from '../Tabs/HookTab/HookExamsTab'
 
 export default function ExamsTab() {
-  const [list, setList] = useState<ExamItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [modalData, setModalData] = useState<SessionResult | null>(null)
-  const [listExamUser, setListExamUser] = useState<ExamItem[]>([])
+  const {
+    list,
+    loading,
+    selectedExams,
+    modalData,
+    showTimeModal,
+    startAt,
+    expiredAt,
+    duration,
+    creating,
 
-  // import/export refs & handlers
-  const fileInputRefExam = useRef<HTMLInputElement | null>(null)
+    toggleSelect,
+    selectAll,
+    openTimeModal,
+    handleCreateSession,
+    formatDateTime,
+    setModalData,
+    setShowTimeModal,
+    setStartAt,
+    setExpiredAt,
+    setDuration,
+    navigate
+  } = useExamsTab()
 
-  const triggerImportExam = () => {
-    fileInputRefExam.current?.click()
-  }
+  const handleExportSelected = () => {
+    const selectedIds: number[] = []
+    const selectedNames: string[] = []
 
-  const handleImportExam = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const fd = new FormData()
-    fd.append('file', file)
-    try {
-      const res = await axiosClient.post('/teacher/exams/import', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      const imported = res.data?.imported ?? 0
-      toast.success(`Import thành công ${imported} câu hỏi`)
-      // reload list (simple approach)
-      window.location.reload()
-    } catch (err: any) {
-      console.error(err)
-      toast.error(err?.response?.data?.message || 'Import thất bại')
-    } finally {
-      if (fileInputRefExam.current) fileInputRefExam.current.value = ''
-    }
-  }
-
-  const handleExportExam = async () => {
-    try {
-      const res = await axiosClient.get('/teacher/exams/export', { responseType: 'blob' })
-      const url = window.URL.createObjectURL(res.data)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'exams.xlsx'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (err: any) {
-      console.error(err)
-      toast.error(err?.response?.data?.message || 'Export thất bại')
-    }
-  }
-
-  // Modal chọn thời gian giao đề
-  const [showTimeModal, setShowTimeModal] = useState(false)
-  const [selectedExamId, setSelectedExamId] = useState<number | string | null>(null)
-  const [startAt, setStartAt] = useState('')
-  const [expiredAt, setExpiredAt] = useState('')
-  const [duration, setDuration] = useState('60')
-  const [creating, setCreating] = useState(false)
-
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    if (!token) {
-      toast.error('Vui lòng đăng nhập.')
-      navigate('/role-select')
-      return
-    }
-
-    const fetchExams = async () => {
-      setLoading(true)
-      try {
-        const res = await axiosClient.get('/teacher/exams', { params: { page: 0, size: 20 } })
-        const items = Array.isArray(res.data.items)
-          ? res.data.items.map((item: any) => ({
-              id: item.id ?? item.examId ?? item.examID ?? item.uuid ?? '',
-              name: item.name ?? '',
-              description: item.description ?? '',
-              totalPoint: item.totalPoint ?? '',
-              numberQuestions: item.numberQuestions ?? 0,
-              startTime: item.startTime ?? '',
-              endTime: item.endTime ?? '',
-              durationMinutes: item.durationMinutes ?? 0
-            }))
-          : []
-        setList(items)
-      } catch {
-        toast.error('Không tải được danh sách đề thi')
-      } finally {
-        setLoading(false)
+    list.forEach(exam => {
+      if (selectedExams.get(exam.id)) {
+        selectedIds.push(Number(exam.id))
+        selectedNames.push(exam.name)
       }
-    }
-
-    fetchExams()
-  }, [navigate])
-
-  // ✅ Hàm load danh sách đề đã giao (từ file 1)
-  const handleListExam = async (examSessionId: number | string) => {
-    console.log('🚀 Bắt đầu gọi API với examSessionId:', examSessionId)
-    try {
-      const res = await axiosClient.get(`/teacher/exam-sessions/search`)
-      const listUsers = Array.isArray(res.data.items)
-        ? res.data.items.map((item: any) => ({
-            id: item.examSessionId ?? '',
-            code: item.code ?? '',
-            inviteLink: item.invitelink ?? '',
-            name: item.name ?? '',
-            owner: item.ownerName ?? '',
-            start: item.startAt ?? ''
-          }))
-        : []
-      setListExamUser(listUsers)
-      console.log('✅ API trả về:', listUsers)
-    } catch (err: any) {
-      console.error('❌ Lỗi API:', err.response?.data || err.message)
-      toast.error('Không tải được danh sách đề đã giao')
-    }
-  }
-
-  // ✅ Mở modal chọn thời gian giao đề
-  const openTimeModal = (examId: number | string) => {
-    setSelectedExamId(examId)
-    const now = new Date()
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Ho_Chi_Minh', // GMT+7
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
     })
-    const parts = formatter.formatToParts(now)
-    const partMap = parts.reduce((acc, part) => {
-      acc[part.type] = part.value
-      return acc
-    }, {} as Record<string, string>)
-    const year = partMap['year']
-    const month = partMap['month']
-    const day = partMap['day']
-    const hour = partMap['hour'].padStart(2, '0')
-    const minute = partMap['minute'].padStart(2, '0')
-    const start = `${year}-${month}-${day}T${hour}:${minute}`
 
-    const oneHourLater = new Date(now.getTime() + 3600 * 1000)
-    const laterParts = formatter.formatToParts(oneHourLater)
-    const laterMap = laterParts.reduce((acc, part) => {
-      acc[part.type] = part.value
-      return acc
-    }, {} as Record<string, string>)
-    const laterYear = laterMap['year']
-    const laterMonth = laterMap['month']
-    const laterDay = laterMap['day']
-    const laterHour = laterMap['hour'].padStart(2, '0')
-    const laterMinute = laterMap['minute'].padStart(2, '0')
-    const end = `${laterYear}-${laterMonth}-${laterDay}T${laterHour}:${laterMinute}`
+    if (selectedIds.length === 0) {
+      toast.warn('Vui lòng chọn ít nhất 1 đề để export!')
+      return
+    }
 
-    setStartAt(start)
-    setExpiredAt(end)
-    setDuration('60')
-    setShowTimeModal(true)
+    exportExams(selectedIds, selectedNames)
   }
 
-  // ✅ Gọi API tạo phiên thi
-  const handleCreateSession = async () => {
-    if (!selectedExamId || !startAt || !expiredAt) {
-      toast.error('Vui lòng chọn đầy đủ thời gian!')
-      return
-    }
-
-    const start = new Date(startAt)
-    const end = new Date(expiredAt)
-    const durationMin = Number(duration)
-
-    if (end <= start) {
-      toast.error('Thời gian kết thúc phải sau thời gian bắt đầu!')
-      return
-    }
-
-    const availableMinutes = Math.floor((end.getTime() - start.getTime()) / 60000)
-    if (durationMin > availableMinutes) {
-      toast.error(
-        `Thời gian làm bài (${durationMin} phút) không được vượt quá thời gian mở phiên (${availableMinutes} phút)!`
-      )
-      return
-    }
-
-    setCreating(true)
-    try {
-      const payload = {
-        examId: Number(selectedExamId),
-        name: 'Phiên thi tùy chỉnh',
-        description: 'Tạo từ giao diện giáo viên',
-        durationMinutes: durationMin,
-        startAt: toVNISO(startAt),
-        expiredAt: toVNISO(expiredAt)
-      }
-
-      const res = await axiosClient.post('/teacher/exam-sessions', payload)
-      if (res.data?.success && res.data?.data) {
-        setModalData(res.data.data)
-        toast.success('Tạo phiên thi thành công!')
-        setShowTimeModal(false)
-      } else {
-        toast.error(res.data?.message || 'Không nhận được dữ liệu từ server!')
-      }
-    } catch {
-      toast.error('Không thể tạo phiên thi!')
-    } finally {
-      setCreating(false)
-    }
-  }
-
-  const formatDateTime = (iso: string) => format(new Date(iso), 'dd/MM/yyyy HH:mm')
+  const selectedCount = Array.from(selectedExams.values()).filter(Boolean).length
 
   return (
 <<<<<<< HEAD
     <div className="p-6">
-
-      {/* Header modern */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-500 text-transparent bg-clip-text">
           Danh sách đề thi
@@ -304,24 +97,20 @@ export default function ExamsTab() {
         accept=".xlsx"
         id="importExcel"
         hidden
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) importExams(file);
-        }}
+        onChange={(e) => e.target.files?.[0] && importExams(e.target.files[0])}
       />
-
       <button
-        onClick={() => document.getElementById("importExcel")?.click()}
+        onClick={() => document.getElementById('importExcel')?.click()}
         className="px-4 py-2 bg-purple-600 text-white rounded-xl shadow hover:shadow-xl transition-all mb-4"
       >
         Import đề thi (.xlsx)
       </button>
 
-      {/* Export multiple */}
-      {selectedExams.size > 0 && (
+      {/* Export selected */}
+      {selectedCount > 0 && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl shadow-sm flex items-center justify-between">
           <span className="text-sm font-medium text-blue-800">
-            Đã chọn {Array.from(selectedExams.values()).filter(Boolean).length} đề thi
+            Đã chọn {selectedCount} đề thi
           </span>
           <button
             onClick={handleExportSelected}
@@ -335,169 +124,101 @@ export default function ExamsTab() {
       ) : list.length === 0 ? (
         <div className='text-center py-8 text-gray-500 italic'>Chưa có đề thi nào.</div>
       ) : (
-        <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5'>
-          {list.map((exam) => (
-            <div
-              key={exam.id}
-              className='relative bg-white border rounded-xl shadow-sm hover:shadow-lg transition-all p-4 flex flex-col justify-between'
-              style={{ aspectRatio: '3/4', transform: 'scale(0.95)' }}
-            >
-              <div>
-                <h3 className='text-base font-semibold text-blue-700 line-clamp-2'>{exam.name}</h3>
-                <p className='text-xs text-gray-500 mt-1 line-clamp-3'>{exam.description || 'Không có mô tả.'}</p>
+        <>
+          <div className="flex items-center gap-3 mb-3 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={list.length > 0 && selectedCount === list.length}
+              onChange={selectAll}
+              className="w-5 h-5 accent-blue-600 rounded"
+            />
+            <span>Chọn tất cả</span>
+          </div>
 
-                <div className='text-[11px] text-gray-500 mt-2'>
-                  🧩 {exam.numberQuestions} câu — ⏱ {exam.durationMinutes} phút
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {list.map((exam) => (
+              <div
+                key={exam.id}
+                className="bg-white border border-gray-100 rounded-2xl shadow-md hover:shadow-xl transition-all p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={!!selectedExams.get(exam.id)}
+                    onChange={() => toggleSelect(exam.id)}
+                    className="w-5 h-5 accent-blue-600 rounded mt-1"
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-blue-700 line-clamp-2">
+                      {exam.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                      {exam.description || 'Không có mô tả.'}
+                    </p>
+                    <span className="text-[11px] text-gray-500 mt-2 block">
+                      {exam.numberQuestions} câu — {exam.durationMinutes} phút
+                    </span>
+                  </div>
                 </div>
-                <div className='text-[11px] text-gray-400'>
-                  📅 {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN') : '—'}
+
+                <div className="flex flex-wrap gap-3 text-xs mt-4">
+                  <button
+                    onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
+                    className="text-blue-600 hover:underline font-medium"
+                  >
+                    Sửa
+                  </button>
+                  <button
+                    onClick={() => navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })}
+                    className="text-blue-600 hover:underline font-medium"
+                  >
+                    Đã giao
+                  </button>
+                  <button
+                    onClick={() => openTimeModal(exam.id)}
+                    className="text-green-600 hover:underline font-medium"
+                  >
+                    Giao đề
+                  </button>
                 </div>
               </div>
-
-              <div className='flex justify-between items-center mt-3'>
-                <button
-                  onClick={() => {
-                    if (!exam.id) {
-                      toast.error('Không tìm thấy ID đề thi!')
-                      return
-                    }
-                    navigate(`/teacher/exams/${exam.id}/edit`)
-                  }}
-                  className='text-blue-600 hover:underline text-xs font-medium'
-                >
-                  ✏️ Sửa
-                </button>
-
-                <button
-                  onClick={() => navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })}
-                  className='text-blue-600 hover:underline text-xs font-medium'
-                >
-                  Các đề đã giao
-                </button>
-
-                <button
-                  onClick={() => openTimeModal(exam.id)}
-                  className='text-green-600 hover:underline text-xs font-medium'
-                >
-                  📤 Giao đề
-                </button>
-              </div>
-            </div>
-          ))}
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
-      {/* Modal chọn thời gian */}
+      {/* Modal thời gian + kết quả giữ nguyên như cũ, chỉ thay DURATIONS import từ hook */}
       {showTimeModal && (
 <<<<<<< HEAD
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
             <h3 className="text-lg font-semibold mb-4">Thiết lập phiên thi</h3>
-
-            <div className='space-y-4'>
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium">Thời gian bắt đầu</label>
-=======
-        <div className='fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm'>
-          <div className='bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md'>
-            <h3 className='text-lg font-semibold text-gray-800 mb-4'>Thiết lập phiên thi</h3>
-
-            <div className='space-y-4'>
-              <div>
-                <label className='block text-sm font-medium text-gray-700 mb-1'>Thời gian bắt đầu</label>
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-                <input
-                  type='datetime-local'
-                  value={startAt}
-                  onChange={(e) => setStartAt(e.target.value)}
-<<<<<<< HEAD
-                  min={new Date().toISOString().slice(0, 16)}
-                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
-=======
-                  min={startAt} // Min là thời gian hiện tại GMT+7 (đã set ở startAt)
-                  className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none'
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-                />
+                <input type="datetime-local" value={startAt} onChange={e => setStartAt(e.target.value)} className="w-full px-3 py-2 border rounded-xl" />
               </div>
-
               <div>
 <<<<<<< HEAD
                 <label className="block text-sm font-medium">Thời gian kết thúc</label>
-=======
-                <label className='block text-sm font-medium text-gray-700 mb-1'>Thời gian kết thúc</label>
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-                <input
-                  type='datetime-local'
-                  value={expiredAt}
-                  onChange={(e) => setExpiredAt(e.target.value)}
-<<<<<<< HEAD
-                  min={startAt || new Date().toISOString().slice(0, 16)}
-                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
-=======
-                  min={startAt}
-                  className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none'
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-                />
+                <input type="datetime-local" value={expiredAt} onChange={e => setExpiredAt(e.target.value)} className="w-full px-3 py-2 border rounded-xl" />
               </div>
-
               <div>
-<<<<<<< HEAD
-                <label className="block text-sm font-medium">Thời gian làm bài (phút)</label>
-                <select
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500"
-=======
-                <label className='block text-sm font-medium text-gray-700 mb-1'>Thời gian làm bài (phút)</label>
-                <select
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  className='w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none'
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-                >
-                  {DURATIONS.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
+                <label className="block text-sm font-medium">Thời gian làm bài</label>
+                <select value={duration} onChange={e => setDuration(e.target.value)} className="w-full px-3 py-2 border rounded-xl">
+                  {DURATIONS.map(d => (
+                    <option key={d.value} value={d.value}>{d.label}</option>
                   ))}
                 </select>
               </div>
 <<<<<<< HEAD
             </div>
-
             <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setShowTimeModal(false)}
-                className="px-4 py-2 text-gray-600"
-              >
-=======
-
-              {startAt && expiredAt && (
-                <div className='text-sm p-3 bg-amber-50 border border-amber-200 rounded-lg'>
-                  <p className='font-medium text-amber-800'>
-                    Thời gian mở phiên:{' '}
-                    {Math.floor((new Date(expiredAt).getTime() - new Date(startAt).getTime()) / 60000)} phút
-                  </p>
-                  <p className='text-amber-700 text-xs mt-1'>Thời gian làm bài: {duration} phút</p>
-                </div>
-              )}
-            </div>
-
-            <div className='flex justify-end gap-3 mt-6'>
-              <button onClick={() => setShowTimeModal(false)} className='px-4 py-2 text-gray-600 hover:text-gray-800'>
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-                Hủy
-              </button>
+              <button onClick={() => setShowTimeModal(false)} className="px-4 py-2 text-gray-600">Hủy</button>
               <button
                 onClick={handleCreateSession}
                 disabled={creating}
-<<<<<<< HEAD
-                className={`px-5 py-2 rounded-xl text-white transition ${
-                  creating
-                    ? 'bg-gray-400'
-                    : 'bg-green-600 hover:bg-green-700 shadow'
-                }`}
+                className={`px-5 py-2 rounded-xl text-white ${creating ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'}`}
               >
                 {creating ? 'Đang tạo...' : 'Tạo phiên'}
 =======
@@ -522,115 +243,35 @@ export default function ExamsTab() {
 
       {/* Modal kết quả */}
       {modalData && (
-<<<<<<< HEAD
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/30 backdrop-blur-sm">
-          <div className="bg-white border rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4">
-            <h3 className="text-lg font-semibold mb-4 text-center">
-              Phiên thi được tạo thành công!
-            </h3>
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg">
+            <h3 className="text-lg font-semibold text-center mb-4">Tạo phiên thành công!</h3>
             <div className="space-y-4 text-sm">
-              
-              <div className="bg-blue-50 p-3 rounded-xl">
-                <p className="font-medium text-gray-700">Link tham gia:</p>
-=======
-        <div className='fixed inset-0 flex items-center justify-center z-50 bg-white/30 backdrop-blur-sm'>
-          <div className='bg-white/90 border border-gray-200 backdrop-blur-md rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4'>
-            <h3 className='text-lg font-semibold text-gray-800 mb-4 text-center'>🎉 Phiên thi được tạo thành công!</h3>
-
-            <div className='space-y-3 text-sm'>
-              <div className='bg-gray-50 p-3 rounded-lg'>
-                <p className='font-medium text-gray-700'>Tên phiên:</p>
-                <p className='text-gray-900'>{modalData.name}</p>
-              </div>
-
-              <div className='bg-blue-50 p-3 rounded-lg'>
-                <p className='font-medium text-gray-700'>Link tham gia:</p>
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-                <a
-                  href={modalData.inviteLink}
-                  target='_blank'
-                  rel='noreferrer'
-                  className='text-blue-600 hover:underline break-all text-xs'
-                >
+              <div className="bg-blue-50 p-4 rounded-xl">
+                <p className="font-medium">Link:</p>
+                <a href={modalData.inviteLink} target="_blank" rel="noreferrer" className="text-blue-600 break-all text-xs">
                   {modalData.inviteLink}
                 </a>
               </div>
-
-<<<<<<< HEAD
-              <div className="bg-green-50 p-3 rounded-xl">
-                <p className="font-medium text-gray-700">Mã tham gia:</p>
-                <p className="font-mono text-lg text-green-700 bg-green-100 px-3 py-1 rounded-xl inline-block">
-=======
-              <div className='bg-green-50 p-3 rounded-lg'>
-                <p className='font-medium text-gray-700'>Mã tham gia:</p>
-                <p className='font-mono text-lg text-green-700 bg-green-100 px-3 py-1 rounded inline-block'>
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-                  {modalData.code}
-                </p>
+              <div className="bg-green-50 p-4 rounded-xl text-center">
+                <p className="font-medium">Mã tham gia:</p>
+                <p className="font-mono text-2xl text-green-700">{modalData.code}</p>
               </div>
-
-<<<<<<< HEAD
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="bg-purple-50 p-3 rounded-xl">
-                  <p className="font-medium text-gray-600">Mở lúc:</p>
-                  <p className="text-purple-800">{formatDateTime(modalData.startAt)}</p>
+                <div className="bg-purple-50 p-3 rounded-xl text-center">
+                  <p className="font-medium">Mở lúc</p>
+                  <p>{formatDateTime(modalData.startAt)}</p>
                 </div>
-
-                <div className="bg-orange-50 p-3 rounded-xl">
-                  <p className="font-medium text-gray-600">Đóng lúc:</p>
-                  <p className="text-orange-800">{formatDateTime(modalData.expiredAt)}</p>
-=======
-              <div className='grid grid-cols-2 gap-3 text-xs'>
-                <div className='bg-purple-50 p-2 rounded'>
-                  <p className='font-medium text-gray-600'>Mở lúc:</p>
-                  <p className='text-purple-800'>{formatDateTime(modalData.startAt)}</p>
-                </div>
-                <div className='bg-orange-50 p-2 rounded'>
-                  <p className='font-medium text-gray-600'>Đóng lúc:</p>
-                  <p className='text-orange-800'>{formatDateTime(modalData.expiredAt)}</p>
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
+                <div className="bg-orange-50 p-3 rounded-xl text-center">
+                  <p className="font-medium">Đóng lúc</p>
+                  <p>{formatDateTime(modalData.expiredAt)}</p>
                 </div>
               </div>
             </div>
-
-            <div className='mt-6 flex justify-center gap-3'>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(modalData.inviteLink)
-                  toast.success('Đã copy link!')
-                }}
-<<<<<<< HEAD
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200 transition text-sm"
-=======
-                className='px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm'
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-              >
-                Copy Link
-              </button>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(modalData.code)
-                  toast.success('Đã copy mã!')
-                }}
-<<<<<<< HEAD
-                className="px-4 py-2 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition text-sm"
-=======
-                className='px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm'
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-              >
-                Copy Mã
-              </button>
-              <button
-                onClick={() => setModalData(null)}
-<<<<<<< HEAD
-                className="px-4 py-2 bg-gray-700 text-white rounded-xl hover:bg-gray-800 transition text-sm"
-=======
-                className='px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm'
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
-              >
-                Đóng
-              </button>
+            <div className="flex justify-center gap-3 mt-6">
+              <button onClick={() => { navigator.clipboard.writeText(modalData.inviteLink); toast.success('Copied link!') }} className="px-4 py-2 bg-blue-100 text-blue-700 rounded-xl">Copy Link</button>
+              <button onClick={() => { navigator.clipboard.writeText(modalData.code); toast.success('Copied mã!') }} className="px-4 py-2 bg-green-100 text-green-700 rounded-xl">Copy Mã</button>
+              <button onClick={() => setModalData(null)} className="px-4 py-2 bg-gray-700 text-white rounded-xl">Đóng</button>
             </div>
           </div>
         </div>

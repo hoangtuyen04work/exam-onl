@@ -3,6 +3,22 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* === FIX TRÀN NGANG VĨNH VIỄN – DÁN VÀO index.css === */
+html, body, #root, #root > div {
+  overflow-x: hidden !important;
+  width: 100vw;
+  max-width: 100vw;
+}
+
+/* Đảm bảo không phần tử nào tràn ra */
+* {
+  box-sizing: border-box;
+}
+
+/* Nếu vẫn còn (trường hợp cực hiếm) */
+body {
+  overflow-x: clip;
+}
 
 .animate-fadeSlide {
   animation: fadeSlide 0.3s ease;
