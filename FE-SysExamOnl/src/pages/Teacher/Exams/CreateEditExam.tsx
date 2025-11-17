@@ -1,330 +1,172 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { toast } from 'react-toastify'
+// src/components/teacher/CreateEditExam.tsx
+import React from 'react'
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
-import api from '../../../api/axiosClient'
+import { useCreateEditExam } from '../Exams/HookExam/HookCreateEditExam'
 
-interface Answer {
-  content: string
-  correct: boolean
-}
-
-interface Question {
-  content: string
-  point: number
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
-  explanation: string
-  shuffleAnswers: boolean
-  answers: Answer[]
-}
+const durations = [15, 30, 45, 60, 90, 120, 150, 180]
 
 export default function CreateEditExam() {
-  const { examId } = useParams<{ examId?: string }>()
-  const navigate = useNavigate()
-  const isEdit = Boolean(examId)
-
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [durationMinutes, setDurationMinutes] = useState(60) // Giữ mặc định 60 phút
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-
-  useEffect(() => {
-    if (!isEdit) {
-      setQuestions([
-        {
-          content: '',
-          point: 1.0,
-          difficulty: 'EASY',
-          explanation: '',
-          shuffleAnswers: true,
-          answers: [
-            { content: '', correct: true },
-            { content: '', correct: false },
-            { content: '', correct: false },
-            { content: '', correct: false }
-          ]
-        }
-      ])
-      setIsLoading(false)
-    }
-  }, [isEdit])
-
-  useEffect(() => {
-    const fetch = async () => {
-      if (!isEdit) return
-      setIsLoading(true)
-      try {
-        const res = await api.get(`/teacher/exams/${examId}`)
-        const data = res.data?.data ?? res.data
-        setName(data?.name ?? '')
-        setDescription(data?.description ?? '')
-        setDurationMinutes(data?.durationMinutes ?? 60)
-        setQuestions(Array.isArray(data?.questions) ? data.questions : [])
-      } catch (err: any) {
-        toast.error(err?.response?.data?.message || 'Không tải được đề thi')
-        navigate('/teacher/exams')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetch()
-  }, [examId, isEdit, navigate])
-
-  const addQuestion = () => {
-    setQuestions([
-      ...questions,
-      {
-        content: '',
-        point: 1.0,
-        difficulty: 'EASY',
-        explanation: '',
-        shuffleAnswers: true,
-        answers: [
-          { content: '', correct: true },
-          { content: '', correct: false },
-          { content: '', correct: false },
-          { content: '', correct: false }
-        ]
-      }
-    ])
-  }
-
-  const updateQuestion = (index: number, field: keyof Question, value: any) => {
-    const copy = [...questions]
-    copy[index] = { ...copy[index], [field]: value }
-    setQuestions(copy)
-  }
-
-  const updateAnswer = (qIndex: number, aIndex: number, content: string) => {
-    const copy = [...questions]
-    copy[qIndex].answers[aIndex].content = content
-    setQuestions(copy)
-  }
-
-  const setCorrectAnswer = (qIndex: number, aIndex: number) => {
-    setQuestions(prev => {
-      const copy = [...prev]
-      copy[qIndex].answers = copy[qIndex].answers.map((ans, i) => ({
-        ...ans,
-        correct: i === aIndex
-      }))
-      return copy
-    })
-  }
-
-  const addAnswer = (qIndex: number) => {
-    const copy = [...questions]
-    copy[qIndex].answers.push({ content: '', correct: false })
-    setQuestions(copy)
-  }
-
-  const removeAnswer = (qIndex: number, aIndex: number) => {
-    const copy = [...questions]
-    copy[qIndex].answers = copy[qIndex].answers.filter((_, i) => i !== aIndex)
-    setQuestions(copy)
-  }
-
-  const removeQuestion = (index: number) => {
-    setQuestions(questions.filter((_, i) => i !== index))
-  }
-
-  const validateBeforeSave = () => {
-    if (!name.trim()) {
-      toast.error('Vui lòng nhập tên đề thi!')
-      return false
-    }
-    if (questions.some(q => !q.content.trim())) {
-      toast.error('Vui lòng nhập nội dung cho tất cả câu hỏi!')
-      return false
-    }
-    return true
-  }
-
-  const handleSubmit = async () => {
-  if (!validateBeforeSave()) return
-  setIsSaving(true)
-
-  const payloadBase = {
-    name: name.trim(),
-    description: description.trim(),
-    questions: questions.map((q, index) => ({
-      ...q,
-      orderColumn: index,
-      shuffleQuestions: true
-    }))
-  }
-
-  try {
-    if (isEdit) {
-  const payload = {
+  const {
+    isEdit,
+    examId,
     name,
+    setName,
     description,
-
-    questions: questions.map((q, index) => ({
-      questionId: q.id ?? q.questionId, // 👈 thêm id cũ vào
-      content: q.content,
-      point: q.point ?? 0,
-      orderColumn: index,
-      shuffleAnswers: true,
-      shuffleQuestions: true,
-      difficulty: q.difficulty || 'EASY',
-      explanation: q.explanation || '',
-      answers: q.answers.map((a) => ({
-        answerId: a.id ?? a.answerId, // 👈 thêm id cũ vào
-        content: a.content,
-        correct: a.correct
-      }))
-    }))
-  }
-
-  await api.put(`/teacher/exams/bulk-update/${examId}`, payload)
-  console.log('Payload gửi đi:', payload)
-  toast.success('Lưu đề thi thành công!')
-    } else {
-      // POST KHÔNG bao gồm các trường thời gian hoặc duration
-      await api.post('/teacher/exams', payloadBase)
-      toast.success('Tạo đề thi thành công!')
-    }
-
-    setTimeout(() => navigate('/teacher/exams'), 800)
-  } catch (err: any) {
-    console.error('API error:', err?.response?.data || err)
-    toast.error(err?.response?.data?.message || err?.message || 'Thao tác thất bại!')
-  } finally {
-    setIsSaving(false)
-  }
-}
-
-
-  const handleDelete = async () => {
-    if (!examId) return toast.error('Không xác định được ID đề thi!')
-    if (!window.confirm('Bạn có chắc muốn xóa bài kiểm tra này không?')) return
-    setIsDeleting(true)
-    try {
-      await api.delete(`/teacher/exams/${examId}`)
-      toast.success('Xóa bài kiểm tra thành công!')
-      setTimeout(() => navigate('/teacher/exams'), 800)
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || 'Xóa thất bại!')
-    } finally {
-      setIsDeleting(false)
-    }
-  }
+    setDescription,
+    durationMinutes,
+    setDurationMinutes,
+    questions,
+    isLoading,
+    isSaving,
+    isDeleting,
+    addQuestion,
+    updateQuestion,
+    updateAnswer,
+    setCorrectAnswer,
+    addAnswer,
+    removeAnswer,
+    removeQuestion,
+    handleSubmit,
+    handleDelete,
+    navigate
+  } = useCreateEditExam()
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-600">
+      <div className="min-h-screen flex items-center justify-center text-xl font-medium text-gray-600">
         Đang tải đề thi...
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 flex justify-center">
-      <div className="bg-white shadow-lg rounded-2xl w-[800px] min-h-[1100px] px-10 py-8 border border-gray-300">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/teacher/exams')}
-              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-semibold">{isEdit ? 'Chỉnh sửa đề thi' : 'Tạo đề thi mới'}</h1>
-              {isEdit && <p className="text-sm text-gray-500">ID: {examId}</p>}
+    <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="max-w-5xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/teacher/exams')}
+                className="p-3 hover:bg-gray-100 rounded-xl transition"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">
+                  {isEdit ? 'Chỉnh sửa đề thi' : 'Tạo đề thi mới'}
+                </h1>
+                {isEdit && <p className="text-sm text-gray-500 mt-1">ID: {examId}</p>}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              {isEdit && (
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex items-center gap-2 bg-red-600 text-white px-5 py-3 rounded-xl hover:bg-red-700 transition disabled:opacity-60"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  {isDeleting ? 'Đang xóa...' : 'Xóa đề'}
+                </button>
+              )}
+              <button
+                onClick={handleSubmit}
+                disabled={isSaving}
+                className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition disabled:opacity-60 font-medium"
+              >
+                <Save className="w-5 h-5" />
+                {isSaving ? 'Đang lưu...' : 'Lưu đề thi'}
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {isEdit && (
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition"
+          {/* Exam Info */}
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Tên đề thi <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="VD: Đề thi học kỳ 1 - Toán lớp 10"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-lg"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Thời gian làm bài <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={durationMinutes}
+                onChange={e => setDurationMinutes(Number(e.target.value))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-lg font-medium"
               >
-                <Trash2 className="w-4 h-4" />
-                {isDeleting ? 'Đang xóa...' : 'Xóa bài kiểm tra'}
-              </button>
-            )}
-            <button
-              onClick={handleSubmit}
-              disabled={isSaving}
-              className="flex items-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 transition"
-            >
-              <Save className="w-4 h-4" />
-              {isSaving ? 'Đang lưu...' : 'Lưu đề thi'}
-            </button>
-          </div>
-        </div>
-
-        {/* Exam Info */}
-        <div className="space-y-4 mb-8">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tên đề thi <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nhập tên đề thi"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-            />
+                {durations.map(m => (
+                  <option key={m} value={m}>{m} phút</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Mô tả</label>
+          <div className="mb-10">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Mô tả đề thi</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Mô tả ngắn gọn về đề thi"
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Ví dụ: Đề kiểm tra 45 phút, gồm 20 câu trắc nghiệm..."
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
             />
           </div>
-        </div>
 
-        {/* Questions */}
-        {questions.map((q, qIndex) => (
-          <div key={qIndex} className="mb-8 border border-gray-200 rounded-xl p-5 shadow-sm">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-lg">Câu {qIndex + 1}</h3>
-              <button onClick={() => removeQuestion(qIndex)} className="text-red-500 hover:text-red-700">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+          {/* Questions */}
+          {questions.map((q, qIndex) => (
+            <div key={qIndex} className="mb-10 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-7 border border-blue-200">
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-xl font-bold text-blue-800">Câu hỏi {qIndex + 1}</h3>
+                <button
+                  onClick={() => removeQuestion(qIndex)}
+                  className="text-red-600 hover:text-red-800 transition"
+                  title="Xóa câu hỏi"
+                >
+                  <Trash2 className="w-6 h-6" />
+                </button>
+              </div>
 
-            <div className="space-y-3">
+              {/* Nội dung câu hỏi */}
               <input
                 type="text"
                 value={q.content}
-                onChange={(e) => updateQuestion(qIndex, 'content', e.target.value)}
+                onChange={e => updateQuestion(qIndex, 'content', e.target.value)}
                 placeholder="Nhập nội dung câu hỏi..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="w-full px-5 py-4 border border-gray-300 rounded-xl text-base font-medium focus:ring-2 focus:ring-blue-500 mb-5"
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Điểm + Độ khó */}
+              <div className="grid grid-cols-2 gap-5 mb-5">
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Điểm</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Điểm số</label>
                   <input
                     type="number"
                     step="0.1"
+                    min="0.1"
                     value={q.point}
-                    onChange={(e) => updateQuestion(qIndex, 'point', parseFloat(e.target.value || '0'))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    onChange={e => updateQuestion(qIndex, 'point', parseFloat(e.target.value) || 0)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-700 mb-1">Độ khó</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Độ khó</label>
                   <select
                     value={q.difficulty}
-                    onChange={(e) => updateQuestion(qIndex, 'difficulty', e.target.value as any)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                    onChange={e => updateQuestion(qIndex, 'difficulty', e.target.value as any)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="EASY">Dễ</option>
                     <option value="MEDIUM">Trung bình</option>
@@ -333,65 +175,76 @@ export default function CreateEditExam() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Các đáp án</label>
-                <div className="space-y-2">
-                  {q.answers.map((a, aIndex) => (
-                    <div key={aIndex} className="flex items-center gap-2">
-                      <span className="w-6 font-semibold">{String.fromCharCode(65 + aIndex)}.</span>
+              {/* Đáp án */}
+              <div className="space-y-3 mb-5">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Các đáp án</label>
+                {q.answers.map((a, aIndex) => (
+                  <div
+                    key={aIndex}
+                    className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all ${
+                      a.correct ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <span className="font-bold text-lg w-8 text-gray-700">
+                      {String.fromCharCode(65 + aIndex)}.
+                    </span>
+                    <input
+                      type="text"
+                      value={a.content}
+                      onChange={e => updateAnswer(qIndex, aIndex, e.target.value)}
+                      placeholder={`Nội dung đáp án ${String.fromCharCode(65 + aIndex)}`}
+                      className="flex-1 px-3 py-2 border-0 bg-transparent outline-none text-base"
+                    />
+                    <label className="flex items-center gap-2 cursor-pointer">
                       <input
-                        type="text"
-                        value={a.content}
-                        onChange={(e) => updateAnswer(qIndex, aIndex, e.target.value)}
-                        placeholder={`Đáp án ${String.fromCharCode(65 + aIndex)}`}
-                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                        type="radio"
+                        name={`correct-${qIndex}`}
+                        checked={a.correct}
+                        onChange={() => setCorrectAnswer(qIndex, aIndex)}
+                        className="w-5 h-5 text-green-600"
                       />
-                      <label className="flex items-center gap-1">
-                        <input
-                          type="radio"
-                          name={`correct-${qIndex}`}
-                          checked={a.correct}
-                          onChange={() => setCorrectAnswer(qIndex, aIndex)}
-                        />
-                        <span className="text-sm">Check</span>
-                      </label>
-                      {q.answers.length > 2 && (
-                        <button
-                          onClick={() => removeAnswer(qIndex, aIndex)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                      <span className="font-medium text-green-700">Đúng</span>
+                    </label>
+                    {q.answers.length > 2 && (
+                      <button
+                        onClick={() => removeAnswer(qIndex, aIndex)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
                 <button
                   onClick={() => addAnswer(qIndex)}
-                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                  className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2 mt-3"
                 >
-                  <Plus className="w-4 h-4" /> Thêm đáp án
+                  <Plus className="w-5 h-5" /> Thêm đáp án
                 </button>
               </div>
 
+              {/* Giải thích */}
               <textarea
                 value={q.explanation}
-                onChange={(e) => updateQuestion(qIndex, 'explanation', e.target.value)}
-                placeholder="Giải thích (tùy chọn)"
-                rows={2}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 mt-3"
+                onChange={e => updateQuestion(qIndex, 'explanation', e.target.value)}
+                placeholder="Giải thích đáp án (hiển thị sau khi nộp bài)"
+                rows={3}
+                className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
-          </div>
-        ))}
+          ))}
 
-        <div className="flex justify-center">
-          <button
-            onClick={addQuestion}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-          >
-            <Plus className="w-5 h-5" /> Thêm câu hỏi
-          </button>
+          {/* Nút thêm câu hỏi */}
+          <div className="text-center mt-16">
+            <button
+              onClick={addQuestion}
+              className="inline-flex items-center gap-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-10 py-6 rounded-2xl text-2xl font-bold shadow-2xl hover:shadow-purple-500/50 transition-all transform hover:scale-105"
+            >
+              <Plus className="w-9 h-9" />
+              Thêm câu hỏi mới
+            </button>
+          </div>
+
         </div>
       </div>
     </div>
