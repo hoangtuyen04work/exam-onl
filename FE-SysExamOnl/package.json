@@ -19,6 +19,7 @@
     "@tanstack/react-query-devtools": "^5.90.2",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
+<<<<<<< HEAD
 
     "framer-motion": "^12.23.24",
 
@@ -26,18 +27,20 @@
     "install": "^0.13.0",
     "lucide-react": "^0.553.0",
 
+=======
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.545.0",
+>>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-icons": "^5.5.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.3",
     "react-toastify": "^11.0.5",
-    "tailwindcss": "^4.1.14",
-    "xlsx": "^0.18.5"
+    "tailwindcss": "^4.1.14"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
-    "@types/file-saver": "^2.0.7",
     "@types/node": "^24.6.2",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
