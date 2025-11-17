@@ -8,38 +8,14 @@ import { exportExams } from '../../Dashboard/import_export/exportExams'
 import { importExams } from "../../Dashboard/import_export/importExams";
 
 interface ExamItem {
-  id: string | number
+  examId: number
   name: string
   description: string
-  totalPoint: string
   numberQuestions: number
-  startTime: string
-  endTime: string
-  durationMinutes: number
 }
-
-interface SessionResult {
-  examSessionId: number
-  code: string
-  inviteLink: string
-  name: string
-  description: string
-  expiredAt: string
-  startAt: string
-  ownerName: string
-}
-
-const DURATIONS = [
-  { value: 15, label: '15 phút' },
-  { value: 30, label: '30 phút' },
-  { value: 45, label: '45 phút' },
-  { value: 60, label: '60 phút' },
-  { value: 90, label: '90 phút' },
-  { value: 120, label: '120 phút' }
-]
 
 export default function ExamsTab() {
-  const [list, setList] = useState<ExamItem[]>([])
+  const [exams, setExams] = useState<ExamItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedExams, setSelectedExams] = useState<Map<number | string, boolean>>(new Map())
   const [modalData, setModalData] = useState<SessionResult | null>(null)
@@ -125,14 +101,7 @@ export default function ExamsTab() {
 
   const openTimeModal = (examId: number | string) => {
     setSelectedExamId(examId)
-    const now = new Date()
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-    const start = now.toISOString().slice(0, 16)
-    const end = new Date(now.getTime() + 3600 * 1000).toISOString().slice(0, 16)
-    setStartAt(start)
-    setExpiredAt(end)
-    setDuration('60')
-    setShowTimeModal(true)
+    setShowCreateModal(true)
   }
 
   const handleCreateSession = async () => {
@@ -179,8 +148,6 @@ export default function ExamsTab() {
     }
   }
 
-  const formatDateTime = (iso: string) => format(new Date(iso), 'dd/MM/yyyy HH:mm')
-
   return (
     <div className="p-6">
 
@@ -195,9 +162,8 @@ export default function ExamsTab() {
             onClick={() => navigate('/teacher/exams/create')}
             className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow hover:shadow-xl transition-all"
           >
-            + Tạo đề thi
+            + Tạo đề thi mới
           </button>
-
           <button
             onClick={() => navigate('/teacher/questions')}
             className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl shadow hover:shadow-xl transition-all"

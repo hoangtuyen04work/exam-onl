@@ -12,6 +12,7 @@ interface Student {
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'
   submittedAt?: string
   score?: number
+  exitCount: number
 }
 
 export default function ExamSessionDetail() {
@@ -32,19 +33,18 @@ export default function ExamSessionDetail() {
       setLoading(true)
       try {
         const res = await axiosClient.get(`/teacher/exam-sessions/${examSessionId}`)
-        
+       
         // Chuẩn Spring Pageable
         const items = Array.isArray(res.data.items) ? res.data.items : []
-
         const mapped: Student[] = items.map((it: any) => ({
           examSessionStudentId: it.examSessionStudentId ?? 0,
           studentId: it.studentId ?? 0,
           studentName: it.studentName ?? 'Không tên',
           status: it.status ?? 'NOT_STARTED',
           submittedAt: it.submittedAt,
-          score: it.score
+          score: it.score,
+          exitCount: it.exitCount ?? 0
         }))
-
         setStudents(mapped)
       } catch (err: any) {
         toast.error('Không tải được danh sách sinh viên')
@@ -127,6 +127,9 @@ export default function ExamSessionDetail() {
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trạng thái
                 </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Số lần thoát
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thời gian nộp
                 </th>
@@ -134,7 +137,7 @@ export default function ExamSessionDetail() {
                   Điểm
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                 Hành động
+                  Hành động
                 </th>
               </tr>
             </thead>
@@ -157,6 +160,9 @@ export default function ExamSessionDetail() {
                         </span>
                       </div>
                     </td>
+                    <td className="px-4 py-3 text-center text-sm text-gray-900">
+                      {s.exitCount}
+                    </td>
                     <td className="px-4 py-3 text-xs text-gray-600">
                       {formatTime(s.submittedAt)}
                     </td>
@@ -164,18 +170,18 @@ export default function ExamSessionDetail() {
                       {s.score !== undefined ? s.score.toFixed(1) : '—'}
                     </td>
                     <td className="px-4 py-3 text-center">
-  <button
-    onClick={(e) => {
-      e.stopPropagation() // Ngăn click row
-      navigate('/teacher/exam-sessions/submission', {
-        state: { examSessionStudentId: s.examSessionStudentId }
-      })
-    }}
-    className="text-blue-600 hover:text-blue-800 text-xs font-medium underline"
-  >
-    Xem bài
-  </button>
-</td>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation() // Ngăn click row
+                          navigate('/teacher/exam-sessions/submission', {
+                            state: { examSessionStudentId: s.examSessionStudentId }
+                          })
+                        }}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium underline"
+                      >
+                        Xem bài
+                      </button>
+                    </td>
                   </tr>
                 )
               })}

@@ -252,7 +252,7 @@ export default function QuestionPaperBank() {
             {/* LIST - CHỈ SCROLL KHI CẦN */}
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-5 border border-gray-200">
               <h2 className="text-xl font-bold flex items-center gap-2 mb-4 text-gray-800">
-                <FileText size={20} className="text-blue-600" /> Danh sách đề thi
+                <FileText size={20} className="text-blue-600" /> Danh sách ngân hàng đề thi
               </h2>
 
               <div className="space-y-3 max-h-96 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300">
