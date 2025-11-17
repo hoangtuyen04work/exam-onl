@@ -231,8 +231,8 @@ export default function ExamsTab() {
         name: 'Phiên thi tùy chỉnh',
         description: 'Tạo từ giao diện giáo viên',
         durationMinutes: durationMin,
-        startAt: `${startAt}:00+07:00`,
-        expiredAt: `${expiredAt}:00+07:00`
+        startAt: toVNISO(startAt),
+        expiredAt: toVNISO(expiredAt)
       }
 
       const res = await axiosClient.post('/teacher/exam-sessions', payload)
@@ -250,16 +250,7 @@ export default function ExamsTab() {
     }
   }
 
-  const formatDateTime = (iso: string) => {
-    return new Date(iso).toLocaleString('vi-VN', {
-      timeZone: 'Asia/Ho_Chi_Minh',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
+  const formatDateTime = (iso: string) => format(new Date(iso), 'dd/MM/yyyy HH:mm')
 
   return (
     <div className='p-6'>
@@ -303,7 +294,7 @@ export default function ExamsTab() {
                   🧩 {exam.numberQuestions} câu — ⏱ {exam.durationMinutes} phút
                 </div>
                 <div className='text-[11px] text-gray-400'>
-                  📅 {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : '—'}
+                  📅 {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN') : '—'}
                 </div>
               </div>
 
