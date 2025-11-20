@@ -6,7 +6,10 @@ import { toast } from 'react-toastify'
 import { Clock, CheckCircle, AlertCircle, Maximize2 } from 'lucide-react'
 import studentApi from '../../../api/student-api'
 import { useFullScreen } from '../../../hooks/useFullScreen'
+import { getStompClient } from '../../../utils/websocket' // ← Thêm dòng này
 import type { ExamSessionContent } from '../../../types/examSession'
+
+type StudentEventType = 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'FOCUS_GAINED' | 'SUBMIT'
 
 export default function ExamPage() {
   const { examId } = useParams()
@@ -18,54 +21,72 @@ export default function ExamPage() {
   const [timeLeft, setTimeLeft] = useState(3600)
   const [isExamStarted, setIsExamStarted] = useState(false)
   const [examSessionStudentId, setExamSessionStudentId] = useState<number | null>(null)
-  const autoSaveRef = useRef<number | null>(null)
+  const [examSessionId, setExamSessionId] = useState<number | null>(null) // ← Để gửi event
 
-  // NGĂN GỌI doExam 2 LẦN
+  const autoSaveRef = useRef<number | null>(null)
   const hasStarted = useRef(false)
-  // NGĂN SUBMIT 2 LẦN
   const hasSubmitted = useRef(false)
-const examDataRef = useRef<ExamSessionContent | null>(null)
+  const examDataRef = useRef<ExamSessionContent | null>(null)
+
   const parsedId = Number(examId)
   const [isLoading, setIsLoading] = useState(false)
   const [exam, setExam] = useState<ExamSessionContent | undefined>(undefined)
   const [examStatus, setExamStatus] = useState<'not-started' | 'expired' | 'available' | null>(null)
 
-  // === GỌI doExam CHỈ 1 LẦN, KHÔNG BỊ HỦY ===
- useEffect(() => {
-  if (!parsedId || hasStarted.current) return;
-  hasStarted.current = true;
+  // ==================== WEBSOCKET SEND EVENT ====================
+  const sendStudentEvent = useCallback((type: StudentEventType) => {
+    if (!examSessionId) return
 
-  setIsLoading(true);
+    const client = getStompClient()
+    if (client.connected) {
+      client.publish({
+        destination: '/app/student/event',
+        body: JSON.stringify({
+          examSessionId: examSessionId,
+          type,
+        }),
+      })
+    } else {
+      // Nếu chưa kết nối, thử lại sau 1s (đảm bảo event không bị mất)
+      setTimeout(() => sendStudentEvent(type), 1000)
+    }
+  }, [examSessionId])
 
-  studentApi
-    .doExam(parsedId)
-    .then((res: any) => {
-      console.log('doExam SUCCESS:', res);
-      if (res?.success) {
-        const examData = res.data;
-        examDataRef.current = examData;
+  // ==================== DO EXAM ====================
+  useEffect(() => {
+    if (!parsedId || hasStarted.current) return
+    hasStarted.current = true
+    setIsLoading(true)
 
-        if (examData.submitted) {
-          navigate(`/exam/${parsedId}/result`, { replace: true });
-          return;
+    studentApi
+      .doExam(parsedId)
+      .then((res: any) => {
+        if (res?.success) {
+          const examData = res.data
+          examDataRef.current = examData
+
+          if (examData.submitted) {
+            navigate(`/exam/${parsedId}/result`, { replace: true })
+            return
+          }
+
+          setExam(examData)
+          setExamSessionId(examData.examSessionId) // ← Lưu để gửi event
+          setExamStatus('available')
+        } else {
+          toast.error(res?.message || 'Không thể tải đề thi')
         }
+      })
+      .catch((err) => {
+        toast.error(err?.response?.data?.message || 'Lỗi tải bài thi')
+      })
+      .finally(() => setIsLoading(false))
+  }, [parsedId, navigate])
 
-        setExam(examData);
-        setExamStatus('available');
-      } else {
-        toast.error(res?.message || 'Không thể tải đề thi');
-      }
-    })
-    .catch((err) => {
-      console.error('doExam ERROR:', err);
-      toast.error(err?.response?.data?.message || 'Lỗi tải bài thi');
-    })
-    .finally(() => setIsLoading(false));
-}, [parsedId]);
-
-  // === Fullscreen ===
+  // ==================== FULLSCREEN ====================
   const handleEndExamForced = useCallback(() => {
     if (isExamStarted) {
+      sendStudentEvent('LEAVE')
       setIsExamStarted(false)
       toast.error('Bạn đã thoát chế độ toàn màn hình — bài thi kết thúc!')
       if (examSessionStudentId) {
@@ -73,15 +94,15 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
       }
       setTimeout(() => navigate('/student'), 1500)
     }
-  }, [isExamStarted, navigate, examSessionStudentId])
+  }, [isExamStarted, navigate, examSessionStudentId, sendStudentEvent])
 
   const { requestFullscreen, exitFullscreen } = useFullScreen({
     onExit: handleEndExamForced,
     enabled: true,
-    requiredFullscreen: true
+    requiredFullscreen: true,
   })
 
-  // === SUBMIT EXAM ===
+  // ==================== SUBMIT EXAM ====================
   const handleSubmitExam = useCallback(
     async (isAutoSubmit = false) => {
       if (!exam || hasSubmitted.current) return false
@@ -92,16 +113,12 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
       const unansweredQuestions = totalQuestions - answeredQuestions
 
       if (!isAutoSubmit && unansweredQuestions > 0) {
-        const confirmSubmit = window.confirm(
-          `Bạn còn ${unansweredQuestions} câu chưa trả lời. Bạn có chắc chắn muốn nộp bài?`
-        )
+        const confirmSubmit = window.confirm(`Bạn còn ${unansweredQuestions} câu chưa trả lời. Bạn có chắc chắn muốn nộp bài?`)
         if (!confirmSubmit) {
           hasSubmitted.current = false
           return false
         }
       }
-
-      const state = isAutoSubmit ? 'DRAFT' : 'FINAL'
 
       const payload: any = {
         examSessionId: parsedId,
@@ -109,20 +126,19 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
           .filter(([_, aId]) => aId != null)
           .map(([qId, aId]) => ({
             questionId: Number(qId),
-            answerId: aId
-          }))
+            answerId: aId,
+          })),
       }
 
-      if (isAutoSubmit) {
-        payload.isAutoSubmit = true
-      }
-
-      console.log('SUBMIT PAYLOAD:', { state, payload })
+      if (isAutoSubmit) payload.isAutoSubmit = true
 
       try {
-        const res = await studentApi.submitExam(state, payload)
+        const res = await studentApi.submitExam(isAutoSubmit ? 'FINAL' : 'FINAL', payload)
 
         if (res?.success) {
+          // Gửi event SUBMIT realtime cho giáo viên
+          sendStudentEvent('SUBMIT')
+
           setIsExamStarted(false)
           await exitFullscreen()
 
@@ -144,21 +160,20 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
           const timeSpent = exam.durationMinutes * 60 - timeLeft
           navigate(`/exam/${parsedId}/result`, {
             state: { result: { ...res.data, timeSpent } },
-            replace: true
+            replace: true,
           })
           return true
         }
       } catch (err: any) {
-        console.error('Submit error:', err)
         toast.error(err?.response?.data?.message || 'Lỗi nộp bài')
         hasSubmitted.current = false
       }
       return false
     },
-    [exam, answers, parsedId, timeLeft, exitFullscreen, navigate]
+    [exam, answers, parsedId, timeLeft, exitFullscreen, navigate, sendStudentEvent]
   )
 
-  // === TIMER + AUTO SAVE ===
+  // ==================== TIMER + AUTO SAVE ====================
   useEffect(() => {
     if (!user || !exam || !isExamStarted) return
 
@@ -181,7 +196,7 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
           examSessionId: parsedId,
           questions: Object.entries(answers)
             .filter(([_, aId]) => aId != null)
-            .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
+            .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId })),
         }
         if (payload.questions.length > 0) {
           await studentApi.submitExam('DRAFT', payload)
@@ -196,18 +211,46 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
     }
   }, [user, exam, isExamStarted, answers, parsedId, handleSubmitExam])
 
-  // === EXIT EVENT ===
+  // ==================== FOCUS LOST / GAINED ====================
+  useEffect(() => {
+    if (!isExamStarted) return
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        sendStudentEvent('FOCUS_LOST')
+      } else {
+        sendStudentEvent('FOCUS_GAINED')
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [isExamStarted, sendStudentEvent])
+
+  // ==================== EXIT EVENT (beforeunload) ====================
   useEffect(() => {
     const onBeforeUnload = () => {
       if (examSessionStudentId) {
         studentApi.exitEvent({ examSessionStudentId, eventTime: new Date().toISOString() }).catch(() => {})
       }
+      if (isExamStarted) {
+        sendStudentEvent('LEAVE')
+      }
     }
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [examSessionStudentId])
+  }, [examSessionStudentId, isExamStarted, sendStudentEvent])
 
-  // === HELPER ===
+  // ==================== CLEANUP KHI RỜI COMPONENT ====================
+  useEffect(() => {
+    return () => {
+      if (isExamStarted && examSessionId) {
+        sendStudentEvent('LEAVE')
+      }
+    }
+  }, [])
+
+  // ==================== HELPER ====================
   const formatTime = (s: number) => {
     const h = String(Math.floor(s / 3600)).padStart(2, '0')
     const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0')
@@ -223,6 +266,7 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
     const success = await requestFullscreen()
     if (success) {
       setIsExamStarted(true)
+      sendStudentEvent('ENTER') // ← Gửi ENTER ngay khi bắt đầu
       toast.success('Bắt đầu làm bài!')
     } else {
       toast.error('Vui lòng cho phép toàn màn hình.')
@@ -230,6 +274,7 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
   }
 
   const handleExitExam = async () => {
+    sendStudentEvent('LEAVE')
     setIsExamStarted(false)
     await exitFullscreen()
     if (examSessionStudentId) {
@@ -251,7 +296,7 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
     }
   }
 
-  // === RENDER ===
+  // ==================== RENDER ====================
   if (isLoading) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50'>
@@ -277,7 +322,7 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
     )
   }
 
-  // === TRƯỚC KHI BẮT ĐẦU ===
+  // Trước khi bắt đầu
   if (!isExamStarted) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50 p-4'>
@@ -308,7 +353,7 @@ const examDataRef = useRef<ExamSessionContent | null>(null)
     )
   }
 
-  // === GIAO DIỆN LÀM BÀI ===
+  // Giao diện làm bài
   const currentQ = exam.questions?.[currentQuestion]
   const total = exam.questions?.length || 0
 

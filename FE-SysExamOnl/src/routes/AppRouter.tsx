@@ -17,6 +17,7 @@ import QuestionBank from '../pages/Teacher/Dashboard/Tabs/BanksTab'
 import StudentList from '../pages/Teacher/Dashboard/Tabs/StudentsTab'
 import CreateEditExam from '../pages/Teacher/Exams/CreateEditExam'
 import ExamSessionsList from '../pages/Teacher/Dashboard/Tabs/ExamSessionsList'
+import TeacherMonitoring from '../pages/Teacher/Dashboard/Tabs/TeacherMonitoring'
 
 import axiosClient from '../api/axiosClient'
 import { useDispatch } from 'react-redux'
@@ -102,6 +103,7 @@ export default function AppRouter() {
         <Route path='exam-sessions/list' element={<ExamSessionsList />} />
         <Route path='exam-sessions/detail' element={<ExamSessionDetail />} />
         <Route path='exam-sessions/submission' element={<ExamSubmissionDetail />} />
+        <Route path='monitoring/:examSessionId' element={<TeacherMonitoring />} />
       </Route>
 
       {/* 404 */}
