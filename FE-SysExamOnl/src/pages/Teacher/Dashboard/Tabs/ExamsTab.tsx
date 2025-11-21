@@ -59,15 +59,12 @@ export default function ExamsTab() {
     exportExams(ids, names);
   };
 
-<<<<<<< HEAD
   const selectedCount = Array.from(selectedExams.values()).filter(Boolean)
     .length;
-=======
-  const selectedCount = Array.from(selectedExams.values()).filter(Boolean).length;
->>>>>>> b302eaeb8bcfda52684e052ee2565286eea8f7cc
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto min-h-[calc(100vh-120px)] flex flex-col">
+
       {/* HEADER + TOOLBAR */}
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex items-center justify-between">
@@ -78,6 +75,7 @@ export default function ExamsTab() {
 
         {/* TOOLBAR */}
         <div className="flex flex-wrap gap-3 items-center bg-white p-4 rounded-xl shadow-sm border">
+
           {/* IMPORT */}
           <input
             type="file"
@@ -211,7 +209,7 @@ export default function ExamsTab() {
         </>
       )}
 
-      {/* PAGINATION */}
+      {/* PAGINATION ALWAYS BOTTOM */}
       <div className="mt-auto pt-6">
         {totalPages > 1 && (
           <div className="flex justify-center items-center gap-3">
@@ -246,10 +244,9 @@ export default function ExamsTab() {
         )}
       </div>
 
-      {/* MODAL THỜI GIAN & KẾT QUẢ - vẫn dùng từ HookExamsTab */}
+      {/* ===== MODAL THỜI GIAN ===== */}
       {showTimeModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-<<<<<<< HEAD
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fadeIn">
             <h3 className="text-lg font-semibold mb-4">Thiết lập phiên thi</h3>
 
@@ -294,7 +291,6 @@ export default function ExamsTab() {
                   ))}
                 </select>
               </div>
-
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
@@ -393,34 +389,6 @@ export default function ExamsTab() {
         </div>
       )}
 
-      {/* hidden file input for exams import */}
-      <input ref={fileInputRefExam} type='file' accept='.xlsx,.xls' className='hidden' onChange={handleImportExam} />
-
-      {/* fixed import/export buttons bottom-right */}
-      <div className='fixed bottom-6 right-6 z-50 flex flex-col gap-3'>
-        <button
-          onClick={triggerImportExam}
-          className='px-4 py-2 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md text-sm'
-          title='Import đề thi từ Excel'
-        >
-          Import
-        </button>
-        <button
-          onClick={handleExportExam}
-          className='px-4 py-2 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md text-sm'
-          title='Export các đề thi ra Excel'
-        >
-          Export
-        </button>
-      </div>
-=======
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            {/* Nội dung modal thời gian và kết quả giữ nguyên như cũ từ hook */}
-            {/* ... (giữ nguyên code modal bạn đã có trong HookExamsTab) */}
-          </div>
-        </div>
-      )}
->>>>>>> b302eaeb8bcfda52684e052ee2565286eea8f7cc
     </div>
   );
 }
