@@ -291,7 +291,7 @@ export default function ExamsTab() {
                   ))}
                 </select>
               </div>
-<<<<<<< HEAD
+
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
@@ -389,8 +389,6 @@ export default function ExamsTab() {
           </div>
         </div>
       )}
-<<<<<<< HEAD
-=======
 
       {/* hidden file input for exams import */}
       <input ref={fileInputRefExam} type='file' accept='.xlsx,.xls' className='hidden' onChange={handleImportExam} />
@@ -412,7 +410,6 @@ export default function ExamsTab() {
           Export
         </button>
       </div>
->>>>>>> 2eabc32c43b3ca16544cfdafe3e750b0f4a9e142
     </div>
   );
 }
