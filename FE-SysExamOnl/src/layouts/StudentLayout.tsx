@@ -9,9 +9,7 @@ export default function StudentLayout() {
   return (
     <>
       {!isStudentExamPage && <Header />}
-      <div className='mx-auto px-4 py-8'>
-        <Outlet />
-      </div>
+      <Outlet />
       <Footer />
     </>
   )
