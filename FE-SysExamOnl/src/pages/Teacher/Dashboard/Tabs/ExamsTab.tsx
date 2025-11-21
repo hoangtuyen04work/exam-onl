@@ -216,7 +216,7 @@ export default function ExamsTab() {
         )}
       </div>
 
-      {/* MODAL THỜI GIAN & KẾT QUẢ - vẫn dùng từ HookExamsTab */}
+      {/* ===== MODAL THỜI GIAN ===== */}
       {showTimeModal && (
         <div className='fixed inset-0 z-50 bg-black/40 flex items-center justify-center'>
           <div className='bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fadeIn'>
@@ -342,6 +342,7 @@ export default function ExamsTab() {
           </div>
         </div>
       )}
+
     </div>
   )
 }
