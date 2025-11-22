@@ -25,7 +25,11 @@ export interface QuestionContentResponse {
 export interface DoExamResponseData {
   status: 'IN_PROGRESS' | 'COMPLETED'
   examSessionId: number
+  examSessionStudentId: number // Thêm field này
   name: string
+  startedAt: string // ISO 8601 timestamp
+  expiredAt: string // ISO 8601 timestamp
+  durationMinutes: number
   questions: QuestionContentResponse[]
 }
 
