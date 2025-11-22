@@ -11,6 +11,7 @@ interface ImportAnswer {
 interface ImportQuestion {
   content: string;
   explanation: string;
+  point: number;
   answers: ImportAnswer[];
 }
 
@@ -30,23 +31,31 @@ export const importExams = async (file: File) => {
 
     const questions: ImportQuestion[] = [];
 
-    for (let i = 0; i < rows.length; i++) {
+    // BẮT ĐẦU TỪ HÀNG 2 (bỏ tiêu đề)
+    for (let i = 3; i < rows.length; i++) {
       const row = rows[i];
-      // CÂU HỎI Ở CỘT A → index 0
-      const questionContent = row[0]?.toString().trim();
+
+      // Câu hỏi nằm ở cột B (index 1)
+      const questionContent = row[1]?.toString().trim();
       if (!questionContent) continue;
 
-      // Đáp án: B, C, D, E (cột 1 đến 4)
-      const A = row[1]?.toString().trim() || "";
-      const B = row[2]?.toString().trim() || "";
-      const C = row[3]?.toString().trim() || "";
-      const D = row[4]?.toString().trim() || "";
+      // Đáp án A–D: index 2–5
+      const A = row[2]?.toString().trim() || "";
+      const B = row[3]?.toString().trim() || "";
+      const C = row[4]?.toString().trim() || "";
+      const D = row[5]?.toString().trim() || "";
 
-      // Đáp án đúng: cột F (index 5)
-      const correctAns = row[5]?.toString().trim().toUpperCase() || "";
+      // Đáp án đúng: index 6
+      const correctAns = row[6]?.toString().trim().toUpperCase() || "";
 
-      // Giải thích: cột G (index 6)
-      const explanation = row[6]?.toString().trim() || "";
+      // Giải thích: index 7
+      const explanation = row[7]?.toString().trim() || "";
+
+      //  Điểm số: index 8
+      let pointValue = Number(row[8]);
+      if (isNaN(pointValue) || pointValue <= 0) {
+        pointValue = 0; // tạm thời để 0, tí set sau
+      }
 
       const answers = [
         { content: A, correct: correctAns === "A" },
@@ -60,52 +69,55 @@ export const importExams = async (file: File) => {
       questions.push({
         content: questionContent,
         explanation,
-        answers,
+        point: pointValue,
+        answers
       });
     }
 
     if (questions.length === 0) {
-      toast.error("Không tìm thấy câu hỏi hợp lệ! Vui lòng kiểm tra cột A có câu hỏi không.");
+      toast.error("Không tìm thấy câu hỏi hợp lệ!");
       return;
     }
 
-    // TỰ ĐỘNG TẠO TÊN ĐỀ
-    const examName = `Import - ${file.name.split('.').slice(0, -1).join('.')}`;
+    // Nếu câu nào không có điểm → chia đều
+    const fallbackPoint = Number((10 / questions.length).toFixed(2));
+
+    const finalQuestions = questions.map((q, idx) => ({
+      content: q.content,
+      explanation: q.explanation,
+      point: q.point > 0 ? q.point : fallbackPoint, // ưu tiên giá trị từ Excel
+      orderColumn: idx + 1,
+      difficulty: "EASY",
+      answers: q.answers,
+    }));
 
     const payload = {
-      name: examName,
-      description: `Import từ file Excel: ${file.name}`,
+      name: `${file.name.split('.').slice(0, -1).join('.')}`,
+      description: ``,
       totalPoint: 10,
       durationMinutes: 60,
       shuffleQuestions: true,
       shuffleAnswers: true,
-      questions: questions.map((q, idx) => ({
-        content: q.content,
-        explanation: q.explanation,
-        point: Number((10 / questions.length).toFixed(2)),
-        orderColumn: idx + 1,
-        difficulty: "EASY",
-        answers: q.answers,
-      })),
+      questions: finalQuestions,
     };
-    //
 
-    toast.info(`Tạo đề: ${questions.length} câu`);
+    toast.info(`Tạo đề: ${finalQuestions.length} câu`);
 
     const response = await axiosClient.post("/teacher/exams", payload, {
       headers: { "Content-Type": "application/json" },
     });
 
-    console.log("Response:", response.data);
-
-    let examId = null;
-    if (response.data?.data?.id) examId = response.data.data.id;
-    else if (response.data?.data) examId = response.data.data;
-    else if (response.data?.id) examId = response.data.id;
+    const examId =
+      response.data?.data?.id ||
+      response.data?.data ||
+      response.data?.id ||
+      null;
 
     if (!examId) throw new Error("Không nhận được ID");
 
-    toast.success(`TẠO ĐỀ THÀNH CÔNG! ID: ${examId} | ${questions.length} câu`);
+    toast.success(
+      `TẠO ĐỀ THÀNH CÔNG! ID: ${examId} | ${finalQuestions.length} câu`
+    );
   } catch (err: any) {
     const msg = err?.response?.data?.message || err.message;
     toast.error("Lỗi: " + msg);
