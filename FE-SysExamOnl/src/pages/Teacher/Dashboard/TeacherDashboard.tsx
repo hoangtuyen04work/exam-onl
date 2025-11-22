@@ -49,7 +49,7 @@ export default function TeacherDashboard() {
               onClick={() => navigate("/teacher")}
             >
               <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-xl">
-                A
+                ES
               </div>
               {sidebarOpen && (
                 <div>
@@ -136,29 +136,9 @@ export default function TeacherDashboard() {
 
         {/* MAIN CONTENT */}
         <div className="flex-1 flex flex-col">
-          <header className="xl:hidden bg-white/90 backdrop-blur-2xl shadow-lg border-b border-white/40 z-10">
-            <div className="px-6 py-4 flex items-center justify-between">
-              <button
-                onClick={() => setSidebarOpen(v => !v)}
-                className="p-3 rounded-xl hover:bg-gray-100"
-              >
-                <Menu size={26} className="text-gray-700" />
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold">
-                  A
-                </div>
-                <div>
-                  <p className="font-bold text-gray-800">Exam System</p>
-                  <p className="text-xs text-gray-500">Giáo viên</p>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <main className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50/50 to-indigo-50/30">
-            <div className="min-h-full px-6 py-8 lg:px-10 lg:py-10">
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/40 p-8">
+          <main className="flex-1 overflow-hidden bg-gradient-to-br from-gray-50/50 to-indigo-50/30">
+            <div className="min-h-full h-full px-6 py-8 lg:px-10 lg:py-10 overflow-hidden ">
+              <div className="h-full w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/40 p-8 overflow-hidden">
                 <Outlet />
               </div>
             </div>
