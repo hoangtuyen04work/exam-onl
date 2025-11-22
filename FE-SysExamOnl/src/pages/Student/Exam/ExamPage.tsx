@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // cspell:disable-next-line
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
@@ -8,6 +8,7 @@ import { AlertCircle, Maximize2, PlayCircle, XCircle } from 'lucide-react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { studentApi, type SubmitPayload } from '../../../api/student-api'
 import { useFullScreen } from '../../../hooks/useFullScreen'
+import { getBaseUrl, loadFromLocalStorage, saveToLocalStorage, useDebounce } from '../../../utils/utils'
 
 export default function ExamPage() {
   const { examId } = useParams<{ examId: string }>()
@@ -15,26 +16,35 @@ export default function ExamPage() {
   const user = useSelector((state: any) => state.auth.user)
 
   const examSessionId = examId ? Number(examId) : null
-
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [timeLeft, setTimeLeft] = useState(0)
   const [isExamStarted, setIsExamStarted] = useState(false)
-  const [examSessionStudentId] = useState<number | null>(null)
-  const [durationMinutes, setDurationMinutes] = useState(0)
-  const [startedAt, setStartedAt] = useState<Date | null>(null)
+  const [examSessionStudentId, setExamSessionStudentId] = useState<number | null>(null)
+  const [expiredAt, setExpiredAt] = useState<Date | null>(null)
   const [examName, setExamName] = useState<string>('')
+  const [isTimeExpired, setIsTimeExpired] = useState(false)
 
+  // === REFS (QUAN TRỌNG: Dùng để truy cập state mới nhất trong Interval/Event) ===
   const autoSaveRef = useRef<number | null>(null)
+  const timerRef = useRef<number | null>(null)
   const hasSubmitted = useRef(false)
-  const answersRef = useRef<Record<number, number>>({})
+  const submitExamRef = useRef<((state: 'DRAFT' | 'FINAL') => void) | null>(null)
 
-  // Cập nhật ref mỗi khi answers thay đổi
+  const answersRef = useRef<Record<number, number>>({})
+  const isExamStartedRef = useRef(false)
+  const examSessionStudentIdRef = useRef<number | null>(null)
+  const lastExitEventTimeRef = useRef<number>(0) // Để debounce EXIT events
+
+  // Luôn cập nhật Ref mỗi khi state thay đổi để các hàm chạy ngầm đọc được
   useEffect(() => {
     answersRef.current = answers
-  }, [answers])
+    isExamStartedRef.current = isExamStarted
+    examSessionStudentIdRef.current = examSessionStudentId
+  }, [answers, isExamStarted, examSessionStudentId])
 
-  // === 1. LOAD EXAM DATA ===
+  const debouncedAnswers = useDebounce(answers, 500)
+
   const {
     data: examData,
     isLoading: isExamLoading,
@@ -44,65 +54,419 @@ export default function ExamPage() {
     queryKey: ['doExam', examSessionId],
     queryFn: () => studentApi.doExam(examSessionId!),
     enabled: !!examSessionId,
-    retry: false
+    retry: 1,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true
   })
 
   const exam = examData?.data
 
-  // === LOAD JOIN EXAM INFO FROM LOCALSTORAGE ===
+  // === LOAD LOGIC (Restore from API/Local) ===
   useEffect(() => {
-    if (examSessionId) {
-      const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-      if (savedInfo) {
-        try {
-          const info = JSON.parse(savedInfo)
-          setDurationMinutes(info.durationMinutes || 0)
-          setExamName(info.name || '')
-
-          // Restore startedAt nếu đã bắt đầu làm bài trước đó
-          if (info.startedAt) {
-            const savedStartedAt = new Date(info.startedAt)
-            setStartedAt(savedStartedAt)
-            // Tính toán timeLeft dựa trên startedAt đã lưu
-            const now = new Date()
-            const elapsed = Math.floor((now.getTime() - savedStartedAt.getTime()) / 1000)
-            const totalSeconds = (info.durationMinutes || 0) * 60
-            const remaining = Math.max(0, totalSeconds - elapsed)
-            setTimeLeft(remaining)
-          }
-        } catch (e) {
-          console.error('Error parsing saved exam info:', e)
+    if (!exam) {
+      if (examSessionId && isExamError) {
+        const savedInfo = loadFromLocalStorage(examSessionId)
+        if (savedInfo) {
+          if (savedInfo.savedAnswers) setAnswers(savedInfo.savedAnswers)
+          if (savedInfo.expiredAt) setExpiredAt(new Date(savedInfo.expiredAt))
+          if (savedInfo.examSessionStudentId) setExamSessionStudentId(savedInfo.examSessionStudentId)
+          if (savedInfo.examName) setExamName(savedInfo.examName)
         }
       }
+      return
     }
-  }, [examSessionId])
 
-  // === MUTATIONS ===
+    setExamName(exam.name)
+
+    if (exam.examSessionStudentId) {
+      setExamSessionStudentId(exam.examSessionStudentId)
+      saveToLocalStorage(examSessionId!, { examSessionStudentId: exam.examSessionStudentId })
+    }
+
+    if (exam.expiredAt) {
+      const expiredDate = new Date(exam.expiredAt)
+      setExpiredAt(expiredDate)
+      saveToLocalStorage(examSessionId!, { expiredAt: exam.expiredAt })
+    }
+
+    // Restore answers
+    const restoredAnswers: Record<number, number> = {}
+    exam.questions.forEach((q) => {
+      const selectedAnswer = q.answers.find((a) => a.selected)
+      if (selectedAnswer) {
+        restoredAnswers[q.questionId] = selectedAnswer.answerId
+      }
+    })
+
+    if (Object.keys(restoredAnswers).length > 0) {
+      setAnswers(restoredAnswers)
+    } else {
+      const savedInfo = loadFromLocalStorage(examSessionId!)
+      if (savedInfo?.savedAnswers && Object.keys(savedInfo.savedAnswers).length > 0) {
+        setAnswers(savedInfo.savedAnswers)
+      }
+    }
+
+    if (exam.status === 'COMPLETED') {
+      navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+      return
+    }
+  }, [exam, examSessionId, navigate, isExamError])
+
   const submitMutation = useMutation({
     mutationFn: ({ state, payload }: { state: 'DRAFT' | 'FINAL'; payload: SubmitPayload }) =>
       studentApi.submitExam(state, payload),
     onSuccess: (_, { state }) => {
-      if (state === 'DRAFT') {
-        // Không hiển thị toast cho DRAFT để tránh spam
-      } else {
+      if (state === 'FINAL') {
         toast.success('Nộp bài thành công!')
       }
     },
-    onError: () => toast.error('Lỗi lưu bài')
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Lỗi lưu bài'
+      toast.error(message)
+    }
   })
 
-  const exitMutation = useMutation({
-    mutationFn: studentApi.exitEvent
-  })
+  // Lấy timer trực tiếp từ API expireAt sau đó tính
+  const calculateTimeLeft = useCallback((): number => {
+    if (!expiredAt) return 0
+    const now = new Date()
+    const remaining = Math.max(0, Math.floor((expiredAt.getTime() - now.getTime()) / 1000))
+    return remaining
+  }, [expiredAt])
 
-  // === FULLSCREEN ===
+  const checkTimeExpired = useCallback((): boolean => {
+    if (!expiredAt) return false
+    const now = new Date()
+    return now.getTime() >= expiredAt.getTime()
+  }, [expiredAt])
+
+  useEffect(() => {
+    if (!isExamStarted || !expiredAt) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+      if (expiredAt && !isExamStarted) {
+        const remaining = calculateTimeLeft()
+        setTimeLeft(remaining)
+        if (remaining <= 0) setIsTimeExpired(true)
+      }
+      return
+    }
+
+    const initialTimeLeft = calculateTimeLeft()
+    setTimeLeft(initialTimeLeft)
+
+    if (initialTimeLeft <= 0 || checkTimeExpired()) {
+      setIsTimeExpired(true)
+      if (!hasSubmitted.current && submitExamRef.current) {
+        submitExamRef.current('FINAL')
+      }
+      return
+    }
+
+    setIsTimeExpired(false)
+
+    timerRef.current = window.setInterval(() => {
+      const remaining = calculateTimeLeft()
+      setTimeLeft(remaining)
+
+      if (remaining <= 0 || checkTimeExpired()) {
+        setIsTimeExpired(true)
+        if (timerRef.current) {
+          clearInterval(timerRef.current)
+          timerRef.current = null
+        }
+        if (!hasSubmitted.current && submitExamRef.current) {
+          submitExamRef.current('FINAL')
+        }
+      }
+    }, 1000)
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+    }
+  }, [isExamStarted, expiredAt, calculateTimeLeft, checkTimeExpired])
+
+  // Auto draft lại bài thi 30s call 1 lần
+  useEffect(() => {
+    if (!isExamStarted || !examSessionId) {
+      if (autoSaveRef.current) {
+        clearInterval(autoSaveRef.current)
+        autoSaveRef.current = null
+      }
+      return
+    }
+
+    const performAutoSave = () => {
+      const currentAnswers = answersRef.current
+      if (Object.keys(currentAnswers).length === 0) return
+
+      const payload: SubmitPayload = {
+        examSessionId,
+        questions: Object.entries(currentAnswers)
+          .filter(([, aId]) => aId != null)
+          .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
+      }
+
+      studentApi
+        .submitExam('DRAFT', payload)
+        .then(() => {
+          console.log('Auto-save draft success')
+          saveToLocalStorage(examSessionId, { savedAnswers: currentAnswers })
+        })
+        .catch((err) => {
+          console.error('Auto-save draft failed:', err)
+        })
+    }
+
+    // Chạy mỗi 30 giây
+    autoSaveRef.current = window.setInterval(performAutoSave, 30_000)
+
+    return () => {
+      if (autoSaveRef.current) {
+        clearInterval(autoSaveRef.current)
+        autoSaveRef.current = null
+      }
+    }
+  }, [isExamStarted, examSessionId]) // Chỉ re-run khi bắt đầu/kết thúc thi
+
+  useEffect(() => {
+    if (!examSessionId || Object.keys(debouncedAnswers).length === 0) return
+    saveToLocalStorage(examSessionId, { savedAnswers: debouncedAnswers })
+  }, [debouncedAnswers, examSessionId])
+
+  // Gửi logs exit tab, chuyển tab, cheets
+  const sendEventLog = useCallback(
+    (type: 'EXIT' | 'SUBMIT_DRAFT') => {
+      const sId = examSessionStudentIdRef.current
+      const baseURL = getBaseUrl()
+
+      if (!baseURL) {
+        console.error('[DEBUG] sendEventLog: baseURL is empty, cannot send event')
+        return
+      }
+
+      // 1. Gửi sự kiện thoát màn hình/tab
+      if (type === 'EXIT' && sId) {
+        // Debounce: Tránh gửi EXIT event quá nhiều lần trong 2 giây
+        const now = Date.now()
+        const timeSinceLastExit = now - lastExitEventTimeRef.current
+        if (timeSinceLastExit < 2000 && lastExitEventTimeRef.current > 0) {
+          console.log(`[DEBUG] EXIT event debounced (${timeSinceLastExit}ms since last), skipping`)
+          return
+        }
+        lastExitEventTimeRef.current = now
+        const url = `${baseURL}/student/exam/exit`
+        const body = JSON.stringify({
+          examSessionStudentId: sId,
+          eventTime: new Date().toISOString()
+        })
+
+        // Lấy token từ localStorage để thêm vào header
+        const token =
+          localStorage.getItem('authToken') ||
+          localStorage.getItem('auth_token') ||
+          localStorage.getItem('access_token')
+        const headers: HeadersInit = { 'Content-Type': 'application/json' }
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+
+        console.log(`[DEBUG] Sending EXIT event to: ${url}`, { examSessionStudentId: sId, body, hasToken: !!token })
+
+        fetch(url, {
+          method: 'POST',
+          headers,
+          body: body,
+          keepalive: true // Quan trọng: Giữ request sống khi tab chết
+        })
+          .then((response) => {
+            console.log(`[DEBUG] EXIT event response status: ${response.status}`, response)
+            if (!response.ok) {
+              console.error(`[DEBUG] EXIT event failed with status: ${response.status}`)
+            }
+            return response.json().catch(() => ({}))
+          })
+          .then((data) => {
+            console.log(`[DEBUG] EXIT event success:`, data)
+          })
+          .catch((e) => {
+            console.error('[DEBUG] Send exit event error:', e)
+          })
+      } else if (type === 'EXIT' && !sId) {
+        console.warn('[DEBUG] sendEventLog EXIT: examSessionStudentId is null, cannot send event')
+      }
+
+      // 2. Gửi Draft cuối cùng
+      if (type === 'SUBMIT_DRAFT' && examSessionId) {
+        const currentAnswers = answersRef.current
+        if (Object.keys(currentAnswers).length === 0) {
+          console.log('[DEBUG] sendEventLog SUBMIT_DRAFT: No answers to submit')
+          return
+        }
+
+        const payload = {
+          state: 'DRAFT',
+          examSessionId: examSessionId,
+          questions: Object.entries(currentAnswers).map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
+        }
+
+        const token =
+          localStorage.getItem('authToken') ||
+          localStorage.getItem('auth_token') ||
+          localStorage.getItem('access_token')
+        const headers: HeadersInit = { 'Content-Type': 'application/json' }
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+
+        console.log(`[DEBUG] Sending SUBMIT_DRAFT to: ${baseURL}/student/exam/submit?state=DRAFT`, payload)
+
+        fetch(`${baseURL}/student/exam/submit?state=DRAFT`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+          keepalive: true
+        })
+          .then((response) => {
+            console.log(`[DEBUG] SUBMIT_DRAFT response status: ${response.status}`)
+            if (!response.ok) {
+              console.error(`[DEBUG] SUBMIT_DRAFT failed with status: ${response.status}`)
+            }
+            return response.json().catch(() => ({}))
+          })
+          .then((data) => {
+            console.log(`[DEBUG] SUBMIT_DRAFT success:`, data)
+          })
+          .catch((e) => {
+            console.error('[DEBUG] Send draft on close error:', e)
+          })
+      }
+    },
+    [examSessionId]
+  )
+
+  // === VISIBILITY CHANGE (Tab Hidden) ===
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isExamStartedRef.current) {
+        console.log('[DEBUG] Tab hidden detected - sending EXIT event')
+        sendEventLog('EXIT')
+      } else if (!document.hidden && isExamStartedRef.current) {
+        console.log('[DEBUG] Tab visible again')
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [sendEventLog])
+
+  // === BEFORE UNLOAD (Close/Reload Tab) ===
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isExamStartedRef.current) {
+        sendEventLog('SUBMIT_DRAFT')
+        sendEventLog('EXIT')
+
+        // Lưu local storage lần cuối
+        if (examSessionId) {
+          saveToLocalStorage(examSessionId, {
+            savedAnswers: answersRef.current,
+            isStarted: false
+          })
+        }
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [examSessionId, sendEventLog])
+
+  // === FULLSCREEN LOGIC ===
   const handleEndExamForced = useCallback(() => {
-    if (examSessionStudentId) {
-      exitMutation.mutate({ examSessionStudentId, eventTime: new Date().toISOString() })
+    if (examSessionStudentIdRef.current) {
+      console.log('[DEBUG] Fullscreen exit detected - sending EXIT event')
+      sendEventLog('EXIT')
       toast.error('Thoát toàn màn hình — bài thi kết thúc!')
       setTimeout(() => navigate('/student'), 1500)
     }
-  }, [examSessionStudentId, exitMutation, navigate])
+  }, [navigate, sendEventLog])
+
+  // === FULLSCREEN CHANGE LISTENER (Additional to hook) ===
+  // Thêm listener riêng để đảm bảo gọi sendEventLog khi thoát fullscreen
+  // Note: handleEndExamForced từ hook cũng sẽ gọi sendEventLog, nhưng listener này đảm bảo không bị miss
+  useEffect(() => {
+    if (!isExamStarted) return
+
+    const handleFullscreenChange = () => {
+      const isFullscreen = !!document.fullscreenElement
+      console.log(`[DEBUG] Fullscreen change detected - isFullscreen: ${isFullscreen}`)
+
+      if (!isFullscreen && isExamStartedRef.current) {
+        console.log('[DEBUG] Exited fullscreen (from listener) - sending EXIT event')
+        sendEventLog('EXIT')
+      }
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+    }
+  }, [isExamStarted, sendEventLog])
+
+  // === WINDOW RESIZE LISTENER ===
+  // Gửi event khi resize window (có thể là dấu hiệu thoát fullscreen hoặc minimize)
+  useEffect(() => {
+    if (!isExamStarted) return
+
+    let resizeTimer: number | null = null
+    const handleResize = () => {
+      // Debounce resize để tránh gọi quá nhiều
+      if (resizeTimer) {
+        clearTimeout(resizeTimer)
+      }
+
+      resizeTimer = window.setTimeout(() => {
+        const isFullscreen = !!document.fullscreenElement
+        console.log(
+          `[DEBUG] Window resize detected - isFullscreen: ${isFullscreen}, window size: ${window.innerWidth}x${window.innerHeight}`
+        )
+
+        // Nếu đang trong fullscreen nhưng window size nhỏ hơn màn hình => có thể đã minimize
+        if (isFullscreen && isExamStartedRef.current) {
+          const screenWidth = window.screen.width
+          const screenHeight = window.screen.height
+          const windowWidth = window.innerWidth
+          const windowHeight = window.innerHeight
+
+          // Nếu window nhỏ hơn đáng kể so với screen => có thể đã minimize
+          if (windowWidth < screenWidth * 0.8 || windowHeight < screenHeight * 0.8) {
+            console.log('[DEBUG] Window appears minimized while in fullscreen - sending EXIT event')
+            sendEventLog('EXIT')
+          }
+        }
+      }, 500)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      if (resizeTimer) {
+        clearTimeout(resizeTimer)
+      }
+    }
+  }, [isExamStarted, sendEventLog])
 
   const { requestFullscreen, exitFullscreen } = useFullScreen({
     onExit: handleEndExamForced,
@@ -110,6 +474,7 @@ export default function ExamPage() {
     requiredFullscreen: true
   })
 
+  // === SUBMIT EXAM ACTION ===
   const submitExam = useCallback(
     (state: 'DRAFT' | 'FINAL') => {
       if (!examSessionId || (hasSubmitted.current && state === 'FINAL')) return
@@ -117,7 +482,7 @@ export default function ExamPage() {
 
       const payload: SubmitPayload = {
         examSessionId,
-        questions: Object.entries(answers)
+        questions: Object.entries(answersRef.current)
           .filter(([, aId]) => aId != null)
           .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
       }
@@ -126,24 +491,8 @@ export default function ExamPage() {
         { state, payload },
         {
           onSuccess: () => {
-            // Lưu answers vào localStorage sau khi save thành công
             if (state === 'DRAFT') {
-              const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-              if (savedInfo) {
-                try {
-                  const info = JSON.parse(savedInfo)
-                  localStorage.setItem(
-                    `exam_${examSessionId}`,
-                    JSON.stringify({
-                      ...info,
-                      savedAnswers: answers,
-                      lastSavedAt: new Date().toISOString()
-                    })
-                  )
-                } catch (e) {
-                  console.error('Error saving answers to localStorage:', e)
-                }
-              }
+              saveToLocalStorage(examSessionId, { savedAnswers: answersRef.current })
             }
           }
         }
@@ -151,351 +500,104 @@ export default function ExamPage() {
 
       if (state === 'FINAL') {
         setIsExamStarted(false)
+        setIsTimeExpired(true)
         exitFullscreen()
         if (autoSaveRef.current) {
           clearInterval(autoSaveRef.current)
           autoSaveRef.current = null
         }
-        // Xóa thông tin đã lưu
+        if (timerRef.current) {
+          clearInterval(timerRef.current)
+          timerRef.current = null
+        }
         localStorage.removeItem(`exam_${examSessionId}`)
         navigate(`/student/exam/${examSessionId}/result`, { replace: true })
       }
     },
-    [examSessionId, answers, navigate, submitMutation, exitFullscreen]
+    [examSessionId, navigate, submitMutation, exitFullscreen]
   )
 
   useEffect(() => {
-    if (exam && exam.questions) {
-      setExamName(exam.name)
+    submitExamRef.current = submitExam
+  }, [submitExam])
 
-      const restoredAnswers: Record<number, number> = {}
-      exam.questions.forEach((q) => {
-        const selectedAnswer = q.answers.find((a) => a.selected)
-        if (selectedAnswer) {
-          restoredAnswers[q.questionId] = selectedAnswer.answerId
-        }
-      })
-
-      let finalAnswers = { ...restoredAnswers }
-
-      // Nếu API không có answers hoặc ít hơn, thử restore từ localStorage
-      if (Object.keys(restoredAnswers).length === 0) {
-        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-        if (savedInfo) {
-          try {
-            const info = JSON.parse(savedInfo)
-            if (info.savedAnswers && Object.keys(info.savedAnswers).length > 0) {
-              finalAnswers = { ...info.savedAnswers }
-            }
-          } catch (e) {
-            console.error('Error restoring answers from localStorage:', e)
-          }
-        }
-      }
-
-      if (Object.keys(finalAnswers).length > 0) {
-        setAnswers(finalAnswers)
-      }
-
-      if (exam.status === 'COMPLETED') {
-        navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-        return
-      }
-    }
-  }, [exam, examSessionId, navigate])
-
-  useEffect(() => {
-    if (!isExamStarted || !durationMinutes || !startedAt) return
-
-    const calculateTimeLeft = () => {
-      const now = new Date()
-      const elapsed = Math.floor((now.getTime() - startedAt.getTime()) / 1000)
-      const totalSeconds = durationMinutes * 60
-      const remaining = Math.max(0, totalSeconds - elapsed)
-      return remaining
-    }
-
-    const initialTimeLeft = calculateTimeLeft()
-    setTimeLeft(initialTimeLeft)
-
-    const timer = setInterval(() => {
-      const remaining = calculateTimeLeft()
-      setTimeLeft(remaining)
-      if (remaining <= 0) {
-        submitExam('FINAL')
-        clearInterval(timer)
-      }
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [isExamStarted, durationMinutes, startedAt, submitExam])
-
-  useEffect(() => {
-    if (startedAt && durationMinutes > 0 && !isExamStarted) {
-      const now = new Date()
-      const elapsed = Math.floor((now.getTime() - startedAt.getTime()) / 1000)
-      const totalSeconds = durationMinutes * 60
-      const remaining = Math.max(0, totalSeconds - elapsed)
-      setTimeLeft(remaining)
-    }
-  }, [startedAt, durationMinutes, isExamStarted])
-
-  useEffect(() => {
-    if (!isExamStarted || !exam) {
-      if (autoSaveRef.current) {
-        clearInterval(autoSaveRef.current)
-        autoSaveRef.current = null
-      }
-      return
-    }
-
-    // Auto-save mỗi 30 giây với DRAFT state
-    autoSaveRef.current = window.setInterval(() => {
-      if (examSessionId && Object.keys(answersRef.current).length > 0) {
-        // Gọi submitExam với DRAFT - sử dụng answersRef để lấy giá trị mới nhất
-        const payload: SubmitPayload = {
-          examSessionId,
-          questions: Object.entries(answersRef.current)
-            .filter(([, aId]) => aId != null)
-            .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
-        }
-
-        submitMutation.mutate(
-          { state: 'DRAFT', payload },
-          {
-            onSuccess: () => {
-              // Lưu vào localStorage sau khi save thành công
-              const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-              if (savedInfo) {
-                try {
-                  const info = JSON.parse(savedInfo)
-                  localStorage.setItem(
-                    `exam_${examSessionId}`,
-                    JSON.stringify({
-                      ...info,
-                      savedAnswers: answersRef.current,
-                      lastSavedAt: new Date().toISOString()
-                    })
-                  )
-                } catch (e) {
-                  console.error('Error saving to localStorage:', e)
-                }
-              }
-            }
-          }
-        )
-      }
-    }, 30_000)
-
-    return () => {
-      if (autoSaveRef.current) {
-        clearInterval(autoSaveRef.current)
-        autoSaveRef.current = null
-      }
-    }
-  }, [isExamStarted, exam, examSessionId, answers, submitMutation])
-
-  useEffect(() => {
-    const onBeforeUnload = () => {
-      if (isExamStarted && examSessionId && Object.keys(answers).length > 0) {
-        const payload: SubmitPayload = {
-          examSessionId,
-          questions: Object.entries(answers)
-            .filter(([, aId]) => aId != null)
-            .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
-        }
-
-        // Sử dụng sendBeacon để gửi request ngay cả khi trang đang đóng
-        const blob = new Blob([JSON.stringify({ state: 'DRAFT', ...payload })], { type: 'application/json' })
-        const baseURL = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/+$/, '') || ''
-        navigator.sendBeacon?.(`${baseURL}/student/exam/submit?state=DRAFT`, blob)
-
-        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-        if (savedInfo) {
-          try {
-            const info = JSON.parse(savedInfo)
-            localStorage.setItem(
-              `exam_${examSessionId}`,
-              JSON.stringify({
-                ...info,
-                savedAnswers: answers,
-                lastSavedAt: new Date().toISOString(),
-                isStarted: false
-              })
-            )
-          } catch (e) {
-            console.error('Error saving on beforeunload:', e)
-          }
-        }
-      }
-
-      if (examSessionStudentId && isExamStarted) {
-        const exitData = {
-          examSessionStudentId,
-          eventTime: new Date().toISOString()
-        }
-        const blob = new Blob([JSON.stringify(exitData)], { type: 'application/json' })
-        const baseURL = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/+$/, '') || ''
-        navigator.sendBeacon?.(`${baseURL}/student/exam/exit`, blob)
-      }
-    }
-    window.addEventListener('beforeunload', onBeforeUnload)
-    return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [examSessionStudentId, isExamStarted, examSessionId, answers])
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && examSessionStudentId && isExamStarted) {
-        exitMutation.mutate({
-          examSessionStudentId,
-          eventTime: new Date().toISOString()
-        })
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [examSessionStudentId, isExamStarted, exitMutation])
-
-  // === HELPER ===
-  const formatTime = (s: number) => {
+  // === HANDLERS ===
+  const formatTime = useCallback((s: number) => {
     const h = String(Math.floor(s / 3600)).padStart(2, '0')
     const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0')
     const sec = String(s % 60).padStart(2, '0')
     return `${h}:${m}:${sec}`
-  }
+  }, [])
 
-  const handleAnswerChange = (qId: number, aId: number) => {
-    setAnswers((prev) => {
-      const newAnswers = { ...prev, [qId]: aId }
-      // Lưu vào localStorage ngay khi thay đổi để tránh mất dữ liệu
-      if (examSessionId) {
-        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-        if (savedInfo) {
-          try {
-            const info = JSON.parse(savedInfo)
-            localStorage.setItem(
-              `exam_${examSessionId}`,
-              JSON.stringify({
-                ...info,
-                savedAnswers: newAnswers
-              })
-            )
-          } catch (e) {
-            console.error('Error saving answer to localStorage:', e)
-          }
-        }
+  const handleAnswerChange = useCallback(
+    (qId: number, aId: number) => {
+      if (isTimeExpired) {
+        toast.warning('Thời gian làm bài đã hết!')
+        return
       }
-      return newAnswers
-    })
-  }
+      setAnswers((prev) => ({ ...prev, [qId]: aId }))
+    },
+    [isTimeExpired]
+  )
 
-  const handleStartExam = async () => {
-    if (!exam) return
+  const handleStartExam = useCallback(async () => {
+    if (!exam || !expiredAt) return
 
-    if (durationMinutes === 0) {
-      toast.error('Không tìm thấy thông tin kỳ thi. Vui lòng tham gia lại.')
-      navigate('/student')
+    const remaining = calculateTimeLeft()
+    if (remaining <= 0 || checkTimeExpired()) {
+      toast.error('Thời gian làm bài đã hết!')
+      setIsTimeExpired(true)
+      if (!hasSubmitted.current) {
+        submitExam('FINAL')
+      }
       return
     }
 
     const success = await requestFullscreen()
     if (success) {
-      const now = new Date()
-      let actualStartedAt = startedAt
-
-      // Nếu chưa có startedAt (lần đầu bắt đầu), lưu vào localStorage
-      if (!actualStartedAt) {
-        actualStartedAt = now
-        setStartedAt(actualStartedAt)
-        // Lưu startedAt vào localStorage
-        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-        if (savedInfo) {
-          try {
-            const info = JSON.parse(savedInfo)
-            localStorage.setItem(
-              `exam_${examSessionId}`,
-              JSON.stringify({
-                ...info,
-                startedAt: actualStartedAt.toISOString(),
-                isStarted: true
-              })
-            )
-          } catch (e) {
-            console.error('Error saving startedAt:', e)
-          }
-        }
-      }
-
       setIsExamStarted(true)
-
-      // Tính timeLeft dựa trên startedAt (có thể là từ localStorage nếu vào lại)
-      const elapsed = Math.floor((now.getTime() - actualStartedAt.getTime()) / 1000)
-      const totalSeconds = durationMinutes * 60
-      const remaining = Math.max(0, totalSeconds - elapsed)
-      setTimeLeft(remaining)
-
-      if (remaining <= 0) {
-        toast.error('Thời gian làm bài đã hết!')
-        submitExam('FINAL')
-        return
-      }
-
-      toast.success(startedAt ? 'Tiếp tục làm bài!' : 'Bắt đầu làm bài!')
+      setIsTimeExpired(false)
+      toast.success('Bắt đầu làm bài!')
     }
-  }
+  }, [exam, expiredAt, requestFullscreen, calculateTimeLeft, checkTimeExpired, submitExam])
 
-  const handleExitExam = async () => {
-    // Lưu DRAFT trước khi thoát
-    if (examSessionId && Object.keys(answers).length > 0) {
-      const payload: SubmitPayload = {
-        examSessionId,
-        questions: Object.entries(answers)
-          .filter(([, aId]) => aId != null)
-          .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
-      }
+  const handleExitExam = useCallback(async () => {
+    sendEventLog('EXIT')
+    sendEventLog('SUBMIT_DRAFT')
 
-      try {
-        await submitMutation.mutateAsync({ state: 'DRAFT', payload })
-        // Lưu vào localStorage
-        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-        if (savedInfo) {
-          try {
-            const info = JSON.parse(savedInfo)
-            localStorage.setItem(
-              `exam_${examSessionId}`,
-              JSON.stringify({
-                ...info,
-                savedAnswers: answers,
-                lastSavedAt: new Date().toISOString(),
-                isStarted: false
-              })
-            )
-          } catch (e) {
-            console.error('Error saving on exit:', e)
-          }
-        }
-      } catch (error) {
-        console.error('Error saving draft on exit:', error)
-      }
+    if (examSessionId) {
+      saveToLocalStorage(examSessionId, {
+        savedAnswers: answers,
+        isStarted: false
+      })
     }
 
     setIsExamStarted(false)
     await exitFullscreen()
-    if (examSessionStudentId) {
-      await exitMutation
-        .mutateAsync({
-          examSessionStudentId,
-          eventTime: new Date().toISOString()
-        })
-        .catch(() => {})
-    }
     navigate('/student')
-  }
+  }, [examSessionId, answers, exitFullscreen, navigate, sendEventLog])
 
-  const handleNext = () => setCurrentQuestion((prev) => Math.min(prev + 1, (exam?.questions.length || 1) - 1))
-  const handlePrev = () => setCurrentQuestion((prev) => Math.max(prev - 1, 0))
+  const handleNext = useCallback(() => {
+    setCurrentQuestion((prev) => Math.min(prev + 1, (exam?.questions.length || 1) - 1))
+  }, [exam?.questions.length])
 
-  // === RENDER: LOADING ===
+  const handlePrev = useCallback(() => {
+    setCurrentQuestion((prev) => Math.max(prev - 1, 0))
+  }, [])
+
+  // === MEMOIZED VALUES ===
+  const durationMinutes = useMemo(() => {
+    return exam?.durationMinutes || 0
+  }, [exam?.durationMinutes])
+
+  // === NẾU NỘP BÀI THÌ XEM RESULT ===
+  useEffect(() => {
+    if (exam?.status === 'COMPLETED' && examSessionId) {
+      navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+    }
+  }, [exam?.status, examSessionId, navigate])
+
+  // Giao diện nhé hết logic rồiif
   if (isExamLoading) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50'>
@@ -507,7 +609,6 @@ export default function ExamPage() {
     )
   }
 
-  // === RENDER: ERROR ===
   if (isExamError || !exam) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50 p-4'>
@@ -532,14 +633,9 @@ export default function ExamPage() {
     )
   }
 
-  // === RENDER: ĐÃ HOÀN THÀNH ===
-  if (exam.status === 'COMPLETED') {
-    navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-    return null
-  }
+  if (exam?.status === 'COMPLETED') return null
 
-  // === RENDER: HẾT THỜI GIAN ===
-  if (timeLeft === 0 && isExamStarted) {
+  if ((timeLeft === 0 && isExamStarted) || isTimeExpired) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50 p-4'>
         <div className='bg-white rounded-xl shadow-lg p-8 max-w-lg w-full text-center'>
@@ -550,7 +646,7 @@ export default function ExamPage() {
           </p>
           <div className='bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800 mb-6'>
             <AlertCircle className='w-4 h-4 inline mr-1' />
-            Thời gian làm bài đã hết.
+            Thời gian làm bài đã hết. Bài thi đã được tự động nộp.
           </div>
           <button
             onClick={() => navigate('/student')}
@@ -563,9 +659,9 @@ export default function ExamPage() {
     )
   }
 
-  // === RENDER: CHƯA BẮT ĐẦU LÀM BÀI ===
   if (!isExamStarted) {
     const hasSavedAnswers = Object.keys(answers).length > 0
+    const canStart = timeLeft > 0 && !isTimeExpired
 
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50 p-4'>
@@ -596,6 +692,12 @@ export default function ExamPage() {
                 <span className='text-blue-700 font-semibold'>{formatTime(timeLeft)}</span>
               </div>
             )}
+            {!canStart && (
+              <div className='flex justify-between text-red-600'>
+                <span className='font-medium'>Trạng thái:</span>
+                <span className='font-semibold'>Đã hết thời gian làm bài</span>
+              </div>
+            )}
             <div className='flex justify-between'>
               <span className='font-medium'>Thí sinh:</span>
               <span className='text-blue-700'>{user?.name}</span>
@@ -615,7 +717,8 @@ export default function ExamPage() {
             </button>
             <button
               onClick={handleStartExam}
-              className='bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center space-x-2 shadow-lg transition'
+              disabled={!canStart}
+              className='bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center space-x-2 shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed'
             >
               <Maximize2 className='w-5 h-5' />
               <span className='font-medium'>{hasSavedAnswers ? 'Tiếp tục làm bài' : 'Bắt đầu thi'}</span>
@@ -626,16 +729,13 @@ export default function ExamPage() {
     )
   }
 
-  // === GIAO DIỆN LÀM BÀI ===
   const currentQ = exam.questions[currentQuestion]
   const total = exam.questions.length
 
   return (
     <div className='min-h-screen bg-white'>
-      {/* Header */}
       <header className='sticky top-0 z-50 bg-white shadow-lg border-b border-blue-200'>
         <div className='max-w-7xl mx-auto flex justify-between items-center px-6 py-4'>
-          {/* Title and User Info */}
           <div className='flex flex-col sm:flex-row sm:items-baseline gap-3'>
             <h1 className='text-xl font-semibold text-blue-700'>{examName || exam.name}</h1>
             <p className='text-sm text-gray-500 sm:border-l sm:pl-3'>
@@ -643,15 +743,30 @@ export default function ExamPage() {
             </p>
           </div>
 
-          {/* Time and Buttons */}
           <div className='flex items-center gap-4'>
-            {/* Time Left */}
-            <div className='flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 shadow-sm'>
-              <span className='text-sm text-blue-600'>Thời gian còn:</span>
-              <span className='font-mono text-lg font-bold text-blue-800'>{formatTime(timeLeft)}</span>
+            <div
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border shadow-sm ${
+                timeLeft < 300
+                  ? 'bg-red-50 border-red-200'
+                  : timeLeft < 600
+                    ? 'bg-yellow-50 border-yellow-200'
+                    : 'bg-blue-50 border-blue-200'
+              }`}
+            >
+              <span
+                className={`text-sm ${timeLeft < 300 ? 'text-red-600' : timeLeft < 600 ? 'text-yellow-600' : 'text-blue-600'}`}
+              >
+                Thời gian còn:
+              </span>
+              <span
+                className={`font-mono text-lg font-bold ${
+                  timeLeft < 300 ? 'text-red-800' : timeLeft < 600 ? 'text-yellow-800' : 'text-blue-800'
+                }`}
+              >
+                {formatTime(timeLeft)}
+              </span>
             </div>
 
-            {/* Exit Button */}
             <button
               onClick={handleExitExam}
               className='hidden md:block bg-white border border-gray-400 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 transition font-normal text-sm shadow-sm'
@@ -659,10 +774,10 @@ export default function ExamPage() {
               Thoát
             </button>
 
-            {/* Submit Button */}
             <button
               onClick={() => submitExam('FINAL')}
-              className='bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium shadow-md transition'
+              disabled={isTimeExpired}
+              className='bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed'
             >
               <span>Nộp bài</span>
             </button>
@@ -670,10 +785,8 @@ export default function ExamPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className='max-w-7xl mx-auto px-6 py-10'>
         <div className='grid grid-cols-1 lg:grid-cols-4 gap-8'>
-          {/* Sidebar: Danh sách câu hỏi */}
           <aside className='lg:col-span-1'>
             <div className='bg-white rounded-xl shadow-lg p-6 sticky top-20 border border-blue-100'>
               <h3 className='font-semibold mb-5 text-gray-700 text-base border-b pb-3 border-gray-200'>
@@ -686,13 +799,13 @@ export default function ExamPage() {
                     key={q.questionId}
                     onClick={() => setCurrentQuestion(i)}
                     className={`w-10 h-10 rounded-md text-sm font-medium transition shadow-sm
-                    ${
-                      i === currentQuestion
-                        ? 'bg-blue-600 text-white ring-2 ring-blue-300'
-                        : answers[q.questionId]
-                          ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
-                          : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
-                    }`}
+                  ${
+                    i === currentQuestion
+                      ? 'bg-blue-600 text-white ring-2 ring-blue-300'
+                      : answers[q.questionId]
+                        ? 'bg-green-100 text-green-700 border border-green-300 hover:bg-green-200'
+                        : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                  }`}
                     title={answers[q.questionId] ? 'Đã trả lời' : 'Chưa trả lời'}
                   >
                     {i + 1}
@@ -702,10 +815,8 @@ export default function ExamPage() {
             </div>
           </aside>
 
-          {/* Content: Hiển thị câu hỏi */}
           <section className='lg:col-span-3'>
             <div className='bg-white rounded-xl shadow-lg p-8 border border-blue-100'>
-              {/* Question Info Header */}
               <div className='flex justify-between items-center mb-6 border-b pb-4 border-gray-200'>
                 <h2 className='text-lg font-bold text-gray-800'>
                   Câu hỏi <span className='text-blue-600'>{currentQuestion + 1}</span> / {total}
@@ -713,20 +824,19 @@ export default function ExamPage() {
                 <span className='text-sm text-gray-500 italic'>Vui lòng đọc kỹ câu hỏi</span>
               </div>
 
-              {/* Question Content */}
               <div className='mb-8'>
                 <p className='text-gray-800 leading-relaxed text-base border-l-4 border-blue-500 pl-4 py-3 bg-blue-50/70 rounded-r-md'>
                   {currentQ.content}
                 </p>
               </div>
 
-              {/* Answers/Options */}
               <div className='space-y-3'>
                 {currentQ.answers.map((opt, index) => (
                   <label
                     key={opt.answerId}
-                    className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition shadow-sm
-                    ${
+                    className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition shadow-sm ${
+                      isTimeExpired ? 'opacity-50 cursor-not-allowed' : ''
+                    } ${
                       answers[currentQ.questionId] === opt.answerId
                         ? 'bg-blue-100 border-blue-400'
                         : 'hover:bg-gray-50 border-gray-200'
@@ -737,6 +847,7 @@ export default function ExamPage() {
                       name={`q-${currentQ.questionId}`}
                       checked={answers[currentQ.questionId] === opt.answerId}
                       onChange={() => handleAnswerChange(currentQ.questionId, opt.answerId)}
+                      disabled={isTimeExpired}
                       className='w-4 h-4 text-blue-600 focus:ring-blue-500'
                     />
 
@@ -748,7 +859,6 @@ export default function ExamPage() {
                 ))}
               </div>
 
-              {/* Navigation */}
               <div className='flex justify-between mt-8 pt-6 border-t border-gray-200'>
                 <button
                   onClick={handlePrev}
@@ -771,11 +881,11 @@ export default function ExamPage() {
         </div>
       </main>
 
-      {/* Mobile/Sticky Nộp bài */}
       <div className='md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-2xl z-40'>
         <button
           onClick={() => submitExam('FINAL')}
-          className='w-full bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 font-medium shadow-lg transition'
+          disabled={isTimeExpired}
+          className='w-full bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 font-medium shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed'
         >
           <span>Nộp bài kết thúc</span>
         </button>
