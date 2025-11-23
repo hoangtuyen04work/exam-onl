@@ -59,7 +59,7 @@ export default function ExamsTab() {
   const selectedCount = Array.from(selectedExams.values()).filter(Boolean).length
 
   return (
-    <div className='p-6 max-w-[1400px] mx-auto min-h-[calc(100vh-120px)] flex flex-col'>
+    <div className='space-y-8'>
       {/* HEADER + TOOLBAR */}
       <div className='flex flex-col gap-4 mb-6'>
         <div className='flex items-center justify-between'>
@@ -80,9 +80,9 @@ export default function ExamsTab() {
           />
           <button
             onClick={() => document.getElementById('examImportFile')?.click()}
-            className='px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition'
+            className='px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-purple-700 transition'
           >
-            Import (.xlsx)
+            Import đề thi
           </button>
 
           {/* EXPORT SELECTED */}
@@ -95,7 +95,7 @@ export default function ExamsTab() {
                 : 'bg-blue-600 text-white hover:bg-blue-700'
             }`}
           >
-            Export đã chọn {selectedCount > 0 && `(${selectedCount})`}
+            Export đề đã chọn {selectedCount > 0 && `(${selectedCount})`}
           </button>
 
           {/* ADD BUTTONS */}

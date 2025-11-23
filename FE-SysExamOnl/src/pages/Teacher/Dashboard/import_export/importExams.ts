@@ -19,7 +19,7 @@ export const importExams = async (file: File) => {
   try {
     toast.info("Đang đọc file Excel...");
 
-    const buffer = await file.arrayBuffer();
+    const buffer = await file.arrayBuffer(); 
     const workbook = XLSX.read(buffer, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows: any[] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -31,7 +31,7 @@ export const importExams = async (file: File) => {
 
     const questions: ImportQuestion[] = [];
 
-    // BẮT ĐẦU TỪ HÀNG 2 (bỏ tiêu đề)
+    
     for (let i = 3; i < rows.length; i++) {
       const row = rows[i];
 
@@ -54,7 +54,7 @@ export const importExams = async (file: File) => {
       //  Điểm số: index 8
       let pointValue = Number(row[8]);
       if (isNaN(pointValue) || pointValue <= 0) {
-        pointValue = 0; // tạm thời để 0, tí set sau
+        pointValue = 1; 
       }
 
       const answers = [
@@ -103,9 +103,7 @@ export const importExams = async (file: File) => {
 
     toast.info(`Tạo đề: ${finalQuestions.length} câu`);
 
-    const response = await axiosClient.post("/teacher/exams", payload, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await axiosClient.post("/teacher/exams", payload);
 
     const examId =
       response.data?.data?.id ||

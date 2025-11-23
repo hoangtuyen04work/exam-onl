@@ -74,7 +74,7 @@ export const useExamsTab = () => {
               durationMinutes: item.durationMinutes ?? 0
             }))
           : []
-        console.log('Fetched exams:', items)
+          console.log('Fetched exams:', items);
         setList(items)
       } catch (err) {
         console.error(err)
