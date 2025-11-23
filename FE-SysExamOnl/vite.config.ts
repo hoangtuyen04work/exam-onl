@@ -12,9 +12,16 @@ export default defineConfig({
   css: {
     devSourcemap: true
   },
+    optimizeDeps: {
+    include: ["sockjs-client"]
+  },
   resolve: {
     alias: {
-      '~': path.resolve(__dirname, './src')
+      '~': path.resolve(__dirname, './src'),
+      './runtimeConfig': './runtimeConfig.browser'
     }
-  }
+  },
+  define: {
+    global: 'globalThis', // ← Dòng này fix triệt để mọi lỗi "global is not defined"
+  },
 })

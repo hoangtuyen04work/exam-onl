@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// cspell:disable-next-line
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
@@ -7,7 +6,10 @@ import { toast } from 'react-toastify'
 import { AlertCircle, Maximize2, PlayCircle, XCircle } from 'lucide-react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { studentApi, type SubmitPayload } from '../../../api/student-api'
+
+// ⭐ 1. IMPORT HOOKS TRƯỚC
 import { useFullScreen } from '../../../hooks/useFullScreen'
+import { useStudentMonitoringWebSocket } from '../../../hooks/useStudentMonitoringWebSocket'
 
 export default function ExamPage() {
   const { examId } = useParams<{ examId: string }>()
@@ -15,12 +17,13 @@ export default function ExamPage() {
   const user = useSelector((state: any) => state.auth.user)
 
   const examSessionId = examId ? Number(examId) : null
+  const token = localStorage.getItem('authToken') || ''
 
+  // === STATES ===
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [timeLeft, setTimeLeft] = useState(0)
   const [isExamStarted, setIsExamStarted] = useState(false)
-  const [examSessionStudentId] = useState<number | null>(null)
   const [durationMinutes, setDurationMinutes] = useState(0)
   const [startedAt, setStartedAt] = useState<Date | null>(null)
   const [examName, setExamName] = useState<string>('')
@@ -29,18 +32,135 @@ export default function ExamPage() {
   const hasSubmitted = useRef(false)
   const answersRef = useRef<Record<number, number>>({})
 
-  // Cập nhật ref mỗi khi answers thay đổi
   useEffect(() => {
     answersRef.current = answers
   }, [answers])
 
-  // === 1. LOAD EXAM DATA ===
-  const {
-    data: examData,
-    isLoading: isExamLoading,
-    isError: isExamError,
-    refetch: refetchExam
-  } = useQuery({
+  // ⭐ REF ĐỂ PHÁ VÒNG LẶP DEPENDENCY
+  const submitExamRef = useRef<(state: 'DRAFT' | 'FINAL') => void>(() => {})
+
+  // ⭐ 2. WEBSOCKET PHẢI ĐỨNG TRƯỚC (cung cấp sendEvent)
+  const { sendEvent } = useStudentMonitoringWebSocket(examSessionId, token, isExamStarted)
+
+  // ⭐ 3. FULLSCREEN PHẢI ĐỨNG TRƯỚC (cung cấp exitFullscreen, dùng submitExamRef)
+  const { requestFullscreen, exitFullscreen } = useFullScreen({
+    onExit: () => {
+      sendEvent('LEAVE')
+      submitExamRef.current('FINAL')
+      toast.error('Thoát toàn màn hình — bài thi kết thúc!')
+      setTimeout(() => navigate('/student'), 1500)
+    },
+    enabled: true,
+    requiredFullscreen: true
+  })
+
+  // ⭐ 4. MUTATION (cung cấp submitMutation)
+  const submitMutation = useMutation({
+    mutationFn: ({ state, payload }: { state: 'DRAFT' | 'FINAL'; payload: SubmitPayload }) =>
+      studentApi.submitExam(state, payload),
+    onSuccess: (_, { state }) => {
+      if (state === 'FINAL') toast.success('Nộp bài thành công!')
+    },
+    onError: () => toast.error('Lỗi lưu bài')
+  })
+
+  // ⭐ 5. SUBMIT EXAM (dùng sendEvent, submitMutation, exitFullscreen)
+  const submitExam = useCallback(
+    (state: 'DRAFT' | 'FINAL') => {
+      if (!examSessionId || (hasSubmitted.current && state === 'FINAL')) return
+      if (state === 'FINAL') {
+        hasSubmitted.current = true
+        sendEvent('SUBMIT')
+      }
+
+      const payload: SubmitPayload = {
+        examSessionId,
+        questions: Object.entries(answers)
+          .filter(([, aId]) => aId != null)
+          .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
+      }
+
+      submitMutation.mutate({ state, payload })
+
+      if (state === 'FINAL') {
+        setIsExamStarted(false)
+        exitFullscreen()
+        if (autoSaveRef.current) clearInterval(autoSaveRef.current)
+        localStorage.removeItem(`exam_${examSessionId}`)
+        navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+      }
+    },
+    [examSessionId, answers, navigate, submitMutation, exitFullscreen, sendEvent]
+  )
+
+  // ⭐ CẬP NHẬT REF SAU KHI SUBMITEXAM ĐÃ ĐỊNH NGHĨA
+  useEffect(() => {
+    submitExamRef.current = submitExam
+  }, [submitExam])
+
+  // === THOÁT CHỦ ĐỘNG ===
+  const handleExitExam = async () => {
+    sendEvent('LEAVE')
+    setIsExamStarted(false)
+    await exitFullscreen()
+    navigate('/student')
+  }
+
+  // === BẮT ĐẦU THI ===
+  const handleStartExam = async () => {
+    if (!exam) return
+
+    if (durationMinutes === 0) {
+      toast.error('Không tìm thấy thông tin kỳ thi. Vui lòng tham gia lại.')
+      navigate('/student')
+      return
+    }
+
+    const success = await requestFullscreen()
+    if (success) {
+      const now = new Date()
+      let actualStartedAt = startedAt
+
+      if (!actualStartedAt) {
+        actualStartedAt = now
+        setStartedAt(actualStartedAt)
+        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
+        if (savedInfo) {
+          try {
+            const info = JSON.parse(savedInfo)
+            localStorage.setItem(
+              `exam_${examSessionId}`,
+              JSON.stringify({
+                ...info,
+                startedAt: actualStartedAt.toISOString(),
+                isStarted: true
+              })
+            )
+          } catch (e) {
+            console.error('Error saving startedAt:', e)
+          }
+        }
+      }
+
+      setIsExamStarted(true)
+
+      const elapsed = Math.floor((now.getTime() - actualStartedAt.getTime()) / 1000)
+      const totalSeconds = durationMinutes * 60
+      const remaining = Math.max(0, totalSeconds - elapsed)
+      setTimeLeft(remaining)
+
+      if (remaining <= 0) {
+        toast.error('Thời gian làm bài đã hết!')
+        submitExam('FINAL')
+        return
+      }
+
+      toast.success(startedAt ? 'Tiếp tục làm bài!' : 'Bắt đầu làm bài!')
+    }
+  }
+
+  // === LOAD EXAM ===
+  const { data: examData, isLoading: isExamLoading, isError: isExamError, refetch: refetchExam } = useQuery({
     queryKey: ['doExam', examSessionId],
     queryFn: () => studentApi.doExam(examSessionId!),
     enabled: !!examSessionId,
@@ -49,7 +169,7 @@ export default function ExamPage() {
 
   const exam = examData?.data
 
-  // === LOAD JOIN EXAM INFO FROM LOCALSTORAGE ===
+  // === LOAD INFO TỪ LOCALSTORAGE ===
   useEffect(() => {
     if (examSessionId) {
       const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
@@ -59,11 +179,9 @@ export default function ExamPage() {
           setDurationMinutes(info.durationMinutes || 0)
           setExamName(info.name || '')
 
-          // Restore startedAt nếu đã bắt đầu làm bài trước đó
           if (info.startedAt) {
             const savedStartedAt = new Date(info.startedAt)
             setStartedAt(savedStartedAt)
-            // Tính toán timeLeft dựa trên startedAt đã lưu
             const now = new Date()
             const elapsed = Math.floor((now.getTime() - savedStartedAt.getTime()) / 1000)
             const totalSeconds = (info.durationMinutes || 0) * 60
@@ -77,93 +195,7 @@ export default function ExamPage() {
     }
   }, [examSessionId])
 
-  // === MUTATIONS ===
-  const submitMutation = useMutation({
-    mutationFn: ({ state, payload }: { state: 'DRAFT' | 'FINAL'; payload: SubmitPayload }) =>
-      studentApi.submitExam(state, payload),
-    onSuccess: (_, { state }) => {
-      if (state === 'DRAFT') {
-        // Không hiển thị toast cho DRAFT để tránh spam
-      } else {
-        toast.success('Nộp bài thành công!')
-      }
-    },
-    onError: () => toast.error('Lỗi lưu bài')
-  })
-
-  const exitMutation = useMutation({
-    mutationFn: studentApi.exitEvent
-  })
-
-  // === FULLSCREEN ===
-  const handleEndExamForced = useCallback(() => {
-    if (examSessionStudentId) {
-      exitMutation.mutate({ examSessionStudentId, eventTime: new Date().toISOString() })
-      toast.error('Thoát toàn màn hình — bài thi kết thúc!')
-      setTimeout(() => navigate('/student'), 1500)
-    }
-  }, [examSessionStudentId, exitMutation, navigate])
-
-  const { requestFullscreen, exitFullscreen } = useFullScreen({
-    onExit: handleEndExamForced,
-    enabled: true,
-    requiredFullscreen: true
-  })
-
-  const submitExam = useCallback(
-    (state: 'DRAFT' | 'FINAL') => {
-      if (!examSessionId || (hasSubmitted.current && state === 'FINAL')) return
-      if (state === 'FINAL') hasSubmitted.current = true
-
-      const payload: SubmitPayload = {
-        examSessionId,
-        questions: Object.entries(answers)
-          .filter(([, aId]) => aId != null)
-          .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
-      }
-
-      submitMutation.mutate(
-        { state, payload },
-        {
-          onSuccess: () => {
-            // Lưu answers vào localStorage sau khi save thành công
-            if (state === 'DRAFT') {
-              const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-              if (savedInfo) {
-                try {
-                  const info = JSON.parse(savedInfo)
-                  localStorage.setItem(
-                    `exam_${examSessionId}`,
-                    JSON.stringify({
-                      ...info,
-                      savedAnswers: answers,
-                      lastSavedAt: new Date().toISOString()
-                    })
-                  )
-                } catch (e) {
-                  console.error('Error saving answers to localStorage:', e)
-                }
-              }
-            }
-          }
-        }
-      )
-
-      if (state === 'FINAL') {
-        setIsExamStarted(false)
-        exitFullscreen()
-        if (autoSaveRef.current) {
-          clearInterval(autoSaveRef.current)
-          autoSaveRef.current = null
-        }
-        // Xóa thông tin đã lưu
-        localStorage.removeItem(`exam_${examSessionId}`)
-        navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-      }
-    },
-    [examSessionId, answers, navigate, submitMutation, exitFullscreen]
-  )
-
+  // === KHÔI PHỤC ANSWERS ===
   useEffect(() => {
     if (exam && exam.questions) {
       setExamName(exam.name)
@@ -178,7 +210,6 @@ export default function ExamPage() {
 
       let finalAnswers = { ...restoredAnswers }
 
-      // Nếu API không có answers hoặc ít hơn, thử restore từ localStorage
       if (Object.keys(restoredAnswers).length === 0) {
         const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
         if (savedInfo) {
@@ -204,6 +235,7 @@ export default function ExamPage() {
     }
   }, [exam, examSessionId, navigate])
 
+  // === TIMER ===
   useEffect(() => {
     if (!isExamStarted || !durationMinutes || !startedAt) return
 
@@ -230,29 +262,12 @@ export default function ExamPage() {
     return () => clearInterval(timer)
   }, [isExamStarted, durationMinutes, startedAt, submitExam])
 
+  // === AUTO SAVE DRAFT ===
   useEffect(() => {
-    if (startedAt && durationMinutes > 0 && !isExamStarted) {
-      const now = new Date()
-      const elapsed = Math.floor((now.getTime() - startedAt.getTime()) / 1000)
-      const totalSeconds = durationMinutes * 60
-      const remaining = Math.max(0, totalSeconds - elapsed)
-      setTimeLeft(remaining)
-    }
-  }, [startedAt, durationMinutes, isExamStarted])
+    if (!isExamStarted || !exam) return
 
-  useEffect(() => {
-    if (!isExamStarted || !exam) {
-      if (autoSaveRef.current) {
-        clearInterval(autoSaveRef.current)
-        autoSaveRef.current = null
-      }
-      return
-    }
-
-    // Auto-save mỗi 30 giây với DRAFT state
     autoSaveRef.current = window.setInterval(() => {
       if (examSessionId && Object.keys(answersRef.current).length > 0) {
-        // Gọi submitExam với DRAFT - sử dụng answersRef để lấy giá trị mới nhất
         const payload: SubmitPayload = {
           examSessionId,
           questions: Object.entries(answersRef.current)
@@ -264,7 +279,6 @@ export default function ExamPage() {
           { state: 'DRAFT', payload },
           {
             onSuccess: () => {
-              // Lưu vào localStorage sau khi save thành công
               const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
               if (savedInfo) {
                 try {
@@ -288,13 +302,11 @@ export default function ExamPage() {
     }, 30_000)
 
     return () => {
-      if (autoSaveRef.current) {
-        clearInterval(autoSaveRef.current)
-        autoSaveRef.current = null
-      }
+      if (autoSaveRef.current) clearInterval(autoSaveRef.current)
     }
-  }, [isExamStarted, exam, examSessionId, answers, submitMutation])
+  }, [isExamStarted, exam, examSessionId])
 
+  // === BEFORE UNLOAD ===
   useEffect(() => {
     const onBeforeUnload = () => {
       if (isExamStarted && examSessionId && Object.keys(answers).length > 0) {
@@ -305,56 +317,14 @@ export default function ExamPage() {
             .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
         }
 
-        // Sử dụng sendBeacon để gửi request ngay cả khi trang đang đóng
         const blob = new Blob([JSON.stringify({ state: 'DRAFT', ...payload })], { type: 'application/json' })
         const baseURL = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/+$/, '') || ''
         navigator.sendBeacon?.(`${baseURL}/student/exam/submit?state=DRAFT`, blob)
-
-        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-        if (savedInfo) {
-          try {
-            const info = JSON.parse(savedInfo)
-            localStorage.setItem(
-              `exam_${examSessionId}`,
-              JSON.stringify({
-                ...info,
-                savedAnswers: answers,
-                lastSavedAt: new Date().toISOString(),
-                isStarted: false
-              })
-            )
-          } catch (e) {
-            console.error('Error saving on beforeunload:', e)
-          }
-        }
-      }
-
-      if (examSessionStudentId && isExamStarted) {
-        const exitData = {
-          examSessionStudentId,
-          eventTime: new Date().toISOString()
-        }
-        const blob = new Blob([JSON.stringify(exitData)], { type: 'application/json' })
-        const baseURL = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/+$/, '') || ''
-        navigator.sendBeacon?.(`${baseURL}/student/exam/exit`, blob)
       }
     }
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [examSessionStudentId, isExamStarted, examSessionId, answers])
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && examSessionStudentId && isExamStarted) {
-        exitMutation.mutate({
-          examSessionStudentId,
-          eventTime: new Date().toISOString()
-        })
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [examSessionStudentId, isExamStarted, exitMutation])
+  }, [isExamStarted, examSessionId, answers])
 
   // === HELPER ===
   const formatTime = (s: number) => {
@@ -367,7 +337,6 @@ export default function ExamPage() {
   const handleAnswerChange = (qId: number, aId: number) => {
     setAnswers((prev) => {
       const newAnswers = { ...prev, [qId]: aId }
-      // Lưu vào localStorage ngay khi thay đổi để tránh mất dữ liệu
       if (examSessionId) {
         const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
         if (savedInfo) {
@@ -387,109 +356,6 @@ export default function ExamPage() {
       }
       return newAnswers
     })
-  }
-
-  const handleStartExam = async () => {
-    if (!exam) return
-
-    if (durationMinutes === 0) {
-      toast.error('Không tìm thấy thông tin kỳ thi. Vui lòng tham gia lại.')
-      navigate('/student')
-      return
-    }
-
-    const success = await requestFullscreen()
-    if (success) {
-      const now = new Date()
-      let actualStartedAt = startedAt
-
-      // Nếu chưa có startedAt (lần đầu bắt đầu), lưu vào localStorage
-      if (!actualStartedAt) {
-        actualStartedAt = now
-        setStartedAt(actualStartedAt)
-        // Lưu startedAt vào localStorage
-        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-        if (savedInfo) {
-          try {
-            const info = JSON.parse(savedInfo)
-            localStorage.setItem(
-              `exam_${examSessionId}`,
-              JSON.stringify({
-                ...info,
-                startedAt: actualStartedAt.toISOString(),
-                isStarted: true
-              })
-            )
-          } catch (e) {
-            console.error('Error saving startedAt:', e)
-          }
-        }
-      }
-
-      setIsExamStarted(true)
-
-      // Tính timeLeft dựa trên startedAt (có thể là từ localStorage nếu vào lại)
-      const elapsed = Math.floor((now.getTime() - actualStartedAt.getTime()) / 1000)
-      const totalSeconds = durationMinutes * 60
-      const remaining = Math.max(0, totalSeconds - elapsed)
-      setTimeLeft(remaining)
-
-      if (remaining <= 0) {
-        toast.error('Thời gian làm bài đã hết!')
-        submitExam('FINAL')
-        return
-      }
-
-      toast.success(startedAt ? 'Tiếp tục làm bài!' : 'Bắt đầu làm bài!')
-    }
-  }
-
-  const handleExitExam = async () => {
-    // Lưu DRAFT trước khi thoát
-    if (examSessionId && Object.keys(answers).length > 0) {
-      const payload: SubmitPayload = {
-        examSessionId,
-        questions: Object.entries(answers)
-          .filter(([, aId]) => aId != null)
-          .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
-      }
-
-      try {
-        await submitMutation.mutateAsync({ state: 'DRAFT', payload })
-        // Lưu vào localStorage
-        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-        if (savedInfo) {
-          try {
-            const info = JSON.parse(savedInfo)
-            localStorage.setItem(
-              `exam_${examSessionId}`,
-              JSON.stringify({
-                ...info,
-                savedAnswers: answers,
-                lastSavedAt: new Date().toISOString(),
-                isStarted: false
-              })
-            )
-          } catch (e) {
-            console.error('Error saving on exit:', e)
-          }
-        }
-      } catch (error) {
-        console.error('Error saving draft on exit:', error)
-      }
-    }
-
-    setIsExamStarted(false)
-    await exitFullscreen()
-    if (examSessionStudentId) {
-      await exitMutation
-        .mutateAsync({
-          examSessionStudentId,
-          eventTime: new Date().toISOString()
-        })
-        .catch(() => {})
-    }
-    navigate('/student')
   }
 
   const handleNext = () => setCurrentQuestion((prev) => Math.min(prev + 1, (exam?.questions.length || 1) - 1))
@@ -532,12 +398,6 @@ export default function ExamPage() {
     )
   }
 
-  // === RENDER: ĐÃ HOÀN THÀNH ===
-  if (exam.status === 'COMPLETED') {
-    navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-    return null
-  }
-
   // === RENDER: HẾT THỜI GIAN ===
   if (timeLeft === 0 && isExamStarted) {
     return (
@@ -563,7 +423,7 @@ export default function ExamPage() {
     )
   }
 
-  // === RENDER: CHƯA BẮT ĐẦU LÀM BÀI ===
+  // === RENDER: CHƯA BẮT ĐẦU ===
   if (!isExamStarted) {
     const hasSavedAnswers = Object.keys(answers).length > 0
 
@@ -637,7 +497,7 @@ export default function ExamPage() {
         <div className='max-w-7xl mx-auto flex justify-between items-center px-6 py-4'>
           {/* Title and User Info */}
           <div className='flex flex-col sm:flex-row sm:items-baseline gap-3'>
-            <h1 className='text-xl font-semibold text-blue-700'>{examName || exam.name}</h1>
+            <h1 className='text-xl font-semibold text-blue-700'>{exam.name}</h1>
             <p className='text-sm text-gray-500 sm:border-l sm:pl-3'>
               Thí sinh: <span className='font-medium text-gray-800'>{user?.name}</span>
             </p>
