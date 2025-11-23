@@ -7,11 +7,9 @@ import { toast } from 'react-toastify'
 import { AlertCircle, Maximize2, PlayCircle, XCircle } from 'lucide-react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { studentApi, type SubmitPayload } from '../../../api/student-api'
-import { useStudentMonitoringWebSocket } from '../../../hooks/useStudentMonitoringWebSocket'
-
-// IMPORT HOOKS TRƯỚC
 import { useFullScreen } from '../../../hooks/useFullScreen'
 import { getBaseUrl, loadFromLocalStorage, saveToLocalStorage, useDebounce } from '../../../utils/utils'
+import { useStudentMonitoringWebSocket } from '../../../hooks/useStudentMonitoringWebSocket' // Thêm import từ file 2
 
 export default function ExamPage() {
   const { examId } = useParams<{ examId: string }>()
@@ -19,16 +17,14 @@ export default function ExamPage() {
   const user = useSelector((state: any) => state.auth.user)
 
   const examSessionId = examId ? Number(examId) : null
-  const token = localStorage.getItem('authToken') || ''
+  const token = localStorage.getItem('authToken') || '' // Thêm từ file 2
 
-  // === STATES ===
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [timeLeft, setTimeLeft] = useState(0)
   const [isExamStarted, setIsExamStarted] = useState(false)
   const [examSessionStudentId, setExamSessionStudentId] = useState<number | null>(null)
   const [expiredAt, setExpiredAt] = useState<Date | null>(null)
-  const [startedAt, setStartedAt] = useState<Date | null>(null)
   const [examName, setExamName] = useState<string>('')
   const [isTimeExpired, setIsTimeExpired] = useState(false)
 
@@ -52,80 +48,15 @@ export default function ExamPage() {
 
   const debouncedAnswers = useDebounce(answers, 500)
 
-  // WEBSOCKET PHẢI ĐỨNG TRƯỚC (cung cấp sendEvent)
+  // Thêm WebSocket hook từ file 2 (đặt trước các phần khác để cung cấp sendEvent)
   const { sendEvent } = useStudentMonitoringWebSocket(examSessionId, token, isExamStarted)
 
-  // FULLSCREEN PHẢI ĐỨNG TRƯỚC (cung cấp exitFullscreen, dùng submitExamRef)
-  const { requestFullscreen, exitFullscreen } = useFullScreen({
-    onExit: () => {
-      sendEvent('LEAVE')
-      submitExamRef.current('FINAL')
-      toast.error('Thoát toàn màn hình — bài thi kết thúc!')
-      setTimeout(() => navigate('/student'), 1500)
-    },
-    enabled: true,
-    requiredFullscreen: true
-  })
-
-  const submitMutation = useMutation({
-    mutationFn: ({ state, payload }: { state: 'DRAFT' | 'FINAL'; payload: SubmitPayload }) =>
-      studentApi.submitExam(state, payload),
-    onSuccess: (_, { state }) => {
-      if (state === 'FINAL') {
-        toast.success('Nộp bài thành công!')
-      }
-    },
-    onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Lỗi lưu bài'
-      toast.error(message)
-    }
-  })
-
-  const submitExam = useCallback(
-    (state: 'DRAFT' | 'FINAL') => {
-      if (!examSessionId || (hasSubmitted.current && state === 'FINAL')) return
-      if (state === 'FINAL') {
-        hasSubmitted.current = true
-        sendEvent('SUBMIT')
-      }
-
-      const payload: SubmitPayload = {
-        examSessionId,
-        questions: Object.entries(answers)
-          .filter(([, aId]) => aId != null)
-          .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
-      }
-
-      submitMutation.mutate({ state, payload })
-
-      if (state === 'FINAL') {
-        setIsExamStarted(false)
-        setIsTimeExpired(true)
-        exitFullscreen()
-        if (autoSaveRef.current) clearInterval(autoSaveRef.current)
-        if (timerRef.current) clearInterval(timerRef.current)
-        localStorage.removeItem(`exam_${examSessionId}`)
-        navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-      }
-    },
-    [examSessionId, answers, navigate, submitMutation, exitFullscreen, sendEvent]
-  )
-
-  // CẬP NHẬT REF SAU KHI SUBMITEXAM ĐÃ ĐỊNH NGHĨA
-  useEffect(() => {
-    submitExamRef.current = submitExam
-  }, [submitExam])
-
-  // === THOÁT CHỦ ĐỘNG ===
-  const handleExitExam = useCallback(async () => {
-    sendEvent('LEAVE')
-    setIsExamStarted(false)
-    await exitFullscreen()
-    navigate('/student')
-  }, [sendEvent, exitFullscreen, navigate])
-
-    // === LOAD EXAM ===
-  const { data: examData, isLoading: isExamLoading, isError: isExamError, refetch: refetchExam } = useQuery({
+  const {
+    data: examData,
+    isLoading: isExamLoading,
+    isError: isExamError,
+    refetch: refetchExam
+  } = useQuery({
     queryKey: ['doExam', examSessionId],
     queryFn: () => studentApi.doExam(examSessionId!),
     enabled: !!examSessionId,
@@ -135,63 +66,6 @@ export default function ExamPage() {
   })
 
   const exam = examData?.data
-    // === MEMOIZED VALUES ===
-  const durationMinutes = useMemo(() => {
-    return exam?.durationMinutes || 0
-  }, [exam?.durationMinutes])
-
-  // === BẮT ĐẦU THI ===
-  const handleStartExam = useCallback(async () => {
-    if (!exam) return
-
-    if (durationMinutes === 0) {
-      toast.error('Không tìm thấy thông tin kỳ thi. Vui lòng tham gia lại.')
-      navigate('/student')
-      return
-    }
-
-    const success = await requestFullscreen()
-    if (success) {
-      const now = new Date()
-      let actualStartedAt = startedAt
-
-      if (!actualStartedAt) {
-        actualStartedAt = now
-        setStartedAt(actualStartedAt)
-        const savedInfo = localStorage.getItem(`exam_${examSessionId}`)
-        if (savedInfo) {
-          try {
-            const info = JSON.parse(savedInfo)
-            localStorage.setItem(
-              `exam_${examSessionId}`,
-              JSON.stringify({
-                ...info,
-                startedAt: actualStartedAt.toISOString(),
-                isStarted: true
-              })
-            )
-          } catch (e) {
-            console.error('Error saving startedAt:', e)
-          }
-        }
-      }
-
-      setIsExamStarted(true)
-
-      const elapsed = Math.floor((now.getTime() - actualStartedAt.getTime()) / 1000)
-      const totalSeconds = durationMinutes * 60
-      const remaining = Math.max(0, totalSeconds - elapsed)
-      setTimeLeft(remaining)
-
-      if (remaining <= 0) {
-        toast.error('Thời gian làm bài đã hết!')
-        submitExam('FINAL')
-        return
-      }
-
-      toast.success(startedAt ? 'Tiếp tục làm bài!' : 'Bắt đầu làm bài!')
-    }
-  }, [exam, durationMinutes, startedAt, examSessionId, requestFullscreen, submitExam, navigate])
 
   // === LOAD LOGIC (Restore from API/Local) ===
   useEffect(() => {
@@ -201,7 +75,6 @@ export default function ExamPage() {
         if (savedInfo) {
           if (savedInfo.savedAnswers) setAnswers(savedInfo.savedAnswers)
           if (savedInfo.expiredAt) setExpiredAt(new Date(savedInfo.expiredAt))
-          if( savedInfo.startedAt) setStartedAt(new Date(savedInfo.startedAt))
           if (savedInfo.examSessionStudentId) setExamSessionStudentId(savedInfo.examSessionStudentId)
           if (savedInfo.examName) setExamName(savedInfo.examName)
         }
@@ -246,7 +119,20 @@ export default function ExamPage() {
     }
   }, [exam, examSessionId, navigate, isExamError])
 
-  
+  const submitMutation = useMutation({
+    mutationFn: ({ state, payload }: { state: 'DRAFT' | 'FINAL'; payload: SubmitPayload }) =>
+      studentApi.submitExam(state, payload),
+    onSuccess: (_, { state }) => {
+      if (state === 'FINAL') {
+        toast.success('Nộp bài thành công!')
+      }
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Lỗi lưu bài'
+      toast.error(message)
+    }
+  })
+
   // Lấy timer trực tiếp từ API expireAt sau đó tính
   const calculateTimeLeft = useCallback((): number => {
     if (!expiredAt) return 0
@@ -353,7 +239,7 @@ export default function ExamPage() {
         autoSaveRef.current = null
       }
     }
-  }, [isExamStarted, examSessionId])
+  }, [isExamStarted, examSessionId]) // Chỉ re-run khi bắt đầu/kết thúc thi
 
   useEffect(() => {
     if (!examSessionId || Object.keys(debouncedAnswers).length === 0) return
@@ -588,6 +474,67 @@ export default function ExamPage() {
     }
   }, [isExamStarted, sendEventLog])
 
+  const { requestFullscreen, exitFullscreen } = useFullScreen({
+    onExit: () => {
+      sendEvent('LEAVE') // Thêm từ file 2
+      submitExamRef.current('FINAL')
+      toast.error('Thoát toàn màn hình — bài thi kết thúc!')
+      setTimeout(() => navigate('/student'), 1500)
+    },
+    enabled: true,
+    requiredFullscreen: true
+  })
+
+  // === SUBMIT EXAM ACTION ===
+  const submitExam = useCallback(
+    (state: 'DRAFT' | 'FINAL') => {
+      if (!examSessionId || (hasSubmitted.current && state === 'FINAL')) return
+      if (state === 'FINAL') {
+        hasSubmitted.current = true
+        sendEvent('SUBMIT') // Thêm từ file 2
+      }
+
+      const payload: SubmitPayload = {
+        examSessionId,
+        questions: Object.entries(answersRef.current)
+          .filter(([, aId]) => aId != null)
+          .map(([qId, aId]) => ({ questionId: Number(qId), answerId: aId }))
+      }
+
+      submitMutation.mutate(
+        { state, payload },
+        {
+          onSuccess: () => {
+            if (state === 'DRAFT') {
+              saveToLocalStorage(examSessionId, { savedAnswers: answersRef.current })
+            }
+          }
+        }
+      )
+
+      if (state === 'FINAL') {
+        setIsExamStarted(false)
+        setIsTimeExpired(true)
+        exitFullscreen()
+        if (autoSaveRef.current) {
+          clearInterval(autoSaveRef.current)
+          autoSaveRef.current = null
+        }
+        if (timerRef.current) {
+          clearInterval(timerRef.current)
+          timerRef.current = null
+        }
+        localStorage.removeItem(`exam_${examSessionId}`)
+        navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+      }
+    },
+    [examSessionId, navigate, submitMutation, exitFullscreen, sendEvent] // Thêm sendEvent vào dependencies
+  )
+
+  useEffect(() => {
+    submitExamRef.current = submitExam
+  }, [submitExam])
+
   // === HANDLERS ===
   const formatTime = useCallback((s: number) => {
     const h = String(Math.floor(s / 3600)).padStart(2, '0')
@@ -607,6 +554,44 @@ export default function ExamPage() {
     [isTimeExpired]
   )
 
+  const handleStartExam = useCallback(async () => {
+    if (!exam || !expiredAt) return
+
+    const remaining = calculateTimeLeft()
+    if (remaining <= 0 || checkTimeExpired()) {
+      toast.error('Thời gian làm bài đã hết!')
+      setIsTimeExpired(true)
+      if (!hasSubmitted.current) {
+        submitExam('FINAL')
+      }
+      return
+    }
+
+    const success = await requestFullscreen()
+    if (success) {
+      setIsExamStarted(true)
+      setIsTimeExpired(false)
+      toast.success('Bắt đầu làm bài!')
+    }
+  }, [exam, expiredAt, requestFullscreen, calculateTimeLeft, checkTimeExpired, submitExam])
+
+  const handleExitExam = useCallback(async () => {
+    sendEvent('LEAVE') // Thêm từ file 2
+    sendEventLog('EXIT')
+    sendEventLog('SUBMIT_DRAFT')
+
+    if (examSessionId) {
+      saveToLocalStorage(examSessionId, {
+        savedAnswers: answers,
+        isStarted: false
+      })
+    }
+
+    setIsExamStarted(false)
+    await exitFullscreen()
+    navigate('/student')
+  }, [examSessionId, answers, exitFullscreen, navigate, sendEvent, sendEventLog]) // Thêm sendEvent vào dependencies
+
   const handleNext = useCallback(() => {
     setCurrentQuestion((prev) => Math.min(prev + 1, (exam?.questions.length || 1) - 1))
   }, [exam?.questions.length])
@@ -615,6 +600,10 @@ export default function ExamPage() {
     setCurrentQuestion((prev) => Math.max(prev - 1, 0))
   }, [])
 
+  // === MEMOIZED VALUES ===
+  const durationMinutes = useMemo(() => {
+    return exam?.durationMinutes || 0
+  }, [exam?.durationMinutes])
 
   // === NẾU NỘP BÀI THÌ XEM RESULT ===
   useEffect(() => {
@@ -623,7 +612,7 @@ export default function ExamPage() {
     }
   }, [exam?.status, examSessionId, navigate])
 
-  // Giao diện
+  // Giao diện nhé hết logic rồiif
   if (isExamLoading) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50'>
@@ -763,7 +752,7 @@ export default function ExamPage() {
       <header className='sticky top-0 z-50 bg-white shadow-lg border-b border-blue-200'>
         <div className='max-w-7xl mx-auto flex justify-between items-center px-6 py-4'>
           <div className='flex flex-col sm:flex-row sm:items-baseline gap-3'>
-            <h1 className='text-xl font-semibold text-blue-700'>{exam.name}</h1>
+            <h1 className='text-xl font-semibold text-blue-700'>{examName || exam.name}</h1>
             <p className='text-sm text-gray-500 sm:border-l sm:pl-3'>
               Thí sinh: <span className='font-medium text-gray-800'>{user?.name}</span>
             </p>
