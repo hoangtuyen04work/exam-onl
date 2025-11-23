@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import { formatDistanceToNow } from 'date-fns';
-import { LogIn, LogOut, Users, Wifi, WifiOff, Clock } from 'lucide-react';
+import { LogIn, LogOut, Users, Wifi, WifiOff, WifiOff, Clock } from 'lucide-react';
 import SockJS from 'sockjs-client';
 import vi from 'date-fns/locale/vi'; // Để format tiếng Việt
 
@@ -18,6 +18,12 @@ interface StudentEventData {
   timestamp: string;
 }
 
+interface StudentStatusResponse {
+  userId: number;
+  username: string;
+  status: 'IN_PROGRESS' | 'COMPLETED';
+}
+
 export default function ExamMonitoringPage() {
   const [onlineStudents, setOnlineStudents] = useState<Set<number>>(new Set());
   const { examSessionId: paramId } = useParams<{ examSessionId: string }>();
@@ -28,29 +34,50 @@ export default function ExamMonitoringPage() {
 
   const token = localStorage.getItem('authToken') || '';
 
-  // Fetch tên sinh viên từ API nếu chưa có (nếu backend không gửi fullName)
-  const fetchStudentName = async (userId: number) => {
-    if (studentDetails.has(userId) && studentDetails.get(userId)?.name) return;
+  // Fetch danh sách sinh viên tham gia từ API
+  useEffect(() => {
+    if (!token) return;
 
-    try {
-      const response = await fetch(`http://localhost:8888/exam-online-system/api/user/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStudentDetails(prev => {
-          const newMap = new Map(prev);
-          const existing = newMap.get(userId) || { name: '', lastEvent: {} as StudentEventData, status: 'offline' };
-          newMap.set(userId, { ...existing, name: data.fullName || data.username || 'Sinh viên ' + userId });
-          return newMap;
+    const fetchParticipants = async () => {
+      try {
+        const response = await fetch(`http://localhost:8888/exam-online-system/api/teacher/exam-sessions/monitoring/${examSessionId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
-      } 
-    } catch (err) {
-      console.error(`Lỗi fetch tên user ${userId}: ${err}`);
-    }
-  };
+        if (response.ok) {
+          const data = await response.json();
+          const participants: StudentStatusResponse[] = data.data; // Giả sử BaseResponse có field 'data' là list
+
+          setStudentDetails(prev => {
+            const newMap = new Map(prev);
+            const newOnline = new Set<number>();
+
+            participants.forEach(participant => {
+              const isOnline = participant.status === 'IN_PROGRESS';
+              if (isOnline) {
+                newOnline.add(participant.userId);
+              }
+              newMap.set(participant.userId, {
+                name: participant.username || 'Sinh viên ' + participant.userId,
+                lastEvent: {} as StudentEventData, // Sẽ cập nhật từ WebSocket
+                status: isOnline ? 'online' : 'offline'
+              });
+            });
+
+            setOnlineStudents(newOnline);
+            return newMap;
+          });
+        } else {
+          console.error('Lỗi fetch danh sách sinh viên:', response.status);
+        }
+      } catch (err) {
+        console.error('Lỗi fetch participants:', err);
+      }
+    };
+
+    fetchParticipants();
+  }, [token, examSessionId]);
 
   useEffect(() => {
     if (!token) {
@@ -77,7 +104,6 @@ export default function ExamMonitoringPage() {
 
           // Sử dụng username nếu có, hoặc fetch fullName
           const name = broadcast.username || broadcast.fullName || 'Sinh viên ' + broadcast.userId;
-          if (!broadcast.username && !broadcast.fullName) fetchStudentName(broadcast.userId);
 
           // Thêm timestamp nếu không có
           broadcast.timestamp = broadcast.timestamp || new Date().toISOString();
