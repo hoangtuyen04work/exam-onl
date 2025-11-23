@@ -9,6 +9,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { studentApi, type SubmitPayload } from '../../../api/student-api'
 import { useFullScreen } from '../../../hooks/useFullScreen'
 import { getBaseUrl, loadFromLocalStorage, saveToLocalStorage, useDebounce } from '../../../utils/utils'
+import { useStudentMonitoringWebSocket } from '../../../hooks/useStudentMonitoringWebSocket' // Thêm import từ file 2
 
 export default function ExamPage() {
   const { examId } = useParams<{ examId: string }>()
@@ -16,6 +17,8 @@ export default function ExamPage() {
   const user = useSelector((state: any) => state.auth.user)
 
   const examSessionId = examId ? Number(examId) : null
+  const token = localStorage.getItem('authToken') || '' // Thêm từ file 2
+
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [timeLeft, setTimeLeft] = useState(0)
@@ -44,6 +47,9 @@ export default function ExamPage() {
   }, [answers, isExamStarted, examSessionStudentId])
 
   const debouncedAnswers = useDebounce(answers, 500)
+
+  // Thêm WebSocket hook từ file 2 (đặt trước các phần khác để cung cấp sendEvent)
+  const { sendEvent } = useStudentMonitoringWebSocket(examSessionId, token, isExamStarted)
 
   const {
     data: examData,
@@ -469,7 +475,12 @@ export default function ExamPage() {
   }, [isExamStarted, sendEventLog])
 
   const { requestFullscreen, exitFullscreen } = useFullScreen({
-    onExit: handleEndExamForced,
+    onExit: () => {
+      sendEvent('LEAVE') // Thêm từ file 2
+      submitExamRef.current('FINAL')
+      toast.error('Thoát toàn màn hình — bài thi kết thúc!')
+      setTimeout(() => navigate('/student'), 1500)
+    },
     enabled: true,
     requiredFullscreen: true
   })
@@ -478,7 +489,10 @@ export default function ExamPage() {
   const submitExam = useCallback(
     (state: 'DRAFT' | 'FINAL') => {
       if (!examSessionId || (hasSubmitted.current && state === 'FINAL')) return
-      if (state === 'FINAL') hasSubmitted.current = true
+      if (state === 'FINAL') {
+        hasSubmitted.current = true
+        sendEvent('SUBMIT') // Thêm từ file 2
+      }
 
       const payload: SubmitPayload = {
         examSessionId,
@@ -514,7 +528,7 @@ export default function ExamPage() {
         navigate(`/student/exam/${examSessionId}/result`, { replace: true })
       }
     },
-    [examSessionId, navigate, submitMutation, exitFullscreen]
+    [examSessionId, navigate, submitMutation, exitFullscreen, sendEvent] // Thêm sendEvent vào dependencies
   )
 
   useEffect(() => {
@@ -562,6 +576,7 @@ export default function ExamPage() {
   }, [exam, expiredAt, requestFullscreen, calculateTimeLeft, checkTimeExpired, submitExam])
 
   const handleExitExam = useCallback(async () => {
+    sendEvent('LEAVE') // Thêm từ file 2
     sendEventLog('EXIT')
     sendEventLog('SUBMIT_DRAFT')
 
@@ -575,7 +590,7 @@ export default function ExamPage() {
     setIsExamStarted(false)
     await exitFullscreen()
     navigate('/student')
-  }, [examSessionId, answers, exitFullscreen, navigate, sendEventLog])
+  }, [examSessionId, answers, exitFullscreen, navigate, sendEvent, sendEventLog]) // Thêm sendEvent vào dependencies
 
   const handleNext = useCallback(() => {
     setCurrentQuestion((prev) => Math.min(prev + 1, (exam?.questions.length || 1) - 1))
