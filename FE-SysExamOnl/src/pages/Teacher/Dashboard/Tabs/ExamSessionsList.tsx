@@ -23,7 +23,7 @@ export default function ExamSessionsList() {
   const examId = location.state?.examId 
  // pagination 
  const [currentPage, setCurrentPage] = React.useState(1);
-   const itemsPerPage = 9;
+   const itemsPerPage = 6;
    const totalPages = Math.ceil(sessions.length / itemsPerPage);
    const currentList = sessions.slice(
      (currentPage - 1) * itemsPerPage,
@@ -31,7 +31,6 @@ export default function ExamSessionsList() {
    );
  
   
-  const examId = location.state?.examId
 
   useEffect(() => {
     if (!examId) {
