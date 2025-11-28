@@ -1,9 +1,11 @@
 // src/components/teacher/ExamsTab.tsx
-import React from 'react'
-import { toast } from 'react-toastify'
-import { exportExams } from '../../Dashboard/import_export/exportExams'
-import { importExams } from '../../Dashboard/import_export/importExams'
-import { useExamsTab, DURATIONS } from '../Tabs/HookTab/HookExamsTab'
+import React from 'react';
+import { toast } from 'react-toastify';
+import { exportExams } from '../../Dashboard/import_export/exportExams';
+import { importExams } from '../../Dashboard/import_export/importExams';
+import { useExamsTab, DURATIONS } from '../Tabs/HookTab/HookExamsTab';
+import { CheckCircle, Clock, Download, Edit2, Upload } from 'lucide-react';
+import  Pagination  from '../../../../components/Common/Pagination';
 
 export default function ExamsTab() {
   const {
@@ -27,88 +29,93 @@ export default function ExamsTab() {
     setExpiredAt,
     setDuration,
     navigate
-  } = useExamsTab()
+  } = useExamsTab();
 
-  // PAGINATION
-  const [currentPage, setCurrentPage] = React.useState(1)
-  const itemsPerPage = 12
-
-  const totalPages = Math.ceil(list.length / itemsPerPage)
-
-  const currentList = list.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  // === PAGINATION ===
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 12;
+  const totalPages = Math.ceil(list.length / itemsPerPage);
+  const currentList = list.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleExportSelected = () => {
-    const ids: number[] = []
-    const names: string[] = []
+    const ids: number[] = [];
+    const names: string[] = [];
 
     list.forEach((e) => {
       if (selectedExams.get(e.id)) {
-        ids.push(Number(e.id))
-        names.push(e.name)
+        ids.push(Number(e.id));
+        names.push(e.name);
       }
-    })
+    });
 
     if (ids.length === 0) {
-      toast.warn('Vui lòng chọn ít nhất 1 đề!')
-      return
+      toast.warn('Vui lòng chọn ít nhất 1 đề!');
+      return;
     }
 
-    exportExams(ids, names)
-  }
+    exportExams(ids, names);
+  };
 
-  const selectedCount = Array.from(selectedExams.values()).filter(Boolean).length
+  const selectedCount = Array.from(selectedExams.values()).filter(Boolean).length;
 
   return (
-    <div className='space-y-8'>
+    <div className="space-y-0">
       {/* HEADER + TOOLBAR */}
-      <div className='flex flex-col gap-4 mb-6'>
-        <div className='flex items-center justify-between'>
-          <h2 className='text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent'>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
             Danh sách đề thi
           </h2>
         </div>
 
         {/* TOOLBAR */}
-        <div className='flex flex-wrap gap-3 items-center bg-white p-4 rounded-xl shadow-sm border'>
+        <div className="flex flex-wrap gap-3 items-center bg-white p-4 rounded-xl shadow-sm border">
           {/* IMPORT */}
           <input
-            type='file'
-            accept='.xlsx'
+            type="file"
+            accept=".xlsx"
             hidden
-            id='examImportFile'
+            id="examImportFile"
             onChange={(e) => e.target.files?.[0] && importExams(e.target.files[0])}
           />
           <button
             onClick={() => document.getElementById('examImportFile')?.click()}
-            className='px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-purple-700 transition'
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-xl 
+                       hover:bg-green-700 active:scale-[0.97] transition-all shadow-sm"
           >
-            Import đề thi
+            <Upload size={18} className="opacity-90" />
+            <span>Tải lên</span>
           </button>
 
           {/* EXPORT SELECTED */}
           <button
             onClick={handleExportSelected}
             disabled={selectedCount === 0}
-            className={`px-4 py-2 rounded-xl transition ${
-              selectedCount === 0
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all shadow-sm
+              ${selectedCount === 0
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.97]'}
+            `}
           >
-            Export đề đã chọn {selectedCount > 0 && `(${selectedCount})`}
+            <Download size={18} className={`${selectedCount === 0 ? 'opacity-50' : 'opacity-90'}`} />
+            <span>Tải xuống</span>
+            {selectedCount > 0 && <span>({selectedCount})</span>}
           </button>
 
           {/* ADD BUTTONS */}
-          <div className='flex gap-3 ml-auto'>
+          <div className="flex gap-3 ml-auto">
             <button
               onClick={() => navigate('/teacher/exams/create')}
-              className='px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition'
+              className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
             >
               + Tạo đề thi
             </button>
             <button
               onClick={() => navigate('/teacher/questions')}
-              className='px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition'
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition"
             >
               + Tạo từ ngân hàng
             </button>
@@ -118,64 +125,78 @@ export default function ExamsTab() {
 
       {/* LOADING / EMPTY */}
       {loading ? (
-        <div className='text-center py-10 text-gray-500'>Đang tải...</div>
+        <div className="text-center py-10 text-gray-500">Đang tải...</div>
       ) : list.length === 0 ? (
-        <div className='text-center py-10 text-gray-400 italic'>Chưa có đề thi nào.</div>
+        <div className="text-center py-10 text-gray-400 italic">Chưa có đề thi nào.</div>
       ) : (
         <>
-          {/* CHECKBOX SELECT ALL */}
-          <div className='flex items-center gap-3 mb-3 text-sm font-medium'>
+          {/* SELECT ALL (trong trang) */}
+          <div className="flex items-center gap-3 mb-3 text-sm font-medium">
             <input
-              type='checkbox'
+              type="checkbox"
               checked={currentList.length > 0 && currentList.every((e) => selectedExams.get(e.id))}
               onChange={() => currentList.forEach((e) => toggleSelect(e.id))}
-              className='w-5 h-5 accent-blue-600'
+              className="w-5 h-5 accent-blue-600"
             />
             <span>Chọn tất cả (trong trang)</span>
           </div>
 
           {/* GRID LIST */}
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {currentList.map((exam) => (
               <div
                 key={exam.id}
-                className='bg-white rounded-2xl border border-gray-200 shadow hover:shadow-lg transition p-5'
+                className="bg-white rounded-2xl border border-gray-200 shadow hover:shadow-lg transition p-5 flex flex-col h-full"
               >
-                <div className='flex items-start gap-3'>
+                <div className="flex items-start gap-3 flex-1">
                   <input
-                    type='checkbox'
+                    type="checkbox"
                     checked={!!selectedExams.get(exam.id)}
                     onChange={() => toggleSelect(exam.id)}
-                    className='w-5 h-5 accent-blue-600 mt-1'
+                    className="w-5 h-5 accent-blue-600 mt-1 shrink-0"
                   />
 
-                  <div className='flex-1'>
-                    <h3 className='font-semibold text-blue-700 text-lg line-clamp-2'>{exam.name}</h3>
-                    <p className='text-xs text-gray-500 mt-1 line-clamp-2'>{exam.description || 'Không có mô tả.'}</p>
-                    <span className='text-[11px] text-gray-600 block mt-2'>
-                      {exam.numberQuestions} câu — {exam.durationMinutes} phút
+                  <div
+                    onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
+                    className="flex-1 min-w-0 cursor-pointer"
+                  >
+                    <h3 className="font-semibold text-blue-700 text-lg line-clamp-2 break-words">
+                      {exam.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2 break-words">
+                      {exam.description || 'Không có mô tả.'}
+                    </p>
+                    <span className="text-[11px] text-gray-600 block mt-2">
+                      {exam.numberQuestions} câu
                     </span>
                   </div>
                 </div>
 
-                <div className='flex flex-wrap gap-4 text-xs mt-4'>
+                {/* BOTTOM ACTIONS */}
+                <div className="flex flex-wrap gap-18 text-xs mt-4 pt-3 border-t border-gray-400">
                   <button
                     onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-                    className='text-blue-600 hover:underline'
+                    className="text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
                   >
+                    <Edit2 className="w-4 h-4" />
                     Sửa
                   </button>
+
                   <button
                     onClick={() =>
-                      navigate('/teacher/exam-sessions/list', {
-                        state: { examId: exam.id }
-                      })
+                      navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })
                     }
-                    className='text-blue-600 hover:underline'
+                    className="text-green-600 hover:underline flex items-center gap-1 cursor-pointer"
                   >
+                    <CheckCircle className="w-4 h-4" />
                     Đã giao
                   </button>
-                  <button onClick={() => openTimeModal(exam.id)} className='text-green-600 hover:underline'>
+
+                  <button
+                    onClick={() => openTimeModal(exam.id)}
+                    className="text-red-600 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Clock className="w-4 h-4" />
                     Giao đề
                   </button>
                 </div>
@@ -185,70 +206,47 @@ export default function ExamsTab() {
         </>
       )}
 
-      {/* PAGINATION */}
-      <div className='mt-auto pt-6'>
-        {totalPages > 1 && (
-          <div className='flex justify-center items-center gap-3'>
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className={`px-3 py-1 rounded-lg border ${
-                currentPage === 1 ? 'text-gray-400 border-gray-300' : 'hover:bg-gray-100'
-              }`}
-            >
-              ← Trước
-            </button>
+      {/*PAGINATION */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        className="fixed bottom-0 left-0 w-full bg-white pt-4 pb-4 shadow-lg z-50"
+      />
 
-            <span className='px-4 py-1 bg-blue-50 text-blue-700 rounded-lg font-medium'>
-              Trang {currentPage}/{totalPages}
-            </span>
-
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className={`px-3 py-1 rounded-lg border ${
-                currentPage === totalPages ? 'text-gray-400 border-gray-300' : 'hover:bg-gray-100'
-              }`}
-            >
-              Sau →
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ===== MODAL THỜI GIAN ===== */}
+      {/* MODAL THỜI GIAN */}
       {showTimeModal && (
-        <div className='fixed inset-0 z-50 bg-black/40 flex items-center justify-center'>
-          <div className='bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fadeIn'>
-            <h3 className='text-lg font-semibold mb-4'>Thiết lập phiên thi</h3>
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fadeIn">
+            <h3 className="text-lg font-semibold mb-4">Thiết lập phiên thi</h3>
 
-            <div className='space-y-4'>
+            <div className="space-y-4">
               <div>
-                <label className='text-sm font-medium'>Thời gian bắt đầu</label>
+                <label className="text-sm font-medium">Thời gian bắt đầu</label>
                 <input
-                  type='datetime-local'
+                  type="datetime-local"
                   value={startAt}
                   onChange={(e) => setStartAt(e.target.value)}
-                  className='w-full px-3 py-2 border rounded-xl'
+                  className="w-full px-3 py-2 border rounded-xl"
                 />
               </div>
 
               <div>
-                <label className='text-sm font-medium'>Thời gian kết thúc</label>
+                <label className="text-sm font-medium">Thời gian kết thúc</label>
                 <input
-                  type='datetime-local'
+                  type="datetime-local"
                   value={expiredAt}
                   onChange={(e) => setExpiredAt(e.target.value)}
-                  className='w-full px-3 py-2 border rounded-xl'
+                  className="w-full px-3 py-2 border rounded-xl"
                 />
               </div>
 
               <div>
-                <label className='text-sm font-medium'>Thời gian làm bài</label>
+                <label className="text-sm font-medium">Thời gian làm bài</label>
                 <select
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  className='w-full px-3 py-2 border rounded-xl'
+                  className="w-full px-3 py-2 border rounded-xl"
                 >
                   {DURATIONS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -259,8 +257,8 @@ export default function ExamsTab() {
               </div>
             </div>
 
-            <div className='flex justify-end gap-3 mt-6'>
-              <button onClick={() => setShowTimeModal(false)} className='px-4 py-2 text-gray-600'>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowTimeModal(false)} className="px-4 py-2 text-gray-600">
                 Hủy
               </button>
               <button
@@ -277,72 +275,75 @@ export default function ExamsTab() {
         </div>
       )}
 
-      {/* ===== MODAL KẾT QUẢ ===== */}
+      {/* MODAL KẾT QUẢ */}
       {modalData && (
-        <div className='fixed inset-0 z-50 bg-black/40 flex items-center justify-center'>
-          <div className='bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl animate-scaleIn'>
-            <h3 className='text-lg font-semibold text-center mb-4'>Tạo phiên thành công!</h3>
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl animate-scaleIn">
+            <h3 className="text-lg font-semibold text-center mb-4">Tạo phiên thành công!</h3>
 
-            <div className='space-y-4 text-sm'>
-              <div className='bg-blue-50 p-4 rounded-xl'>
-                <p className='font-medium'>Link:</p>
-                <a
-                  href={modalData.inviteLink}
-                  target='_blank'
-                  rel='noreferrer'
-                  className='text-blue-600 text-xs break-all'
-                >
-                  {modalData.inviteLink}
-                </a>
+            <div className="space-y-4 text-sm">
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                <p className="font-medium text-blue-700 mb-1">Link tham gia</p>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={modalData.inviteLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex-1 text-blue-600 text-sm break-all underline hover:text-blue-800"
+                  >
+                    {modalData.inviteLink}
+                  </a>
+                </div>
               </div>
 
-              <div className='bg-green-50 p-4 rounded-xl text-center'>
-                <p className='font-medium'>Mã tham gia:</p>
-                <p className='font-mono text-2xl text-green-700'>{modalData.code}</p>
+              <div className="bg-green-50 p-4 rounded-xl text-center">
+                <p className="font-medium">Mã tham gia:</p>
+                <p className="font-mono text-2xl text-green-700">{modalData.code}</p>
               </div>
 
-              <div className='grid grid-cols-2 gap-3 text-xs'>
-                <div className='bg-purple-50 p-3 rounded-xl text-center'>
-                  <p className='font-medium'>Mở lúc</p>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="bg-purple-50 p-3 rounded-xl text-center">
+                  <p className="font-medium">Mở lúc</p>
                   <p>{formatDateTime(modalData.startAt)}</p>
                 </div>
-
-                <div className='bg-orange-50 p-3 rounded-xl text-center'>
-                  <p className='font-medium'>Đóng lúc</p>
+                <div className="bg-orange-50 p-3 rounded-xl text-center">
+                  <p className="font-medium">Đóng lúc</p>
                   <p>{formatDateTime(modalData.expiredAt)}</p>
                 </div>
               </div>
             </div>
 
-            <div className='flex justify-center gap-3 mt-6'>
+            <div className="flex justify-center gap-3 mt-6">
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(modalData.inviteLink)
-                  toast.success('Copied link!')
+                  navigator.clipboard.writeText(modalData.inviteLink);
+                  toast.success('Copied link!');
                 }}
-                className='px-4 py-2 bg-blue-100 text-blue-700 rounded-xl'
+                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-xl cursor-pointer"
               >
                 Copy Link
               </button>
 
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(modalData.code)
-                  toast.success('Copied mã!')
+                  navigator.clipboard.writeText(modalData.code);
+                  toast.success('Copied mã!');
                 }}
-                className='px-4 py-2 bg-green-100 text-green-700 rounded-xl'
+                className="px-4 py-2 bg-green-100 text-green-700 rounded-xl cursor-pointer"
               >
                 Copy Mã
               </button>
 
-              <button onClick={() => setModalData(null)} className='px-4 py-2 bg-gray-700 text-white rounded-xl'>
+              <button
+                onClick={() => setModalData(null)}
+                className="px-4 py-2 bg-gray-700 text-white rounded-xl cursor-pointer"
+              >
                 Đóng
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
-  )
+  );
 }
