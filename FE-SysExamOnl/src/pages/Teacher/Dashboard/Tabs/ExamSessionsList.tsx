@@ -31,6 +31,8 @@ export default function ExamSessionsList() {
    );
  
   
+  const examId = location.state?.examId
+
   useEffect(() => {
     if (!examId) {
       toast.error('Không có ID đề thi!')
@@ -42,7 +44,7 @@ export default function ExamSessionsList() {
       setLoading(true)
       try {
         const res = await axiosClient.get('/teacher/exam-sessions/search', {
-          params: { examId } 
+          params: { examId }
         })
 
         const listUsers = Array.isArray(res.data.items)
@@ -117,10 +119,12 @@ export default function ExamSessionsList() {
           {currentList.map((session) => (
             <div
               key={session.id}
-              className="bg-white border rounded-xl shadow-sm hover:shadow-md transition-all p-5"
-              onClick={() => navigate('/teacher/exam-sessions/detail', {
-      state: { examSessionId: session.id }
-    })}
+              className="bg-white border rounded-xl shadow-sm hover:shadow-md transition-all p-5 cursor-pointer"
+              onClick={() =>
+                navigate('/teacher/exam-sessions/detail', {
+                  state: { examSessionId: session.id }
+                })
+              }
             >
               <div className="flex justify-between items-start mb-3">
                 <h3 className="font-semibold text-blue-700 line-clamp-1">
@@ -155,24 +159,43 @@ export default function ExamSessionsList() {
                 </p>
               </div>
 
-              <div className="mt-4 flex gap-2">
+              {/* BUTTONS */}
+              <div className="mt-4 flex flex-col gap-2">
+
+                {/* Copy buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigator.clipboard.writeText(session.inviteLink)
+                      toast.success('Đã copy link!')
+                    }}
+                    className="flex-1 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-100 transition"
+                  >
+                    Copy Link
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigator.clipboard.writeText(session.code)
+                      toast.success('Đã copy mã!')
+                    }}
+                    className="flex-1 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-100 transition"
+                  >
+                    Copy Mã
+                  </button>
+                </div>
+
+                {/* Nút Quản lý */}
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(session.inviteLink)
-                    toast.success('Đã copy link!')
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigate(`/teacher/monitoring/${session.id}`)
                   }}
-                  className="flex-1 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-100 transition"
+                  className="w-full text-xs bg-green-50 text-green-700 px-3 py-2 rounded hover:bg-green-100 transition"
                 >
-                  Copy Link
-                </button>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(session.code)
-                    toast.success('Đã copy mã!')
-                  }}
-                  className="flex-1 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-100 transition"
-                >
-                  Copy Mã
+                  Quản lý phiên thi
                 </button>
               </div>
             </div>

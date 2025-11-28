@@ -23,7 +23,7 @@ export default function StudentDashboard() {
   const navigate = useNavigate()
   const user: UserData | null = useSelector((state: any) => state.auth.user)
   const [currentPage] = useState(0)
-  const pageSize = 5
+  const pageSize = 10000
   const [examCode, setExamCode] = useState('')
   const [loadingJoin, setLoadingJoin] = useState(false)
   const hasSubmitted = useRef(false)
