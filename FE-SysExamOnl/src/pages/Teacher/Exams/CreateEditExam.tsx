@@ -1,6 +1,6 @@
 // src/components/teacher/CreateEditExam.tsx
-import React from 'react'
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { ArrowLeft, Plus, Trash2, Save, ArrowUp } from 'lucide-react'
 import { useCreateEditExam } from '../Exams/HookExam/HookCreateEditExam'
 
 const durations = [15, 30, 45, 60, 90, 120, 150, 180]
@@ -31,6 +31,32 @@ export default function CreateEditExam() {
     navigate
   } = useCreateEditExam()
 
+  
+
+  // Hiển thị nút khi scroll > 100px
+  const [showScroll, setShowScroll] = useState(false)
+  const scrollBtnRef = useRef<HTMLDivElement>(null)
+
+  // Hiển thị và di chuyển nút theo scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScroll(window.scrollY > 100)
+
+      // Cập nhật vị trí top của nút để nó chạy theo scroll
+      if (scrollBtnRef.current) {
+        const containerOffsetTop = 20 // khoảng cách trên cùng của container
+        scrollBtnRef.current.style.top = `${window.scrollY + containerOffsetTop}px`
+      }
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-xl font-medium text-gray-600">
@@ -40,9 +66,11 @@ export default function CreateEditExam() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
+    <div>
+
+    <div className="min-h-screen  py-10 px-4 relative">
       <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-12">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -139,7 +167,6 @@ export default function CreateEditExam() {
                 </button>
               </div>
 
-              {/* Nội dung câu hỏi */}
               <input
                 type="text"
                 value={q.content}
@@ -148,7 +175,6 @@ export default function CreateEditExam() {
                 className="w-full px-5 py-4 border border-gray-300 rounded-xl text-base font-medium focus:ring-2 focus:ring-blue-500 mb-5"
               />
 
-              {/* Điểm + Độ khó */}
               <div className="grid grid-cols-2 gap-5 mb-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Điểm số</label>
@@ -175,7 +201,6 @@ export default function CreateEditExam() {
                 </div>
               </div>
 
-              {/* Đáp án */}
               <div className="space-y-3 mb-5">
                 <label className="block text-sm font-semibold text-gray-700 mb-3">Các đáp án</label>
                 {q.answers.map((a, aIndex) => (
@@ -223,7 +248,6 @@ export default function CreateEditExam() {
                 </button>
               </div>
 
-              {/* Giải thích */}
               <textarea
                 value={q.explanation}
                 onChange={e => updateQuestion(qIndex, 'explanation', e.target.value)}
@@ -236,17 +260,39 @@ export default function CreateEditExam() {
 
           {/* Nút thêm câu hỏi */}
           <div className="text-center mt-16">
-            <button
-              onClick={addQuestion}
-              className="inline-flex items-center gap-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-10 py-6 rounded-2xl text-2xl font-bold shadow-2xl hover:shadow-purple-500/50 transition-all transform hover:scale-105"
-            >
-              <Plus className="w-9 h-9" />
-              Thêm câu hỏi mới
-            </button>
-          </div>
+  <button
+    onClick={addQuestion}
+    className="
+      inline-flex items-center gap-2
+      bg-blue-600 text-white
+      px-4 py-2
+      rounded-lg
+      text-base font-medium
+      shadow-md
+      hover:bg-blue-700
+      transition-all duration-200
+      active:scale-95
+    "
+  >
+    <Plus className="w-4 h-4" />
+    Thêm câu hỏi
+  </button>
+</div>
 
         </div>
       </div>
+
+      {showScroll && (
+            <div
+              ref={scrollBtnRef}
+              onClick={scrollToTop}
+              className="absolute right-5 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 cursor-pointer transition-all flex items-center justify-center"
+            >
+              <ArrowUp className="w-6 h-6" />
+            </div>
+          )}
+          </div>
     </div>
   )
 }
+  
