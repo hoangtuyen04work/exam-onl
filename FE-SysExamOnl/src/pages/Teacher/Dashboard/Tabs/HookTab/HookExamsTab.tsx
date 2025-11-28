@@ -136,7 +136,7 @@ export const useExamsTab = () => {
       const payload = {
         examId: Number(selectedExamId),
         name: 'Phiên thi tùy chỉnh',
-        description: 'Tạo từ giao diện giáo viên',
+        description: '/ện giáo viên',
         durationMinutes: durationMin,
         startAt: start.toISOString(),
         expiredAt: end.toISOString()

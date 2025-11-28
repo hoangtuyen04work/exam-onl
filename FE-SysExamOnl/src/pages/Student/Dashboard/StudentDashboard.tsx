@@ -13,7 +13,8 @@ import {
   BarChart3,
   TrendingUp,
   TrendingDown,
-  KeyRound
+  KeyRound,
+  BookOpen
 } from 'lucide-react'
 import { toLocalStringISO } from '../../../utils/utils'
 import { fetchCompletedExams, studentApi } from '../../../api/student-api'
@@ -168,6 +169,51 @@ export default function StudentDashboard() {
                 <p className='text-gray-500 font-light'>Phòng thi:</p>
                 <p className='font-medium text-gray-800'>{user?.room || 'N/A'}</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className='grid gap-6 lg:grid-cols-2 mb-8'>
+          {/* My Classes Card */}
+          <div
+            onClick={() => navigate('/student/classes')}
+            className='bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]'
+          >
+            <div className='p-8 text-white'>
+              <div className='flex items-center justify-between mb-4'>
+                <div className='flex items-center gap-3'>
+                  <div className='w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm'>
+                    <BookOpen className='w-6 h-6' />
+                  </div>
+                  <div>
+                    <h3 className='text-2xl font-bold'>Lớp học của tôi</h3>
+                    <p className='text-blue-100 text-sm'>Xem các lớp học đã tham gia</p>
+                  </div>
+                </div>
+                <ChevronRight className='w-8 h-8 opacity-70' />
+              </div>
+              <p className='text-blue-50 text-sm leading-relaxed'>
+                Xem danh sách các lớp học, bài thi được giao và thông tin chi tiết từng lớp học.
+              </p>
+            </div>
+          </div>
+
+          {/* Join by Code Card */}
+          <div className='bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg overflow-hidden'>
+            <div className='p-8 text-white'>
+              <div className='flex items-center gap-3 mb-4'>
+                <div className='w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm'>
+                  <KeyRound className='w-6 h-6' />
+                </div>
+                <div>
+                  <h3 className='text-2xl font-bold'>Tham gia kỳ thi</h3>
+                  <p className='text-purple-100 text-sm'>Nhập mã để vào phòng thi</p>
+                </div>
+              </div>
+              <p className='text-purple-50 text-sm leading-relaxed mb-4'>
+                Nhập mã kỳ thi được cung cấp bởi giảng viên để bắt đầu làm bài ngay.
+              </p>
             </div>
           </div>
         </div>

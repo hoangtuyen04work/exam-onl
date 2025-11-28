@@ -1,21 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { KeyRound, Loader2, ArrowLeftCircle } from 'lucide-react'
 import { studentApi } from '../../../api/student-api'
 
 export default function JoinExam() {
-  const [code, setCode] = useState('')
+  const { inviteCode } = useParams<{ inviteCode?: string }>()
+  const [code, setCode] = useState(inviteCode || '')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const hasSubmitted = useRef(false)
 
   useEffect(() => {
+    // Tự động điền mã nếu có trong URL
+    if (inviteCode) {
+      setCode(inviteCode)
+    }
     return () => {
       hasSubmitted.current = false
     }
-  }, [])
+  }, [inviteCode])
 
   const handleJoin = async () => {
     if (loading || hasSubmitted.current) return
@@ -31,7 +36,7 @@ export default function JoinExam() {
       const res = await studentApi.joinExam(code.trim())
       if (res?.success && res.data) {
         toast.success(res.message || 'Tham gia kỳ thi thành công!')
-        navigate(`/exam/${res.data.examSessionId}`)
+        navigate(`/student/exam/join/${res.data.examSessionId}`)
       } else {
         toast.error(res?.message || 'Không thể tham gia kỳ thi')
       }
@@ -58,8 +63,18 @@ export default function JoinExam() {
           </div>
 
           <p className='text-gray-600 mb-8 text-sm sm:text-base leading-relaxed'>
-            Nhập <span className='font-semibold text-gray-800'>mã kỳ thi</span> được cung cấp bởi giảng viên để bắt đầu
-            làm bài. Đảm bảo rằng bạn đã đăng nhập đúng tài khoản sinh viên.
+            {inviteCode ? (
+              <>
+                Mã kỳ thi <span className='font-semibold text-blue-600'>{inviteCode}</span> đã được điền sẵn.
+                <br />
+                Nhấn nút <span className='font-semibold text-gray-800'>"Tham gia ngay"</span> để bắt đầu làm bài.
+              </>
+            ) : (
+              <>
+                Nhập <span className='font-semibold text-gray-800'>mã kỳ thi</span> được cung cấp bởi giảng viên để bắt
+                đầu làm bài. Đảm bảo rằng bạn đã đăng nhập đúng tài khoản sinh viên.
+              </>
+            )}
           </p>
 
           <input
@@ -69,6 +84,7 @@ export default function JoinExam() {
             placeholder='Ví dụ: ABC123'
             className='w-full px-5 py-3.5 text-lg border border-gray-300 rounded-2xl text-center font-semibold text-gray-700 shadow-sm focus:ring-4 focus:ring-blue-400 focus:outline-none transition-all duration-200 mb-6'
             disabled={loading}
+            readOnly={!!inviteCode}
           />
 
           <div className='flex items-center gap-4'>
