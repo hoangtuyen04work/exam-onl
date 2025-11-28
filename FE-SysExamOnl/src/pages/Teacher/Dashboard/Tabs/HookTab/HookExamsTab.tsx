@@ -102,10 +102,17 @@ export const useExamsTab = () => {
 
   const openTimeModal = (examId: number | string) => {
     setSelectedExamId(examId)
-    const now = new Date()
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-    setStartAt(now.toISOString().slice(0, 16))
-    setExpiredAt(new Date(now.getTime() + 3600000).toISOString().slice(0, 16))
+   const now = new Date();
+
+// Format đúng cho input datetime-local
+const formatLocal = (d: Date) => {
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
+setStartAt(formatLocal(now));
+setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)));
     setDuration('60')
     setShowTimeModal(true)
   }
@@ -157,7 +164,13 @@ export const useExamsTab = () => {
     }
   }
 
-  const formatDateTime = (iso: string) => format(new Date(iso), 'dd/MM/yyyy HH:mm')
+  const formatDateTime = (iso: string) => {
+  const d = new Date(iso);
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return format(local, 'dd/MM/yyyy HH:mm');
+};
+
 
   return {
     list,

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import axiosClient from '../../../../api/axiosClient'
 import { toast } from 'react-toastify'
 import { ArrowLeft } from 'lucide-react'
+import  Pagination  from '../../../../components/Common/Pagination';
 
 interface ExamSession {
   id: string | number
@@ -19,6 +20,17 @@ export default function ExamSessionsList() {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const location = useLocation()
+  const examId = location.state?.examId 
+ // pagination 
+ const [currentPage, setCurrentPage] = React.useState(1);
+   const itemsPerPage = 9;
+   const totalPages = Math.ceil(sessions.length / itemsPerPage);
+   const currentList = sessions.slice(
+     (currentPage - 1) * itemsPerPage,
+     currentPage * itemsPerPage
+   );
+ 
+  
   const examId = location.state?.examId
 
   useEffect(() => {
@@ -104,7 +116,7 @@ export default function ExamSessionsList() {
       ) : (
         /* Danh sách phiên thi */
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {sessions.map((session) => (
+          {currentList.map((session) => (
             <div
               key={session.id}
               className="bg-white border rounded-xl shadow-sm hover:shadow-md transition-all p-5 cursor-pointer"
@@ -190,6 +202,12 @@ export default function ExamSessionsList() {
           ))}
         </div>
       )}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        className="fixed bottom-0 left-0 w-full bg-white pt-4 pb-4 shadow-lg z-50"
+      />
     </div>
   )
 }
