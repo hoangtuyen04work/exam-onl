@@ -62,9 +62,6 @@ export default function QuestionPaperBank() {
                   <span className="text-sm text-slate-500">({papers.length})</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={handleExport} className="p-2 rounded-md hover:bg-slate-50 text-slate-600" title="Xuất">
-                    <Download className="w-4 h-4" />
-                  </button>
                   <button onClick={triggerImport} className="p-2 rounded-md hover:bg-slate-50 text-slate-600" title="Nhập">
                     <Upload className="w-4 h-4" />
                   </button>
