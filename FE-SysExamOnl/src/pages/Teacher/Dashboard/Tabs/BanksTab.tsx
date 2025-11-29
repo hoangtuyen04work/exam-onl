@@ -1,6 +1,16 @@
+<<<<<<< HEAD
 'use client'
 
 import { Plus, Eye, Trash2, X, Calendar, FileText, Loader2, ChevronLeft, ChevronRight, Download, Upload, Edit } from 'lucide-react'
+=======
+import { Plus, Eye, Trash2, X, Calendar, FileText, Loader2, ChevronLeft, ChevronRight, Download, Upload, Edit } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import axiosClient from '../../../../api/axiosClient'
+import { toast } from 'react-toastify'
+import type { QuestionPaper } from '../Tabs/HookTab/HookBanktab'
+>>>>>>> bdc1cbe
 import { useBankQuestion } from '../Tabs/HookTab/HookBanktab'
 
 export default function QuestionPaperBank() {
@@ -15,14 +25,50 @@ export default function QuestionPaperBank() {
     formatDate, difficultyText
   } = useBankQuestion()
 
+  useEffect(() => {
+    // preserve scroll position and lock background scroll robustly
+    const prevBodyOverflow = document.body.style.overflow
+    const prevDocOverflow = document.documentElement.style.overflow
+    const prevBodyPosition = document.body.style.position
+    const prevBodyTop = document.body.style.top
+    const prevBodyWidth = document.body.style.width
+    if (showAddModal) {
+      const scrollY = window.scrollY || window.pageYOffset
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+    }
+
+    return () => {
+      // restore
+      document.body.style.overflow = prevBodyOverflow
+      document.documentElement.style.overflow = prevDocOverflow
+      document.body.style.position = prevBodyPosition
+      document.body.style.top = prevBodyTop
+      document.body.style.width = prevBodyWidth
+      // restore scroll position if we set it
+      if (showAddModal) {
+        const top = parseInt(document.body.style.top || '0')
+        window.scrollTo(0, Math.abs(top))
+      }
+    }
+  }, [showAddModal])
+
   return (
     <>
       {showAddModal && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => setShowAddModal(false)} />
       )}
 
+<<<<<<< HEAD
       <div className="  p-4">
         <div className="max-w-7xl mx-auto space-y-4">
+=======
+      <div className="p-3 overflow-hidden">
+        <div className="max-w-7xl mx-auto space-y-4 overflow-hidden">
+>>>>>>> bdc1cbe
 
           {/* HEADER - tiêu đề đã bỏ, search + tạo mới sang trái */}
           <div className="flex items-center justify-between gap-4">
@@ -69,7 +115,11 @@ export default function QuestionPaperBank() {
                 </div>
               </div>
 
+<<<<<<< HEAD
               <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-2">
+=======
+              <div className="space-y-3 max-h-[22rem] overflow-y-auto pr-2">
+>>>>>>> bdc1cbe
                 {loadingPapers ? (
                   <div className="flex justify-center py-10">
                     <Loader2 className="animate-spin w-7 h-7 text-indigo-600" />
@@ -106,7 +156,11 @@ export default function QuestionPaperBank() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
+<<<<<<< HEAD
                         <div className="text-xs text-slate-400">{p.questionCount ?? 0} câu</div>
+=======
+                        <div className="text-xs text-slate-400">{((p as unknown) as { questionCount?: number }).questionCount ?? 0} câu</div>
+>>>>>>> bdc1cbe
                       </div>
                     </div>
                   ))
@@ -162,6 +216,10 @@ export default function QuestionPaperBank() {
                       <button onClick={() => { /* placeholder cho edit */ }} className="px-3 py-2 rounded-md bg-white border text-slate-600 hover:bg-slate-50">
                         <Edit className="w-4 h-4 mr-2 inline" /> Sửa
                       </button>
+<<<<<<< HEAD
+=======
+                      <CreateFromBankButton selectedPaper={selectedPaper} />
+>>>>>>> bdc1cbe
                       <button onClick={() => setSelectedPaper(null)} className="p-2 rounded-md text-slate-500 hover:bg-slate-50">
                         <X />
                       </button>
@@ -174,7 +232,11 @@ export default function QuestionPaperBank() {
                     </div>
                   ) : (
                     // new scroll container to prevent page break
+<<<<<<< HEAD
                     <div className="mt-4 overflow-auto max-h-[56vh] space-y-4">
+=======
+                    <div className="mt-4 overflow-auto max-h-[44vh] space-y-4">
+>>>>>>> bdc1cbe
                       {selectedPaper.questions.map((q, i) => (
                         <div key={i} className="p-4 bg-gradient-to-r from-slate-50 to-white border border-gray-100 rounded-lg w-full break-words">
                           <div className="flex justify-between items-start">
@@ -387,3 +449,121 @@ export default function QuestionPaperBank() {
     </>
   )
 }
+
+// Small component defined below to keep the main component tidy
+function CreateFromBankButton({ selectedPaper: selectedPaperProp }: { selectedPaper: QuestionPaper | null }) {
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  
+  const [easyCount, setEasyCount] = useState<number>(0)
+  const [mediumCount, setMediumCount] = useState<number>(0)
+  const [hardCount, setHardCount] = useState<number>(0)
+
+  const handleSubmit = async () => {
+    if (!selectedPaperProp) return toast.error('Vui lòng chọn ngân hàng đề trước')
+    if (!name.trim()) return toast.error('Vui lòng nhập tên bài kiểm tra')
+
+    const total = Number(easyCount || 0) + Number(mediumCount || 0) + Number(hardCount || 0)
+
+    const payload = {
+      bankQuestionId: selectedPaperProp.bankQuestionId,
+      name: name.trim(),
+      description: description.trim(),
+      number: total,
+      easyCount: Number(easyCount || 0),
+      mediumCount: Number(mediumCount || 0),
+      hardCount: Number(hardCount || 0),
+    }
+
+    try {
+      await axiosClient.post('/teacher/exams/bank-question', payload)
+      toast.success('Tạo bài kiểm tra thành công')
+      setOpen(false)
+      navigate('/teacher/exams')
+    } catch (err) {
+      let msg = 'Tạo bài kiểm tra thất bại'
+      if (axios.isAxiosError(err) && err.response) msg = err.response.data?.message ?? msg
+      else if (err instanceof Error) msg = err.message
+      toast.error(msg)
+    }
+  }
+
+  useEffect(() => {
+    if (open && selectedPaperProp) {
+      setName(`${selectedPaperProp.name} - Bài kiểm tra`)
+      setDescription(selectedPaperProp.description || '')
+      const counts = (selectedPaperProp.questions || []).reduce((acc, q) => {
+        if (q.difficulty === 'EASY') acc.easy++
+        else if (q.difficulty === 'MEDIUM') acc.medium++
+        else if (q.difficulty === 'HARD') acc.hard++
+        return acc
+      }, { easy: 0, medium: 0, hard: 0 })
+      setEasyCount(counts.easy)
+      setMediumCount(counts.medium)
+      setHardCount(counts.hard)
+    }
+  }, [open, selectedPaperProp])
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)} className="px-3 py-2 rounded-md bg-white border text-slate-600 hover:bg-slate-50">
+        <FileText className="w-4 h-4 mr-2 inline" /> Tạo bài từ ngân hàng
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setOpen(false)} />
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800">Tạo bài kiểm tra từ ngân hàng</h3>
+                <div className="text-sm text-slate-500">Điền thông tin, sau đó nhấn xác nhận</div>
+              </div>
+              <button onClick={() => setOpen(false)} className="p-2 rounded-md text-slate-500 hover:bg-slate-50"><X /></button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-slate-700">Ngân hàng</label>
+                <div className="mt-1 p-3 bg-slate-50 rounded text-sm text-slate-700">{selectedPaperProp?.name ?? '—'}</div>
+              </div>
+
+              <div>
+                <label className="text-sm text-slate-700">Tên bài kiểm tra</label>
+                <input value={name} onChange={e => setName(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg p-2 text-sm" />
+              </div>
+
+              <div>
+                <label className="text-sm text-slate-700">Mô tả</label>
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="mt-1 w-full border border-gray-200 rounded-lg p-2 text-sm" />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-sm text-slate-700">Số câu Dễ</label>
+                  <input type="number" min={0} value={easyCount} onChange={e => setEasyCount(parseInt(e.target.value || '0'))} className="mt-1 w-full border border-gray-200 rounded-lg p-2 text-sm" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-700">Số câu Trung bình</label>
+                  <input type="number" min={0} value={mediumCount} onChange={e => setMediumCount(parseInt(e.target.value || '0'))} className="mt-1 w-full border border-gray-200 rounded-lg p-2 text-sm" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-700">Số câu Khó</label>
+                  <input type="number" min={0} value={hardCount} onChange={e => setHardCount(parseInt(e.target.value || '0'))} className="mt-1 w-full border border-gray-200 rounded-lg p-2 text-sm" />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setOpen(false)} className="px-4 py-2 border rounded-md text-slate-600 bg-white hover:bg-slate-50">Hủy</button>
+              <button onClick={handleSubmit} className="px-4 py-2 rounded-md bg-gradient-to-r from-indigo-600 to-blue-600 text-white">Xác nhận</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+

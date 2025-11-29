@@ -176,9 +176,9 @@ export default function TeacherDashboard() {
 
         {/* MAIN CONTENT */}
         <div className="flex-1 flex flex-col ml-[var(--sidebar-width)]" style={{marginLeft: sidebarOpen ? 256 : 120}}>
-          <main className="flex-1 overflow-auto bg-gradient-to-br from-gray-50/50 to-indigo-50/30">
-            <div className="min-h-full px-3 py-4 lg:px-8 lg:py-8">
-              <div className="min-h-full w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/40 p-4">
+          <main className="flex-1 overflow-hidden bg-gradient-to-br from-gray-50/50 to-indigo-50/30">
+            <div className="min-h-full h-full px-2 py-3 lg:px-10 lg:py-10 overflow-hidden ">
+              <div className="h-full w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/40 p-8 overflow-hidden">
                 <Outlet />
               </div>
             </div>
