@@ -9,7 +9,7 @@ export default function HomeTab() {
   return (
       <div className='flex flex-col justify-between h-full'>
 
-    <div className="space-y-8 ">
+    <div className="space-y-8 p-10 ">
       {/* Chào mừng – nhỏ gọn hơn */}
       <div className="text-center py-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">
@@ -24,9 +24,9 @@ export default function HomeTab() {
         {/* Tạo đề mới */}
         <button
           onClick={() => navigate('/teacher/exams/create')}
-          className="group flex items-center gap-5 bg-white rounded-xl shadow-md hover:shadow-xl border border-gray-200 p-6 transition-all hover:border-blue-400 hover:-translate-y-1"
+          className="group flex items-center gap-5 bg-white rounded-xl cursor-pointer shadow-md hover:shadow-xl border border-gray-200 p-6 transition-all hover:border-blue-400 hover:-translate-y-1"
         >
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition">
+          <div className="w-12 h-12 bg-blue-100  rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition">
             <Plus className="w-7 h-7 text-blue-600 group-hover:text-white" />
           </div>
           <div className="text-left">
@@ -38,7 +38,7 @@ export default function HomeTab() {
         {/* Từ ngân hàng câu hỏi */}
         <button
           onClick={() => navigate('/teacher/questions')}
-          className="group flex items-center gap-5 bg-white rounded-xl shadow-md hover:shadow-xl border border-gray-200 p-6 transition-all hover:border-green-400 hover:-translate-y-1"
+          className="group flex items-center gap-5 cursor-pointer bg-white rounded-xl shadow-md hover:shadow-xl border border-gray-200 p-6 transition-all hover:border-green-400 hover:-translate-y-1"
         >
           <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-600 transition">
             <BookOpenText className="w-7 h-7 text-green-600 group-hover:text-white" />

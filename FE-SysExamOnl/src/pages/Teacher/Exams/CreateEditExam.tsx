@@ -116,20 +116,7 @@ export default function CreateEditExam() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Thời gian <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={durationMinutes}
-                onChange={e => setDurationMinutes(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-blue-500 text-sm font-medium"
-              >
-                {durations.map(m => (
-                  <option key={m} value={m}>{m} phút</option>
-                ))}
-              </select>
-            </div>
+           
           </div>
 
           <div className="mb-6">
