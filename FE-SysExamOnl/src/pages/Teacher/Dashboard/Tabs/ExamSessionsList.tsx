@@ -31,8 +31,6 @@ export default function ExamSessionsList() {
    );
  
   
-  const examId = location.state?.examId
-
   useEffect(() => {
     if (!examId) {
       toast.error('Không có ID đề thi!')

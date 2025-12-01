@@ -8,7 +8,7 @@ import axios, {
 } from 'axios';
 
 // Lấy base URL từ .env (Vite chuẩn)
-const baseURL = (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/+$/, '') || '';
+const baseURL = (import.meta.env.VITE_API_BASE_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
 
 // Tạo instance Axios
 const api: AxiosInstance = axios.create({
@@ -40,10 +40,10 @@ function readToken(): string | null {
 export function setAuthToken(token: string | null) {
   try {
     if (token) {
-      localStorage.setItem('auth_token', token);
+      localStorage.setItem('authToken', token);
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
-      localStorage.removeItem('auth_token');
+      localStorage.removeItem('authToken');
       delete api.defaults.headers.common['Authorization'];
     }
   } catch {

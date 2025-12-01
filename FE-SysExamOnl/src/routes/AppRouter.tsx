@@ -21,10 +21,7 @@ import ExamMonitoringPage from '../pages/Teacher/Dashboard/Tabs/ExamMonitoringPa
 import ClassListPage from '../pages/Teacher/Classes'
 import ClassDetailPage from '../pages/Teacher/Classes/ClassDetailPage'
 import ClassEditPage from '../pages/Teacher/Classes/ClassEditPage'
-import {
-  ClassListPage as StudentClassListPage,
-  ClassDetailPage as StudentClassDetailPage
-} from '../pages/Student/Classes'
+import { ClassListPage as StudentClassListPage } from '../pages/Student/Classes'
 
 import axiosClient from '../api/axiosClient'
 import { useDispatch } from 'react-redux'
@@ -72,7 +69,7 @@ export default function AppRouter() {
       >
         <Route index element={<StudentDashboard />} />
         <Route path='classes' element={<StudentClassListPage />} />
-        <Route path='classes/:classId' element={<StudentClassDetailPage />} />
+        <Route path='classes/:classId' element={<StudentClassListPage />} />
         <Route path='exam/join/:examId' element={<ExamPage />} />
         <Route path='exam/join' element={<JoinExam />} />
         <Route path='exam/:examSessionId/result' element={<ResultPage />} />

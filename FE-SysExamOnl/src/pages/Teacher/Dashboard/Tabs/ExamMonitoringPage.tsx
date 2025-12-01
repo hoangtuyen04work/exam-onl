@@ -30,6 +30,9 @@ export default function ExamMonitoringPage() {
   const [examSessionId, setExamSessionId] = useState(paramId || '28')
   const [stompClient, setStompClient] = useState<Client | null>(null)
   const [connected, setConnected] = useState(false)
+
+  const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
+
   const [studentDetails, setStudentDetails] = useState<
     Map<
       number,
@@ -51,7 +54,7 @@ export default function ExamMonitoringPage() {
     const fetchParticipants = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8888/exam-online-system/api/teacher/exam-sessions/monitoring/${examSessionId}`,
+          `${serverPort}/api/teacher/exam-sessions/monitoring/${examSessionId}`,
           {
             headers: { Authorization: `Bearer ${token}` }
           }
@@ -102,9 +105,10 @@ export default function ExamMonitoringPage() {
       alert('Vui lòng đăng nhập để xem monitoring!')
       return
     }
+    console.log('Kết nối tới WebSocket...', serverPort)
 
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8888/exam-online-system/ws'),
+      webSocketFactory: () => new SockJS(serverPort + '/ws'),
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },

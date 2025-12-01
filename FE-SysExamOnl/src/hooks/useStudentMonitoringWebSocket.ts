@@ -14,6 +14,9 @@ export const useStudentMonitoringWebSocket = (
   isExamStarted: boolean
 ) => {
   const clientRef = useRef<Client | null>(null);
+  const baseURL = (import.meta.env.VITE_API_BASE_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
+  const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
+
 
   const sendEvent = (event: StudentEvent['event']) => {
     if (!clientRef.current?.connected || !examSessionId) return;
@@ -40,7 +43,7 @@ export const useStudentMonitoringWebSocket = (
     }
 
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8888/exam-online-system/ws'),
+      webSocketFactory: () => new SockJS(serverPort + '/ws'),
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },

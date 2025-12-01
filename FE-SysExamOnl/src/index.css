@@ -3,6 +3,11 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 /* === FIX TRÀN NGANG VĨNH VIỄN – DÁN VÀO index.css === */
 html, body, #root, #root > div {
   overflow-x: hidden !important;
@@ -22,6 +27,10 @@ body {
 
 .animate-fadeSlide {
   animation: fadeSlide 0.3s ease;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
 }
 
 .stats-card {
