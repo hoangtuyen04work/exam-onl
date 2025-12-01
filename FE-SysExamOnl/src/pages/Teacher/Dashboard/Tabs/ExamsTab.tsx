@@ -33,7 +33,7 @@ export default function ExamsTab() {
 
   // === PAGINATION ===
   const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 12;
+  const itemsPerPage = 8;
   const totalPages = Math.ceil(list.length / itemsPerPage);
   const currentList = list.slice(
     (currentPage - 1) * itemsPerPage,
@@ -62,8 +62,9 @@ export default function ExamsTab() {
   const selectedCount = Array.from(selectedExams.values()).filter(Boolean).length;
 
   return (
-    <div className="space-y-0">
-      {/* HEADER + TOOLBAR */}
+     <div className="space-y-0">
+
+      {/* HEADER */}
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
@@ -73,7 +74,6 @@ export default function ExamsTab() {
 
         {/* TOOLBAR */}
         <div className="flex flex-wrap gap-3 items-center bg-white p-4 rounded-xl shadow-sm border">
-          {/* IMPORT */}
           <input
             type="file"
             accept=".xlsx"
@@ -81,31 +81,29 @@ export default function ExamsTab() {
             id="examImportFile"
             onChange={(e) => e.target.files?.[0] && importExams(e.target.files[0])}
           />
+
           <button
             onClick={() => document.getElementById('examImportFile')?.click()}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-xl 
-                       hover:bg-green-700 active:scale-[0.97] transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-all"
           >
-            <Upload size={18} className="opacity-90" />
+            <Upload size={18} />
             <span>Tải lên</span>
           </button>
 
-          {/* EXPORT SELECTED */}
           <button
             onClick={handleExportSelected}
             disabled={selectedCount === 0}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all shadow-sm
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all
               ${selectedCount === 0
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.97]'}
+                : 'bg-blue-600 text-white hover:bg-blue-700'}
             `}
           >
-            <Download size={18} className={`${selectedCount === 0 ? 'opacity-50' : 'opacity-90'}`} />
+            <Download size={18} />
             <span>Tải xuống</span>
             {selectedCount > 0 && <span>({selectedCount})</span>}
           </button>
 
-          {/* ADD BUTTONS */}
           <div className="flex gap-3 ml-auto">
             <button
               onClick={() => navigate('/teacher/exams/create')}
@@ -113,6 +111,7 @@ export default function ExamsTab() {
             >
               + Tạo đề thi
             </button>
+
             <button
               onClick={() => navigate('/teacher/questions')}
               className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition"
@@ -130,7 +129,7 @@ export default function ExamsTab() {
         <div className="text-center py-10 text-gray-400 italic">Chưa có đề thi nào.</div>
       ) : (
         <>
-          {/* SELECT ALL (trong trang) */}
+          {/* SELECT ALL */}
           <div className="flex items-center gap-3 mb-3 text-sm font-medium">
             <input
               type="checkbox"
@@ -141,72 +140,72 @@ export default function ExamsTab() {
             <span>Chọn tất cả (trong trang)</span>
           </div>
 
-          {/* GRID LIST */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {currentList.map((exam) => (
-              <div
-                key={exam.id}
-                className="bg-white rounded-2xl border border-gray-200 shadow hover:shadow-lg transition p-5 flex flex-col h-full"
-              >
-                <div className="flex items-start gap-3 flex-1">
-                  <input
-                    type="checkbox"
-                    checked={!!selectedExams.get(exam.id)}
-                    onChange={() => toggleSelect(exam.id)}
-                    className="w-5 h-5 accent-blue-600 mt-1 shrink-0"
-                  />
+          {/* GRID */}
+          <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
 
-                  <div
-                    onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-                    className="flex-1 min-w-0 cursor-pointer"
-                  >
-                    <h3 className="font-semibold text-blue-700 text-lg line-clamp-2 break-words">
-                      {exam.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2 break-words">
-                      {exam.description || 'Không có mô tả.'}
-                    </p>
-                    <span className="text-[11px] text-gray-600 block mt-2">
-                      {exam.numberQuestions} câu
-                    </span>
-                  </div>
-                </div>
+  {currentList.map((exam) => (
+    <div
+      key={exam.id}
+      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-3 flex flex-col h-full"
+    >
+      <div className="flex items-start gap-2 flex-1">
+        <input
+          type="checkbox"
+          checked={!!selectedExams.get(exam.id)}
+          onChange={() => toggleSelect(exam.id)}
+          className="w-4 h-4 accent-blue-600 mt-1"
+        />
 
-                {/* BOTTOM ACTIONS */}
-                <div className="flex flex-wrap gap-18 text-xs mt-4 pt-3 border-t border-gray-400">
-                  <button
-                    onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-                    className="text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Sửa
-                  </button>
+        <div
+          onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
+          className="flex-1 cursor-pointer"
+        >
+          <h3 className="font-semibold text-blue-700 text-base line-clamp-2 break-words">
+            {exam.name}
+          </h3>
 
-                  <button
-                    onClick={() =>
-                      navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })
-                    }
-                    className="text-green-600 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Đã giao
-                  </button>
+          <p className="text-[11px] text-gray-500 mt-1 line-clamp-2 break-words">
+            {exam.description || 'Không có mô tả.'}
+          </p>
 
-                  <button
-                    onClick={() => openTimeModal(exam.id)}
-                    className="text-red-600 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <Clock className="w-4 h-4" />
-                    Giao đề
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <span className="text-[10px] text-gray-600 block mt-1.5">
+            {exam.numberQuestions} câu
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-6 text-[11px] mt-3 pt-2 border-t border-gray-300">
+        <button
+          onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
+          className="text-blue-600 hover:underline flex items-center gap-1"
+        >
+          <Edit2 className="w-3.5 h-3.5" /> Sửa
+        </button>
+
+        <button
+          onClick={() =>
+            navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })
+          }
+          className="text-green-600 hover:underline flex items-center gap-1"
+        >
+          <CheckCircle className="w-3.5 h-3.5" /> Đã giao
+        </button>
+
+        <button
+          onClick={() => openTimeModal(exam.id)}
+          className="text-red-600 hover:underline flex items-center gap-1"
+        >
+          <Clock className="w-3.5 h-3.5" /> Giao đề
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
+
         </>
       )}
 
-      {/*PAGINATION */}
+      {/* PAGINATION */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
@@ -214,7 +213,7 @@ export default function ExamsTab() {
         className="fixed bottom-0 left-0 w-full bg-white pt-4 pb-4 shadow-lg z-50"
       />
 
-      {/* MODAL THỜI GIAN */}
+     {/* MODAL THỜI GIAN */}
       {showTimeModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fadeIn">

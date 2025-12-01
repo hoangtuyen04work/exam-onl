@@ -23,7 +23,7 @@ export default function ExamSessionsList() {
   const examId = location.state?.examId 
  // pagination 
  const [currentPage, setCurrentPage] = React.useState(1);
-   const itemsPerPage = 9;
+   const itemsPerPage = 6;
    const totalPages = Math.ceil(sessions.length / itemsPerPage);
    const currentList = sessions.slice(
      (currentPage - 1) * itemsPerPage,
@@ -81,8 +81,9 @@ export default function ExamSessionsList() {
   }
 
   return (
+    <div className="space-y-0">
+
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={() => navigate(-1)}
@@ -100,7 +101,6 @@ export default function ExamSessionsList() {
         </div>
       </div>
 
-      {/* Loading */}
       {loading ? (
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -112,94 +112,92 @@ export default function ExamSessionsList() {
           <p className="text-gray-500">Đề này chưa được giao cho bất kỳ phiên nào.</p>
         </div>
       ) : (
-        /* Danh sách phiên thi */
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {currentList.map((session) => (
-            <div
-              key={session.id}
-              className="bg-white border rounded-xl shadow-sm hover:shadow-md transition-all p-5 cursor-pointer"
-              onClick={() =>
-                navigate('/teacher/exam-sessions/detail', {
-                  state: { examSessionId: session.id }
-                })
-              }
-            >
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="font-semibold text-blue-700 line-clamp-1">
-                  {session.name || 'Phiên không tên'}
-                </h3>
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                  {session.code}
-                </span>
-              </div>
+        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
 
-              <div className="space-y-2 text-sm text-gray-600">
-                <p className="flex items-center gap-2">
-                  <span className="font-medium">Chủ sở hữu:</span>
-                  <span className="truncate">{session.owner}</span>
-                </p>
+  {currentList.map((session) => (
+    <div
+      key={session.id}
+      className="bg-white border rounded-xl shadow-sm hover:shadow-md transition-all p-2 cursor-pointer"
+      onClick={() =>
+        navigate('/teacher/exam-sessions/detail', {
+          state: { examSessionId: session.id }
+        })
+      }
+    >
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="font-semibold text-blue-700 text-sm line-clamp-1">
+          {session.name || 'Phiên không tên'}
+        </h3>
+        <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+          {session.code}
+        </span>
+      </div>
 
-                <p className="flex items-center gap-2">
-                  <span className="font-medium">Bắt đầu:</span>
-                  <span>{formatDate(session.start)}</span>
-                </p>
+      <div className="space-y-1.5 text-xs text-gray-600">
+        <p className="flex items-center gap-1.5">
+          <span className="font-medium">Chủ sở hữu:</span>
+          <span className="truncate">{session.owner}</span>
+        </p>
 
-                <p className="flex items-center gap-2">
-                  <span className="font-medium">Link:</span>
-                  <a
-                    href={session.inviteLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 hover:underline text-xs truncate block"
-                  >
-                    {session.inviteLink || 'Không có'}
-                  </a>
-                </p>
-              </div>
+        <p className="flex items-center gap-1.5">
+          <span className="font-medium">Bắt đầu:</span>
+          <span>{formatDate(session.start)}</span>
+        </p>
 
-              {/* BUTTONS */}
-              <div className="mt-4 flex flex-col gap-2">
+        <p className="flex items-center gap-1.5">
+          <span className="font-medium">Link:</span>
+          <a
+            href={session.inviteLink}
+            target="_blank"
+            rel="noreferrer"
+            className="text-blue-600 hover:underline text-[10px] truncate block"
+          >
+            {session.inviteLink || 'Không có'}
+          </a>
+        </p>
+      </div>
 
-                {/* Copy buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigator.clipboard.writeText(session.inviteLink)
-                      toast.success('Đã copy link!')
-                    }}
-                    className="flex-1 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-100 transition"
-                  >
-                    Copy Link
-                  </button>
+      <div className="mt-3 flex flex-col gap-1.5">
+        <div className="flex gap-1.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(session.inviteLink);
+              toast.success('Đã copy link!');
+            }}
+            className="flex-1 text-[10px] bg-blue-50 text-blue-700 px-2 py-1.5 rounded hover:bg-blue-100 transition"
+          >
+            Copy Link
+          </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigator.clipboard.writeText(session.code)
-                      toast.success('Đã copy mã!')
-                    }}
-                    className="flex-1 text-xs bg-gray-50 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-100 transition"
-                  >
-                    Copy Mã
-                  </button>
-                </div>
-
-                {/* Nút Quản lý */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    navigate(`/teacher/monitoring/${session.id}`)
-                  }}
-                  className="w-full text-xs bg-green-50 text-green-700 px-3 py-2 rounded hover:bg-green-100 transition"
-                >
-                  Quản lý phiên thi
-                </button>
-              </div>
-            </div>
-          ))}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(session.code);
+              toast.success('Đã copy mã!');
+            }}
+            className="flex-1 text-[10px] bg-gray-50 text-gray-700 px-2 py-1.5 rounded hover:bg-gray-100 transition"
+          >
+            Copy Mã
+          </button>
         </div>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/teacher/monitoring/${session.id}`);
+          }}
+          className="w-full text-[10px] bg-green-50 text-green-700 px-3 py-1.5 rounded hover:bg-green-100 transition"
+        >
+          Quản lý phiên thi
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
+
       )}
+
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
@@ -207,5 +205,6 @@ export default function ExamSessionsList() {
         className="fixed bottom-0 left-0 w-full bg-white pt-4 pb-4 shadow-lg z-50"
       />
     </div>
+                    </div>
   )
 }
