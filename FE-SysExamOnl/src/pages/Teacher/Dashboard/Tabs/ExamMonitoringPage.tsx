@@ -8,7 +8,7 @@ import { vi } from 'date-fns/locale/vi'
 
 interface StudentEvent {
   examSessionId: number
-  event: 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'SUBMIT'
+  event: 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'FOCUS_REGAINED' | 'SUBMIT' | 'TAB_SWITCH' | 'DISCONNECTED'
 }
 
 interface StudentEventBroadcast {
@@ -20,8 +20,17 @@ interface StudentEventBroadcast {
 interface StudentStatusResponse {
   userId: number
   username: string
-  status: 'IN_PROGRESS' | 'COMPLETED'
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'DISCONNECTED'
   timestamp: string
+}
+
+type StudentDetail = {
+  name: string
+  lastEvent: StudentEventBroadcast | null
+  currentStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'UNKNOWN'
+  timestamp?: string
+  focusLostCount?: number
+  tabSwitchCount?: number
 }
 
 export default function ExamMonitoringPage() {
@@ -31,19 +40,9 @@ export default function ExamMonitoringPage() {
   const [stompClient, setStompClient] = useState<Client | null>(null)
   const [connected, setConnected] = useState(false)
 
-  const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
+  const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || ''
 
-  const [studentDetails, setStudentDetails] = useState<
-    Map<
-      number,
-      {
-        name: string
-        lastEvent: StudentEventBroadcast | null
-        currentStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'UNKNOWN'
-        timestamp?: string
-      }
-    >
-  >(new Map())
+  const [studentDetails, setStudentDetails] = useState<Map<number, StudentDetail>>(new Map())
 
   const token = localStorage.getItem('authToken') || ''
 
@@ -53,12 +52,9 @@ export default function ExamMonitoringPage() {
 
     const fetchParticipants = async () => {
       try {
-        const response = await fetch(
-          `${serverPort}/api/teacher/exam-sessions/monitoring/${examSessionId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        )
+        const response = await fetch(`${serverPort}/api/teacher/exam-sessions/monitoring/${examSessionId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
 
         if (!response.ok) {
           console.error('Lỗi fetch danh sách sinh viên:', response.status)

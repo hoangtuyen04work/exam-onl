@@ -4,6 +4,7 @@ import { studentClassApi } from '../../../api/student-class-api'
 import { StudentClass, StudentClassDetail } from '../../../types/class.type'
 import { ChatBox } from '../../../components/Chat'
 import { classChatApi } from '../../../api/class-chat-api'
+import ReactPaginate from 'react-paginate'
 
 // Decode JWT to get userId
 const getUserIdFromToken = (): number => {
@@ -30,6 +31,10 @@ const ClassListPage = () => {
   const [activeTab, setActiveTab] = useState<'exams' | 'chat'>('exams')
   const [allowStudentChat, setAllowStudentChat] = useState(true)
   const [showClassInfo, setShowClassInfo] = useState(false)
+
+  // Exam pagination
+  const [examPage, setExamPage] = useState(0)
+  const examsPerPage = 10
 
   useEffect(() => {
     loadClasses()
@@ -118,6 +123,42 @@ const ClassListPage = () => {
       window.location.href = inviteLink
     }
   }
+
+  const ExamTable = ({ exams, page, totalPages, onPageChange }) => (
+    <div>
+      <table className='min-w-full bg-white'>
+        <thead>
+          <tr>
+            <th className='py-2'>Tên bài thi</th>
+            <th className='py-2'>Thời gian bắt đầu</th>
+            <th className='py-2'>Thời gian kết thúc</th>
+            <th className='py-2'>Thời gian làm</th>
+          </tr>
+        </thead>
+        <tbody>
+          {exams.map((exam) => (
+            <tr key={exam.id}>
+              <td className='py-2'>{exam.name}</td>
+              <td className='py-2'>{formatDateTime(exam.startAt)}</td>
+              <td className='py-2'>{formatDateTime(exam.expiredAt)}</td>
+              <td className='py-2'>{exam.durationMinutes} phút</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className='flex justify-between mt-4'>
+        <button onClick={() => onPageChange(page - 1)} disabled={page === 0}>
+          Trước
+        </button>
+        <span>
+          Trang {page + 1} của {totalPages}
+        </span>
+        <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages - 1}>
+          Sau
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className='h-screen flex overflow-hidden bg-gray-50'>
@@ -351,102 +392,192 @@ const ClassListPage = () => {
                       <p className='text-gray-600 text-lg'>Chưa có bài thi nào</p>
                     </div>
                   ) : (
-                    <div className='space-y-3'>
-                      {classDetail.examSessions.map((exam) => {
-                        const status = getExamStatus(exam.startAt, exam.expiredAt)
-                        const canStart = new Date() >= new Date(exam.startAt) && new Date() <= new Date(exam.expiredAt)
+                    <div className='bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden'>
+                      <div className='overflow-x-auto'>
+                        <table className='min-w-full divide-y divide-gray-200'>
+                          <thead className='bg-gradient-to-r from-blue-50 to-indigo-50'>
+                            <tr>
+                              <th className='px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-1/4'>
+                                Tên bài thi
+                              </th>
+                              <th className='px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-1/6'>
+                                Mã bài thi
+                              </th>
+                              <th className='px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-1/6'>
+                                Thời gian bắt đầu
+                              </th>
+                              <th className='px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-1/6'>
+                                Thời gian kết thúc
+                              </th>
+                              <th className='px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-1/8'>
+                                Thời lượng
+                              </th>
+                              <th className='px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-1/8'>
+                                Trạng thái
+                              </th>
+                              <th className='px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-1/8'>
+                                Thao tác
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className='bg-white divide-y divide-gray-200'>
+                            {classDetail.examSessions
+                              .slice(examPage * examsPerPage, (examPage + 1) * examsPerPage)
+                              .map((exam) => {
+                                const now = new Date()
+                                const startTime = new Date(exam.startAt)
+                                const endTime = new Date(exam.expiredAt)
+                                const isUpcoming = startTime > now
+                                const isActive = startTime <= now && endTime >= now
+                                const isExpired = endTime < now
+                                const canStart = isActive && exam.inviteLink
 
-                        return (
-                          <div
-                            key={exam.classExamSessionId}
-                            className='bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all border border-gray-200'
-                          >
-                            <div className='flex justify-between items-start mb-3'>
-                              <div className='flex-1'>
-                                <div className='flex items-center gap-2.5 mb-1.5'>
-                                  <div className='w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center'>
-                                    <svg
-                                      className='w-5 h-5 text-white'
-                                      fill='none'
-                                      stroke='currentColor'
-                                      viewBox='0 0 24 24'
-                                    >
-                                      <path
-                                        strokeLinecap='round'
-                                        strokeLinejoin='round'
-                                        strokeWidth={2}
-                                        d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
-                                      />
-                                    </svg>
-                                  </div>
-                                  <div>
-                                    <h3 className='text-base font-bold text-gray-900'>{exam.examSessionName}</h3>
-                                    <p className='text-xs text-gray-500'>{exam.examSessionCode}</p>
-                                  </div>
-                                </div>
-                              </div>
-                              <span
-                                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${status.color} flex items-center gap-1`}
-                              >
-                                {status.text === 'Đang diễn ra' && '🟢'}
-                                {status.text === 'Sắp diễn ra' && '🔵'}
-                                {status.text === 'Đã kết thúc' && '⚫'}
-                                {status.text}
-                              </span>
-                            </div>
+                                return (
+                                  <tr key={exam.classExamSessionId} className='hover:bg-gray-50 transition-colors'>
+                                    <td className='px-4 py-3 w-1/4'>
+                                      <div className='flex items-center gap-2'>
+                                        <div className='w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0'>
+                                          <svg
+                                            className='w-4 h-4 text-white'
+                                            fill='none'
+                                            stroke='currentColor'
+                                            viewBox='0 0 24 24'
+                                          >
+                                            <path
+                                              strokeLinecap='round'
+                                              strokeLinejoin='round'
+                                              strokeWidth={2}
+                                              d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+                                            />
+                                          </svg>
+                                        </div>
+                                        <div className='min-w-0 flex-1'>
+                                          <div className='text-sm font-semibold text-gray-900 truncate'>
+                                            {exam.examSessionName}
+                                          </div>
+                                          {exam.description && (
+                                            <div className='text-xs text-gray-500 truncate'>{exam.description}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className='px-4 py-3 w-1/6'>
+                                      <span className='text-sm text-gray-600 font-mono block truncate'>
+                                        {exam.examSessionCode}
+                                      </span>
+                                    </td>
+                                    <td className='px-4 py-3 w-1/6'>
+                                      <div className='text-sm text-gray-900'>
+                                        <div className='truncate'>
+                                          {new Date(exam.startAt).toLocaleDateString('vi-VN')}
+                                        </div>
+                                        <div className='text-xs text-gray-500 truncate'>
+                                          {new Date(exam.startAt).toLocaleTimeString('vi-VN', {
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className='px-4 py-3 w-1/6'>
+                                      <div className='text-sm text-gray-900'>
+                                        <div className='truncate'>
+                                          {new Date(exam.expiredAt).toLocaleDateString('vi-VN')}
+                                        </div>
+                                        <div className='text-xs text-gray-500 truncate'>
+                                          {new Date(exam.expiredAt).toLocaleTimeString('vi-VN', {
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className='px-4 py-3 w-1/8'>
+                                      <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap'>
+                                        {exam.durationMinutes} phút
+                                      </span>
+                                    </td>
+                                    <td className='px-4 py-3 w-1/8'>
+                                      {isActive && (
+                                        <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 gap-1 whitespace-nowrap'>
+                                          <span className='w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse'></span>
+                                          Đang diễn ra
+                                        </span>
+                                      )}
+                                      {isUpcoming && (
+                                        <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 whitespace-nowrap'>
+                                          Sắp diễn ra
+                                        </span>
+                                      )}
+                                      {isExpired && (
+                                        <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 whitespace-nowrap'>
+                                          Đã kết thúc
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className='px-4 py-3 w-1/8 text-center'>
+                                      {canStart && (
+                                        <button
+                                          onClick={() => handleStartExam(exam.inviteLink)}
+                                          className='inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-medium transition-all shadow-sm hover:shadow text-xs gap-1 whitespace-nowrap'
+                                        >
+                                          <svg
+                                            className='w-3.5 h-3.5'
+                                            fill='none'
+                                            stroke='currentColor'
+                                            viewBox='0 0 24 24'
+                                          >
+                                            <path
+                                              strokeLinecap='round'
+                                              strokeLinejoin='round'
+                                              strokeWidth={2}
+                                              d='M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z'
+                                            />
+                                            <path
+                                              strokeLinecap='round'
+                                              strokeLinejoin='round'
+                                              strokeWidth={2}
+                                              d='M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                                            />
+                                          </svg>
+                                          Bắt đầu
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
 
-                            {exam.description && (
-                              <p className='text-gray-700 mb-3 p-2.5 bg-gray-50 rounded-lg text-xs'>
-                                {exam.description}
-                              </p>
-                            )}
-
-                            <div className='grid grid-cols-2 gap-2 mb-3'>
-                              <div className='p-2.5 bg-blue-50 rounded-lg'>
-                                <p className='text-[10px] text-blue-600 mb-0.5'>⏰ Bắt đầu</p>
-                                <p className='text-xs font-semibold text-gray-900'>{formatDateTime(exam.startAt)}</p>
-                              </div>
-                              <div className='p-2.5 bg-red-50 rounded-lg'>
-                                <p className='text-[10px] text-red-600 mb-0.5'>⏱️ Kết thúc</p>
-                                <p className='text-xs font-semibold text-gray-900'>{formatDateTime(exam.expiredAt)}</p>
-                              </div>
-                              <div className='p-2.5 bg-green-50 rounded-lg'>
-                                <p className='text-[10px] text-green-600 mb-0.5'>⏳ Thời lượng</p>
-                                <p className='text-xs font-semibold text-gray-900'>{exam.durationMinutes} phút</p>
-                              </div>
-                              <div className='p-2.5 bg-purple-50 rounded-lg'>
-                                <p className='text-[10px] text-purple-600 mb-0.5'>📅 Ngày giao</p>
-                                <p className='text-xs font-semibold text-gray-900'>
-                                  {new Date(exam.assignedAt).toLocaleDateString('vi-VN')}
-                                </p>
-                              </div>
-                            </div>
-
-                            {canStart && exam.inviteLink && (
-                              <button
-                                onClick={() => handleStartExam(exam.inviteLink)}
-                                className='w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 font-semibold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 text-sm'
-                              >
-                                <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                                  <path
-                                    strokeLinecap='round'
-                                    strokeLinejoin='round'
-                                    strokeWidth={2}
-                                    d='M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z'
-                                  />
-                                  <path
-                                    strokeLinecap='round'
-                                    strokeLinejoin='round'
-                                    strokeWidth={2}
-                                    d='M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-                                  />
-                                </svg>
-                                Bắt đầu làm bài
-                              </button>
-                            )}
-                          </div>
-                        )
-                      })}
+                      {/* Pagination */}
+                      {classDetail.examSessions.length > examsPerPage && (
+                        <div className='px-4 py-3 border-t border-gray-200 bg-gray-50'>
+                          <ReactPaginate
+                            previousLabel='← Trước'
+                            nextLabel='Sau →'
+                            breakLabel='...'
+                            pageCount={Math.ceil(classDetail.examSessions.length / examsPerPage)}
+                            marginPagesDisplayed={2}
+                            pageRangeDisplayed={3}
+                            onPageChange={({ selected }) => setExamPage(selected)}
+                            forcePage={examPage}
+                            containerClassName='flex items-center justify-center gap-2'
+                            pageClassName=''
+                            pageLinkClassName='px-3 py-1.5 text-sm text-gray-700 hover:bg-blue-50 rounded-lg transition-colors'
+                            previousClassName=''
+                            previousLinkClassName='px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium'
+                            nextClassName=''
+                            nextLinkClassName='px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium'
+                            breakClassName=''
+                            breakLinkClassName='px-3 py-1.5 text-sm text-gray-500'
+                            activeClassName=''
+                            activeLinkClassName='px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg font-medium'
+                            disabledClassName='opacity-50 cursor-not-allowed'
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

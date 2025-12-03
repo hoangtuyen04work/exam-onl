@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { studentClassApi } from '../../../api/student-class-api'
 import { StudentClassDetail } from '../../../types/class.type'
 import { ChatBox } from '../../../components/Chat'
 import { classChatApi } from '../../../api/class-chat-api'
+import ReactPaginate from 'react-paginate'
 
 // Decode JWT to get userId
 const getUserIdFromToken = (): number => {
@@ -25,11 +26,15 @@ const ClassDetailPage = () => {
   const [allowStudentChat, setAllowStudentChat] = useState(true)
   const [activeTab, setActiveTab] = useState<'exams' | 'chat'>('exams')
   const [showClassInfo, setShowClassInfo] = useState(false)
+  const [students, setStudents] = useState([])
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
 
   useEffect(() => {
     if (classId) {
       loadClassDetail()
       loadChatSettings()
+      fetchStudents()
     }
   }, [classId])
 
@@ -57,6 +62,16 @@ const ClassDetailPage = () => {
       console.error('Failed to load chat settings:', error)
     }
   }
+
+  const fetchStudents = useCallback(async () => {
+    try {
+      const response = await studentClassApi.getStudents(classId, page, 10) // Replace with actual API call
+      setStudents(response.items)
+      setTotalPages(response.totalPages)
+    } catch (error) {
+      console.error('Error fetching students:', error)
+    }
+  }, [classId, page])
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -88,6 +103,10 @@ const ClassDetailPage = () => {
       // Navigate to exam page using invite link
       window.location.href = inviteLink
     }
+  }
+
+  const handlePageClick = (selectedItem: { selected: number }) => {
+    setPage(selectedItem.selected)
   }
 
   if (loading) {
@@ -444,15 +463,64 @@ const ClassDetailPage = () => {
 
           {/* Chat Tab */}
           {activeTab === 'chat' && (
-            <div className='p-5'>
-              <ChatBox
-                classId={Number(classId)}
-                userRole='STUDENT'
-                userId={getUserIdFromToken()}
-                allowStudentChat={allowStudentChat}
-              />
+            <div className='p-5 h-full flex flex-col'>
+              <div className='flex-grow overflow-y-auto'>
+                <ChatBox
+                  classId={Number(classId)}
+                  userRole='STUDENT'
+                  userId={getUserIdFromToken()}
+                  allowStudentChat={allowStudentChat}
+                />
+              </div>
             </div>
           )}
+        </div>
+
+        {/* Student List - New Section */}
+        <div className='bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mt-6'>
+          <div className='px-5 py-4 border-b border-gray-200'>
+            <h2 className='text-lg font-semibold text-gray-800'>Danh sách sinh viên</h2>
+          </div>
+          <div className='p-5'>
+            <div className='overflow-x-auto'>
+              <table className='table-auto w-full border-collapse border border-gray-200'>
+                <thead>
+                  <tr className='bg-gray-100'>
+                    <th className='border border-gray-300 px-4 py-2'>Tên học sinh</th>
+                    <th className='border border-gray-300 px-4 py-2'>Mã học sinh</th>
+                    <th className='border border-gray-300 px-4 py-2'>Email</th>
+                    <th className='border border-gray-300 px-4 py-2'>Ngày tham gia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((student) => (
+                    <tr key={student.id} className='hover:bg-gray-50'>
+                      <td className='border border-gray-300 px-4 py-2'>{student.name}</td>
+                      <td className='border border-gray-300 px-4 py-2'>{student.code}</td>
+                      <td className='border border-gray-300 px-4 py-2'>{student.email}</td>
+                      <td className='border border-gray-300 px-4 py-2'>
+                        {new Date(student.joinedAt).toLocaleDateString('vi-VN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <ReactPaginate
+              previousLabel={'← Trước'}
+              nextLabel={'Sau →'}
+              breakLabel={'...'}
+              pageCount={totalPages}
+              marginPagesDisplayed={2}
+              pageRangeDisplayed={5}
+              onPageChange={handlePageClick}
+              containerClassName={'pagination'}
+              activeClassName={'active'}
+              className='flex justify-center mt-4'
+              pageClassName='mx-1 px-3 py-1 border rounded'
+              activeLinkClassName='bg-blue-500 text-white'
+            />
+          </div>
         </div>
       </div>
     </div>
