@@ -25,6 +25,7 @@ import { loginSuccess } from '../store/slices/authSlice'
 import ExamSessionDetail from '../pages/Teacher/Dashboard/Tabs/ESListUser'
 import ExamSubmissionDetail from '../pages/Teacher/Dashboard/Tabs/ExamSubmissionDetail'
 import StudentLayout from '../layouts/StudentLayout'
+import RoleProtected from '../components/Common/RoleProtected'
 
 export default function AppRouter() {
   const dispatch = useDispatch()
@@ -46,8 +47,17 @@ export default function AppRouter() {
       <Route path='/' element={<Navigate to='/role-select' replace />} />
 
       {/* Auth */}
-      <Route path='/login' element={<LoginPage />} />
-      <Route path='/register' element={<RegisterPage />} />
+      <Route path='/login' element={
+        <RoleProtected>
+        <LoginPage />
+        </RoleProtected>
+        
+        } />
+      <Route path='/register' element={
+        <RoleProtected>
+        <RegisterPage />
+        </RoleProtected>
+        } />
       <Route path='/verify-email' element={<VerifyEmailPage />} />
       <Route path='/role-select' element={<RoleSelectPage />} />
 
