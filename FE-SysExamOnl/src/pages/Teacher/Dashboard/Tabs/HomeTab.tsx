@@ -51,7 +51,7 @@ export default function HomeTab() {
       </div>
 
       {/* Import Excel – dạng banner nhỏ gọn */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-5 border border-indigo-100">
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-2 border border-indigo-100">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div 
           // onClick={() => navigate('/teacher/exams')}
@@ -70,7 +70,7 @@ export default function HomeTab() {
             } 
               
              }
-            className="w-9 h-9 text-indigo-600 flex-shrink-0 cursor-pointer" />
+            className="w-7 h-7 ml-2 text-indigo-600 flex-shrink-0 cursor-pointer" />
             <div>
               <p className="font-medium text-gray-800">Có đề cũ rồi ?</p>
               <p className="text-sm text-gray-600">Import Excel chỉ mất vài giây</p>

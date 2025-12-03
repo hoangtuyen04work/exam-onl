@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import axiosClient from '../../api/axiosClient'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import { BookOpen, UserIcon } from 'lucide-react'
 
 type Role = {
   id: string | number
@@ -47,8 +48,8 @@ export default function RoleSelectPage() {
         const status = (err as { response?: { status?: number } })?.response?.status
         if (status === 401 || status === 403) {
           const fallback = [
-            { id: 1, name: 'Teacher', code: 'TEACHER' },
-            { id: 2, name: 'Student', code: 'STUDENT' }
+            { id: 1, name: 'Giáo viên', code: 'TEACHER' },
+            { id: 2, name: 'Sinh viên', code: 'STUDENT' }
           ]
           setRoles(fallback)
           toast.info('Không truy cập được roles (401/403). Dùng danh sách mặc định.')
@@ -68,7 +69,9 @@ export default function RoleSelectPage() {
   const selectRole = (role: Role) => {
     try {
       localStorage.setItem('selectedRole', JSON.stringify({ id: role.id, name: role.name }))
-      toast.success(`Chọn vai trò: ${role.name}`)
+      toast.success(` Đăng nhập với tư cách  ${
+        role.name.toLowerCase().includes('teach') ? 'Giáo Viên' : 'Thí Sinh'
+      }`)
       navigate('/login')
     } catch {
       toast.error('Không thể lưu lựa chọn vai trò')
@@ -82,7 +85,7 @@ export default function RoleSelectPage() {
         backgroundImage: "url('https://examonline.in/wp-content/uploads/2021/06/Secure-Exam-Browser-2048x1245.png')"
       }}
     >
-      <div className="bg-white/95 shadow-2xl border-4 border-blue-600 rounded-2xl w-full max-w-md p-8 m-12 backdrop-blur-sm">
+      <div className="bg-white/95 shadow-2xl border-4 border-blue-600 rounded-2xl w-full max-w-md p-8 m-12 ">
         <div className="flex flex-col items-center mb-6">
           <img src='https://actvn.edu.vn/Images/actvn_big_icon.png' alt='Logo' className='w-16 h-16 mb-3' />
           <h1 className='text-center font-semibold text-gray-800'>Phòng Khảo thí & Đảm bảo chất lượng đào tạo</h1>
@@ -90,7 +93,7 @@ export default function RoleSelectPage() {
         </div>
 
         <div className='border border-cyan-500 rounded-lg p-6'>
-          <h2 className='text-center font-semibold mb-4'>CHỌN VAI TRÒ</h2>
+          <h2 className='text-center font-bold mb-4'> Đăng nhập với tư cách là</h2>
           {loading ? (
             <p className="text-center">Đang tải vai trò...</p>
           ) : (
@@ -99,21 +102,28 @@ export default function RoleSelectPage() {
                 <p className="text-center text-sm text-gray-500">Không có vai trò để hiển thị</p>
               ) : (
                 <div className="space-y-3">
-                  {roles.map((r) => (
-                    <button
-                      key={String(r.id)}
-                      className="w-full border rounded-lg py-3 hover:bg-blue-50 transition text-left px-4"
-                      onClick={() => selectRole(r)}
-                    >
-                      <div className="font-medium">{r.name}</div>
-                      {r.code && <div className="text-xs text-gray-500">{r.code}</div>}
-                    </button>
-                  ))}
-                </div>
+  {roles.map((r) => (
+    <button
+      key={String(r.id)}
+      className="w-full border rounded-lg py-3 hover:bg-blue-50 transition cursor-pointer text-left px-4"
+      onClick={() => selectRole(r)}
+    >
+      <div className="font-medium ">
+        {(() => {
+          const name = (r.name || "").toString().toLowerCase();
+          return name.includes("teacher") || name.includes("teach")
+            ? <div className='flex items-center gap-2 '><BookOpen className='mr-1 text-green-400'></BookOpen>Giáo Viên </div>
+            : <div className='flex items-center gap-2 '><UserIcon size={20} className='text-blue-400'></UserIcon>Thí Sinh </div>;
+        })()}
+      </div>
+      {r.code && <div className="text-xs text-gray-500">{r.code}</div>}
+    </button>
+  ))}
+</div>
               )}
 
-              <div className="mt-4 flex items-center justify-between text-sm">
-                <button
+              <div className="">
+                {/* <button
                   className="text-blue-600 underline"
                   onClick={() => {
                     localStorage.removeItem('selectedRole')
@@ -121,10 +131,10 @@ export default function RoleSelectPage() {
                   }}
                 >
                   Bỏ chọn
-                </button>
-                <button className="text-blue-600 underline" onClick={() => window.location.href = '/login'}>
+                </button> */}
+                {/* <button className="text-blue-600 underline" onClick={() => window.location.href = '/login'}>
                   Quay lại đăng nhập
-                </button>
+                </button> */}
               </div>
             </>
           )}

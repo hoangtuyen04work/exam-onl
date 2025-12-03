@@ -3,7 +3,7 @@ import axiosClient from '../../api/axiosClient.ts'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, BookOpen, UserIcon } from 'lucide-react'
 
 interface VerifyPayload {
   code: string
@@ -61,6 +61,8 @@ export default function VerifyEmailPage() {
     }
   })
 
+
+  
   return (
     <div
       className='min-h-screen flex items-center justify-center bg-cover bg-center px-4'
@@ -68,27 +70,32 @@ export default function VerifyEmailPage() {
         backgroundImage: "url('https://examonline.in/wp-content/uploads/2021/06/Secure-Exam-Browser-2048x1245.png')"
       }}
     >
-      <div className='bg-white/95 shadow-2xl border-4 border-blue-600 rounded-2xl w-full max-w-md p-8 m-12 backdrop-blur-sm'>
+      <div className='p-6 min-h-5/6 w-md border-3 border-blue-600 shadow-2xl  rounded-xl        bg-white/95'>
         <button
           type='button'
           aria-label='Quay lại đăng ký'
           className='mb-2 inline-flex items-center text-blue-700 hover:text-blue-900'
           onClick={() => navigate('/register')}
         >
-          <ArrowLeft size={18} className='mr-1' /> Quay lại đăng ký
+          <ArrowLeft size={18} className='mr-1' /> Quay lại 
         </button>
 
         <div className='flex flex-col items-center mb-6'>
           <img src='https://actvn.edu.vn/Images/actvn_big_icon.png' alt='Logo' className='w-16 h-16 mb-3' />
           <h1 className='text-center font-semibold text-gray-800'>Phòng Khảo thí & Đảm bảo chất lượng đào tạo</h1>
           <p className='text-blue-800 font-bold text-lg'>Phần Mềm Thi Thử Nghiệm</p>
-          <p className='text-gray-500 text-sm'>
-            {(() => {
-              const name = (selectedRole?.name || '').toString().toLowerCase()
-              if (name.includes('teach')) return '(dành cho giáo viên)'
-              return '(dành cho thí sinh)'
-            })()}
-          </p>
+         <p className=" text-sm flex items-center gap-1  ">
+          {(() => {
+            const name = (selectedRole?.name || "").toString().toLowerCase();
+            if (name.includes("teach")) return (
+              <><BookOpen className='mr-1 text-green-600  '></BookOpen>Giáo Viên </>
+            );
+            return (
+               <><UserIcon size={20} className='text-blue-600'></UserIcon>Thí Sinh </>
+            )
+          })()}
+        
+        </p>
         </div>
 
         <div className='border border-cyan-500 rounded-lg p-6'>

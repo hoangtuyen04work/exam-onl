@@ -36,13 +36,13 @@ const Pagination: React.FC<PaginationProps> = ({
         &lt;
       </button>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2  ">
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
           <button
             key={page}
             onClick={() => onPageChange(page)}
             className={`
-              px-3 py-1.5 rounded-md text-sm font-medium transition cursor-pointer
+              px-2 py-0.5 rounded-md text-sm font-medium transition cursor-pointer
               ${page === currentPage
                 ? 'bg-blue-600 text-white shadow'
                 : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}
