@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-'use client'
-
-import { Plus, Eye, Trash2, X, Calendar, FileText, Loader2, ChevronLeft, ChevronRight, Download, Upload, Edit } from 'lucide-react'
-=======
 import { Plus, Eye, Trash2, X, Calendar, FileText, Loader2, ChevronLeft, ChevronRight, Download, Upload, Edit } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -10,7 +5,6 @@ import axios from 'axios'
 import axiosClient from '../../../../api/axiosClient'
 import { toast } from 'react-toastify'
 import type { QuestionPaper } from '../Tabs/HookTab/HookBanktab'
->>>>>>> bdc1cbe
 import { useBankQuestion } from '../Tabs/HookTab/HookBanktab'
 
 export default function QuestionPaperBank() {
@@ -62,13 +56,8 @@ export default function QuestionPaperBank() {
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" onClick={() => setShowAddModal(false)} />
       )}
 
-<<<<<<< HEAD
-      <div className="  p-4">
-        <div className="max-w-7xl mx-auto space-y-4">
-=======
       <div className="p-3 overflow-hidden">
         <div className="max-w-7xl mx-auto space-y-4 overflow-hidden">
->>>>>>> bdc1cbe
 
           {/* HEADER - tiêu đề đã bỏ, search + tạo mới sang trái */}
           <div className="flex items-center justify-between gap-4">
@@ -115,11 +104,7 @@ export default function QuestionPaperBank() {
                 </div>
               </div>
 
-<<<<<<< HEAD
-              <div className="space-y-3 max-h-[28rem] overflow-y-auto pr-2">
-=======
               <div className="space-y-3 max-h-[22rem] overflow-y-auto pr-2">
->>>>>>> bdc1cbe
                 {loadingPapers ? (
                   <div className="flex justify-center py-10">
                     <Loader2 className="animate-spin w-7 h-7 text-indigo-600" />
@@ -156,11 +141,7 @@ export default function QuestionPaperBank() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-<<<<<<< HEAD
-                        <div className="text-xs text-slate-400">{p.questionCount ?? 0} câu</div>
-=======
                         <div className="text-xs text-slate-400">{((p as unknown) as { questionCount?: number }).questionCount ?? 0} câu</div>
->>>>>>> bdc1cbe
                       </div>
                     </div>
                   ))
@@ -216,10 +197,7 @@ export default function QuestionPaperBank() {
                       <button onClick={() => { /* placeholder cho edit */ }} className="px-3 py-2 rounded-md bg-white border text-slate-600 hover:bg-slate-50">
                         <Edit className="w-4 h-4 mr-2 inline" /> Sửa
                       </button>
-<<<<<<< HEAD
-=======
                       <CreateFromBankButton selectedPaper={selectedPaper} />
->>>>>>> bdc1cbe
                       <button onClick={() => setSelectedPaper(null)} className="p-2 rounded-md text-slate-500 hover:bg-slate-50">
                         <X />
                       </button>
@@ -232,11 +210,7 @@ export default function QuestionPaperBank() {
                     </div>
                   ) : (
                     // new scroll container to prevent page break
-<<<<<<< HEAD
-                    <div className="mt-4 overflow-auto max-h-[56vh] space-y-4">
-=======
                     <div className="mt-4 overflow-auto max-h-[44vh] space-y-4">
->>>>>>> bdc1cbe
                       {selectedPaper.questions.map((q, i) => (
                         <div key={i} className="p-4 bg-gradient-to-r from-slate-50 to-white border border-gray-100 rounded-lg w-full break-words">
                           <div className="flex justify-between items-start">

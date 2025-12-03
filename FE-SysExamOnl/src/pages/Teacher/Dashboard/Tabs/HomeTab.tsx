@@ -20,38 +20,6 @@ export default function HomeTab() {
       </div>
 
       {/* 2 nút hành động chính – dạng card nhỏ gọn, ngang nhau */}
-<<<<<<< HEAD
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1">
-  {/* Tạo đề mới */}
-  <button
-    onClick={() => navigate('/teacher/exams/create')}
-    className="group flex items-center gap-3 bg-white cursor-pointer rounded-xl shadow-md hover:shadow-xl border border-gray-200 p-4 transition-all hover:border-blue-400 hover:-translate-y-1"
-  >
-    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition">
-      <Plus className="w-6 h-6 text-blue-600 group-hover:text-white" />
-    </div>
-    <div className="text-left">
-      <h3 className="font-semibold text-gray-900">Tạo đề thi mới</h3>
-      <p className="text-sm text-gray-500 mt-0.5">Soạn từ đầu, đầy đủ dạng câu</p>
-    </div>
-  </button>
-
-  {/* Từ ngân hàng câu hỏi */}
-  <button
-    onClick={() => navigate('/teacher/questions')}
-    className="group flex items-center gap-3 bg-white cursor-pointer rounded-xl shadow-md hover:shadow-xl border border-gray-200 p-4 transition-all hover:border-green-400 hover:-translate-y-1"
-  >
-    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-600 transition">
-      <BookOpenText className="w-6 h-6 text-green-600 group-hover:text-white" />
-    </div>
-    <div className="text-left">
-      <h3 className="font-semibold text-gray-900">Dùng ngân hàng câu hỏi</h3>
-      <p className="text-sm text-gray-500 mt-0.5">Hàng nghìn câu sẵn có, lọc nhanh</p>
-    </div>
-  </button>
-</div>
-
-=======
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         {/* Tạo đề mới */}
         <button
@@ -81,7 +49,6 @@ export default function HomeTab() {
           </div>
         </button>
       </div>
->>>>>>> d46274aeb8eafd42a77898fd469e3e78b2c5700d
 
       {/* Import Excel – dạng banner nhỏ gọn */}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-2 border border-indigo-100">
