@@ -78,7 +78,7 @@ export default function TeacherDashboard() {
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tr from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse"></div>
       </div>
 
-      <div className="min-h-screen flex">
+      <div className="h-screen flex overflow-hidden">
         {/* SIDEBAR */}
         <aside
           className={`${sidebarOpen ? "w-64" : "w-30"} fixed top-0 left-0 h-screen
