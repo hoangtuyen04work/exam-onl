@@ -5,7 +5,7 @@ import axiosClient from '../../api/axiosClient.ts'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 // import { useDispatch } from 'react-redux'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, BookOpen, UserIcon } from 'lucide-react'
 
 interface RegisterPayload {
   email: string
@@ -98,39 +98,44 @@ export default function RegisterPage() {
     }
     registerMutation.mutate()
   }
+ function handleRoleChange() {
+    localStorage.removeItem('selectedRole');
+    navigate('/role-select')
+    toast.info('Vui lòng chọn  vai trò trước khi đăng nhập.')
+  }
 
   return (
     <div
-      className='min-h-screen flex items-center justify-center bg-cover bg-center px-4'
+      className='h-screen bg-cover bg-center flex items-center justify-center '
       style={{
         backgroundImage: "url('https://examonline.in/wp-content/uploads/2021/06/Secure-Exam-Browser-2048x1245.png')"
       }}
     >
-      <div className="bg-white/95 shadow-2xl border-4 border-blue-600 rounded-2xl w-full max-w-md p-8 mx-auto my-12 backdrop-blur-sm min-h-0">
-        <button
-          type='button'
-          aria-label='Quay lại chọn vai trò'
-          className='mb-2 inline-flex items-center text-blue-700 hover:text-blue-900'
-          onClick={() => navigate('/role-select')}
-        >
-          <ArrowLeft size={18} className='mr-1' /> Quay lại chọn vai trò
-        </button>
+      <div className=" p-6 min-h-5/6 w-md border-3 border-blue-600 shadow-2xl  rounded-xl        bg-white/95">
+        
         <div className='flex flex-col items-center mb-6'>
           <img src='https://actvn.edu.vn/Images/actvn_big_icon.png' alt='Logo' className='w-16 h-16 mb-3' />
           <h1 className='text-center font-semibold text-gray-800'>Phòng Khảo thí & Đảm bảo chất lượng đào tạo</h1>
           <p className='text-blue-800 font-bold text-lg'>Phần Mềm Thi Thử Nghiệm</p>
-          <p className='text-gray-500 text-sm'>
-            {(() => {
-              const name = (selectedRole?.name || '').toString().toLowerCase()
-              if (name.includes('teach')) return '(dành cho giáo viên)'
-              return '(dành cho thí sinh)'
-            })()}
-          </p>
+          <p className=" text-sm flex items-center gap-1 ml-10 ">
+          {(() => {
+            const name = (selectedRole?.name || "").toString().toLowerCase();
+            if (name.includes("teach")) return (
+              <><BookOpen className='mr-1 text-green-600  '></BookOpen>Giáo Viên </>
+            );
+            return (
+               <><UserIcon size={20} className='text-blue-600'></UserIcon>Thí Sinh </>
+            )
+          })()}
+          <div 
+          onClick={handleRoleChange}
+          className='text-blue-600  cursor-pointer hover:text-blue-800 underline'>thay đổi</div>
+        </p>
         </div>
 
-        <div className='border border-cyan-500 rounded-lg p-6'>
-          <h2 className='text-center font-semibold mb-4'>ĐĂNG KÝ TÀI KHOẢN</h2>
-          <form onSubmit={handleSubmit} className='space-y-4'>
+        <div className=''>
+          <h2 className='text-center font-semibold mb-3'>ĐĂNG KÝ TÀI KHOẢN</h2>
+          <form onSubmit={handleSubmit} className='space-y-4 mx-3'>
             <div>
               <label className='block text-sm font-medium mb-1'>
                 Họ và tên
@@ -168,27 +173,27 @@ export default function RegisterPage() {
                 placeholder='Nhập mật khẩu'
                 className='w-full border border-gray-400 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500'
               />
-          {/* Role được lấy từ bước chọn vai trò, không hiển thị selector */}
+      
             </div>
 
             <button
               type='submit'
               disabled={isSubmitting || registerMutation.isPending}
-              className='w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-medium'
+              className='w-full bg-blue-600 text-white py-2 cursor-pointer rounded-lg hover:bg-blue-700 transition font-medium'
             >
               {registerMutation.isPending ? 'Đang đăng ký...' : 'Đăng ký'}
             </button>
           </form>
-          <div className='text-center mt-4 text-sm'>
-            <button className='text-blue-600 underline' onClick={() => navigate('/login')}>Đã có tài khoản? Đăng nhập</button>
+          <div className='text-center mt-3 text-sm'>
+            <button className='text-blue-600 underline cursor-pointer hover:text-blue-800' onClick={() => navigate('/login')}>Đã có tài khoản? Đăng nhập</button>
           </div>
         </div>
 
-        <div className='mt-8 text-center text-xs text-gray-500 space-y-2'>
+         <div className='mt-3 text-center text-xs text-gray-500 space-y-2'>
           <p className='text-gray-400'>© HV KTMM – Thực tập cơ sở</p>
         </div>
 
-        <div className='mt-4 border-t border-gray-200 pt-4 text-center text-xs space-y-1 text-gray-600'>
+        <div className=' border-t border-gray-200 pt-4 text-center text-xs space-y-1 text-gray-600'>
           <p>Địa chỉ: Số 114 Chiến Thắng, Phương Liệt, Hà Nội</p>
           <p>Điện thoại: 84-24-88889999; Email: kt@actvn.edu.vn</p>
         </div>

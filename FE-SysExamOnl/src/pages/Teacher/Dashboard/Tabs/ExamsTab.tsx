@@ -62,10 +62,10 @@ export default function ExamsTab() {
   const selectedCount = Array.from(selectedExams.values()).filter(Boolean).length;
 
   return (
-     <div className="space-y-0">
+     <div className="pb-10">
 
       {/* HEADER */}
-      <div className="flex flex-col gap-4 mb-6">
+      <div className="flex flex-col gap-4 mb-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">
             Danh sách đề thi
@@ -73,7 +73,7 @@ export default function ExamsTab() {
         </div>
 
         {/* TOOLBAR */}
-        <div className="flex flex-wrap gap-3 items-center bg-white p-4 rounded-xl shadow-sm border">
+        <div className="flex flex-wrap gap-3 items-center bg-white p-1 rounded-xl shadow-sm border">
           <input
             type="file"
             accept=".xlsx"
@@ -135,7 +135,7 @@ export default function ExamsTab() {
               type="checkbox"
               checked={currentList.length > 0 && currentList.every((e) => selectedExams.get(e.id))}
               onChange={() => currentList.forEach((e) => toggleSelect(e.id))}
-              className="w-5 h-5 accent-blue-600"
+              className="w-4 h-4 accent-blue-600"
             />
             <span>Chọn tất cả (trong trang)</span>
           </div>
@@ -174,7 +174,7 @@ export default function ExamsTab() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-6 text-[11px] mt-3 pt-2 border-t border-gray-300">
+      <div className="flex flex-wrap gap-3 text-[11px] mt-3 pt-2 border-t border-gray-300">
         <button
           onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
           className="text-blue-600 hover:underline flex items-center gap-1"
@@ -204,13 +204,13 @@ export default function ExamsTab() {
 
         </>
       )}
-
+ 
       {/* PAGINATION */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={setCurrentPage}
-        className="fixed bottom-0 left-0 w-full bg-white pt-4 pb-4 shadow-lg z-50"
+        className="fixed bottom-0 left-0 w-full   shadow-lg z-50"
       />
 
      {/* MODAL THỜI GIAN */}
