@@ -144,62 +144,66 @@ export default function ExamsTab() {
           <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
 
   {currentList.map((exam) => (
-    <div
-      key={exam.id}
-      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-3 flex flex-col h-full"
-    >
-      <div className="flex items-start gap-2 flex-1">
-        <input
-          type="checkbox"
-          checked={!!selectedExams.get(exam.id)}
-          onChange={() => toggleSelect(exam.id)}
-          className="w-4 h-4 accent-blue-600 mt-1"
-        />
+  <div
+    key={exam.id}
+    className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-3 flex flex-col h-full"
+  >
+    <div className="flex items-start gap-2 flex-1">
+      <input
+        type="checkbox"
+        checked={!!selectedExams.get(exam.id)}
+        onChange={() => toggleSelect(exam.id)}
+        className="w-4 h-4 accent-blue-600 mt-1 flex-shrink-0"
+      />
 
-        <div
-          onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-          className="flex-1 cursor-pointer"
-        >
-          <h3 className="font-semibold text-blue-700 text-base line-clamp-2 break-words">
-            {exam.name}
-          </h3>
+      <div
+        onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
+        className="flex-1 cursor-pointer min-w-0" // thêm min-w-0 để text không đẩy layout
+      >
+        {/* Tên đề thi - 2 dòng, ... nếu dài */}
+        <h3 className="font-semibold text-blue-700 text-base line-clamp-2 break-words">
+          {exam.name}
+        </h3>
 
-          <p className="text-[11px] text-gray-500 mt-1 line-clamp-2 break-words">
-            {exam.description || 'Không có mô tả.'}
-          </p>
+        {/* Mô tả - 2 dòng, ... nếu dài */}
+        <p className="text-sm text-gray-500 mt-1 line-clamp-2 break-words">
+          {exam.description || 'Không có mô tả.'}
+        </p>
 
-          <span className="text-[10px] text-gray-600 block mt-1.5">
-            {exam.numberQuestions} câu
-          </span>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-3 text-[11px] mt-3 pt-2 border-t border-gray-300">
-        <button
-          onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-          className="text-blue-600 hover:underline flex items-center gap-1"
-        >
-          <Edit2 className="w-3.5 h-3.5" /> Sửa
-        </button>
-
-        <button
-          onClick={() =>
-            navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })
-          }
-          className="text-green-600 hover:underline flex items-center gap-1"
-        >
-          <CheckCircle className="w-3.5 h-3.5" /> Đã giao
-        </button>
-
-        <button
-          onClick={() => openTimeModal(exam.id)}
-          className="text-red-600 hover:underline flex items-center gap-1"
-        >
-          <Clock className="w-3.5 h-3.5" /> Giao đề
-        </button>
+        {/* Số câu hỏi */}
+        <span className="text-[10px] text-gray-600 block mt-1.5">
+          {exam.numberQuestions} câu
+        </span>
       </div>
     </div>
-  ))}
+
+    {/* Nút hành động */}
+    <div className="flex flex-wrap gap-3 text-[11px] mt-3 pt-2 border-t border-gray-300">
+      <button
+        onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
+        className="text-blue-600 hover:underline flex items-center gap-1"
+      >
+        <Edit2 className="w-3.5 h-3.5" /> Sửa
+      </button>
+
+      <button
+        onClick={() =>
+          navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })
+        }
+        className="text-green-600 hover:underline flex items-center gap-1"
+      >
+        <CheckCircle className="w-3.5 h-3.5" /> Đã giao
+      </button>
+
+      <button
+        onClick={() => openTimeModal(exam.id)}
+        className="text-red-600 hover:underline flex items-center gap-1"
+      >
+        <Clock className="w-3.5 h-3.5" /> Giao đề
+      </button>
+    </div>
+  </div>
+))}
 </div>
 
         </>
