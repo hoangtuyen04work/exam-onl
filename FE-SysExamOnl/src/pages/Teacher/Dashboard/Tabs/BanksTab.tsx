@@ -89,159 +89,195 @@ export default function QuestionPaperBank() {
           {/* LAYOUT: list + detail */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {/* LIST */}
-            <div className="lg:col-span-1 bg-white rounded-2xl shadow p-4 border border-gray-100">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-medium text-slate-800">Danh sách ngân hàng</h3>
-                  <span className="text-sm text-slate-500">({papers.length})</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={triggerImport} className="p-2 rounded-md hover:bg-slate-50 text-slate-600" title="Nhập">
-                    <Upload className="w-4 h-4" />
-                  </button>
-                  <input ref={fileInputRef} type="file" accept=".json,.csv" className="hidden" onChange={handleImportFile} />
-                </div>
+  {/* LIST */}
+  <div className="lg:col-span-1 bg-white rounded-2xl shadow p-4 border border-gray-100">
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2">
+        <h3 className="text-lg font-medium text-slate-800">Danh sách ngân hàng</h3>
+        <span className="text-sm text-slate-500">({papers.length})</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button onClick={triggerImport} className="p-2 rounded-md hover:bg-slate-50 text-slate-600" title="Nhập">
+          <Upload className="w-4 h-4" />
+        </button>
+        <input ref={fileInputRef} type="file" accept=".json,.csv" className="hidden" onChange={handleImportFile} />
+      </div>
+    </div>
+
+    <div className="space-y-3 max-h-[22rem] overflow-y-auto pr-2">
+      {loadingPapers ? (
+        <div className="flex justify-center py-10">
+          <Loader2 className="animate-spin w-7 h-7 text-indigo-600" />
+        </div>
+      ) : papers.length === 0 ? (
+        <div className="text-center py-8 text-slate-500">Chưa có ngân hàng đề</div>
+      ) : (
+        papers.map(p => (
+          <div
+            key={p.bankQuestionId}
+            onClick={() => fetchPaperDetail(p.bankQuestionId)}
+            className={`flex justify-between items-center gap-3 p-3 rounded-xl border transition cursor-pointer ${
+              selectedPaper?.bankQuestionId === p.bankQuestionId
+                ? 'bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200 shadow'
+                : 'bg-white border-gray-100 hover:shadow-sm'
+            }`}
+          >
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Avatar */}
+              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold flex-shrink-0">
+                {String(p.name || 'D').charAt(0).toUpperCase()}
               </div>
 
-              <div className="space-y-3 max-h-[22rem] overflow-y-auto pr-2">
-                {loadingPapers ? (
-                  <div className="flex justify-center py-10">
-                    <Loader2 className="animate-spin w-7 h-7 text-indigo-600" />
-                  </div>
-                ) : papers.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">Chưa có ngân hàng đề</div>
-                ) : (
-                  papers.map(p => (
-                    <div
-                      key={p.bankQuestionId}
-                      onClick={() => fetchPaperDetail(p.bankQuestionId)}
-                      className={`flex justify-between items-center gap-3 p-3 rounded-xl border transition cursor-pointer ${selectedPaper?.bankQuestionId === p.bankQuestionId ? 'bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200 shadow' : 'bg-white border-gray-100 hover:shadow-sm'}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold">
-                          {String(p.name || 'D').slice(0,1).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium text-slate-800 truncate">{p.name}</div>
-                          <div className="text-xs text-slate-500 truncate">{p.description || 'Không có mô tả'}</div>
-                          <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-                            <Calendar className="w-3 h-3" /> <span>{formatDate(p.createdAt)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeletePaper(p.bankQuestionId) }}
-                            className="p-1 rounded-md text-red-500 hover:bg-red-50"
-                            title="Xoá"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <div className="text-xs text-slate-400">{((p as unknown) as { questionCount?: number }).questionCount ?? 0} câu</div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* PAGINATION */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 mt-4">
-                  <button
-                    onClick={() => fetchPapers(page - 1)}
-                    disabled={page === 0}
-                    className="p-2 rounded-md bg-white border border-gray-100 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <div className="text-sm text-slate-600">Trang {page + 1} / {totalPages}</div>
-                  <button
-                    onClick={() => fetchPapers(page + 1)}
-                    disabled={page >= totalPages - 1}
-                    className="p-2 rounded-md bg-white border border-gray-100 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
+              {/* Nội dung text */}
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-slate-800 line-clamp-1 break-words">
+                  {p.name}
                 </div>
-              )}
+                <div className="text-xs text-slate-500 line-clamp-1 break-words">
+                  {p.description || 'Không có mô tả'}
+                </div>
+                <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
+                  <Calendar className="w-3 h-3" />
+                  <span>{formatDate(p.createdAt)}</span>
+                </div>
+              </div>
             </div>
 
-            {/* DETAIL */}
-            <div className="lg:col-span-2">
-              {!selectedPaper ? (
-                <div className="h-full flex flex-col items-center justify-center bg-white rounded-2xl shadow p-12 border border-gray-100">
-                  <Eye size={64} className="text-indigo-200 mb-4" />
-                  <div className="text-lg font-medium text-slate-700">Chọn một đề để xem chi tiết</div>
-                  <div className="text-sm text-slate-400 mt-2">Hoặc tạo ngân hàng đề mới để bắt đầu</div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl shadow p-4 border border-gray-100 flex flex-col ">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-2xl font-semibold text-slate-800">{selectedPaper.name}</h2>
-                      <div className="text-sm text-slate-500 mt-1">{selectedPaper.description || 'Không có mô tả'}</div>
-                      <div className="text-xs text-slate-400 mt-2 flex items-center gap-3">
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(selectedPaper.createdAt)}</span>
-                        <span className="px-2 py-1 rounded bg-slate-50 text-slate-500 text-xs">{selectedPaper.questions.length} câu</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleExport()} className="px-3 py-2 rounded-md bg-white border text-slate-600 hover:bg-slate-50">
-                        <Download className="w-4 h-4 mr-2 inline" /> Xuất
-                      </button>
-                      <button onClick={() => { /* placeholder cho edit */ }} className="px-3 py-2 rounded-md bg-white border text-slate-600 hover:bg-slate-50">
-                        <Edit className="w-4 h-4 mr-2 inline" /> Sửa
-                      </button>
-                      <CreateFromBankButton selectedPaper={selectedPaper} />
-                      <button onClick={() => setSelectedPaper(null)} className="p-2 rounded-md text-slate-500 hover:bg-slate-50">
-                        <X />
-                      </button>
-                    </div>
-                  </div>
-
-                  {loadingDetail ? (
-                    <div className="flex justify-center py-10">
-                      <Loader2 className="animate-spin w-10 h-10 text-indigo-600" />
-                    </div>
-                  ) : (
-                    // new scroll container to prevent page break
-                    <div className="mt-4 overflow-auto max-h-[44vh] space-y-4">
-                      {selectedPaper.questions.map((q, i) => (
-                        <div key={i} className="p-4 bg-gradient-to-r from-slate-50 to-white border border-gray-100 rounded-lg w-full break-words">
-                          <div className="flex justify-between items-start">
-                            <div className="min-w-0">
-                              <div className="text-sm text-slate-600">Câu {i + 1}</div>
-                              <h3 className="text-md font-medium text-slate-800 whitespace-pre-wrap break-words">{q.content}</h3>
-                              <div className="text-xs text-slate-500 mt-1">Độ khó: <span className="font-medium text-indigo-600">{difficultyText(q.difficulty)}</span></div>
-                              {q.explanation && <div className="mt-2 text-sm text-amber-700 italic whitespace-pre-wrap break-words">Giải thích: {q.explanation}</div>}
-                            </div>
-                            <div className="text-indigo-700 font-bold ml-4">{q.point} đ</div>
-                          </div>
-
-                          <ul className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {q.answers.map((a, j) => (
-                              <li key={j} className={`p-2 rounded-md ${a.correct ? 'bg-green-50 border border-green-100 text-green-700 font-semibold' : 'bg-white border border-gray-100 text-slate-700'}`}>
-                                <div className="flex items-start gap-3">
-                                  <div className="font-semibold w-6">{String.fromCharCode(65 + j)}.</div>
-                                  <div className="text-sm whitespace-pre-wrap break-words">{a.content}</div>
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+            {/* Nút xóa + số câu */}
+            <div className="flex flex-col items-end gap-2 flex-shrink-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeletePaper(p.bankQuestionId);
+                }}
+                className="p-1 rounded-md text-red-500 hover:bg-red-50 transition"
+                title="Xoá"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <div className="text-xs text-slate-400">
+                {((p as unknown) as { questionCount?: number }).questionCount ?? 0} câu
+              </div>
             </div>
           </div>
+        ))
+      )}
+    </div>
+
+    {/* PAGINATION */}
+    {totalPages > 1 && (
+      <div className="flex items-center justify-center gap-3 mt-4">
+        <button
+          onClick={() => fetchPapers(page - 1)}
+          disabled={page === 0}
+          className="p-2 rounded-md bg-white border border-gray-100 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <div className="text-sm text-slate-600">Trang {page + 1} / {totalPages}</div>
+        <button
+          onClick={() => fetchPapers(page + 1)}
+          disabled={page >= totalPages - 1}
+          className="p-2 rounded-md bg-white border border-gray-100 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    )}
+  </div>
+
+  {/* DETAIL */}
+  <div className="lg:col-span-2">
+    {!selectedPaper ? (
+      <div className="h-full flex flex-col items-center justify-center bg-white rounded-2xl shadow p-12 border border-gray-100">
+        <Eye size={64} className="text-indigo-200 mb-4" />
+        <div className="text-lg font-medium text-slate-700">Chọn một đề để xem chi tiết</div>
+        <div className="text-sm text-slate-400 mt-2">Hoặc tạo ngân hàng đề mới để bắt đầu</div>
+      </div>
+    ) : (
+      <div className="bg-white rounded-2xl shadow p-4 border border-gray-100 flex flex-col">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-2xl font-semibold text-slate-800 line-clamp-2 break-words">
+              {selectedPaper.name}
+            </h2>
+            <div className="text-sm text-slate-500 mt-1 line-clamp-2 break-words">
+              {selectedPaper.description || 'Không có mô tả'}
+            </div>
+            <div className="text-xs text-slate-400 mt-2 flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" /> {formatDate(selectedPaper.createdAt)}
+              </span>
+              <span className="px-2 py-1 rounded bg-slate-50 text-slate-500 text-xs">
+                {selectedPaper.questions.length} câu
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button onClick={() => handleExport()} className="px-3 py-2 rounded-md bg-white border text-slate-600 hover:bg-slate-50">
+              <Download className="w-4 h-4 mr-2 inline" /> Xuất
+            </button>
+            <button onClick={() => { /* placeholder cho edit */ }} className="px-3 py-2 rounded-md bg-white border text-slate-600 hover:bg-slate-50">
+              <Edit className="w-4 h-4 mr-2 inline" /> Sửa
+            </button>
+            <CreateFromBankButton selectedPaper={selectedPaper} />
+            <button onClick={() => setSelectedPaper(null)} className="p-2 rounded-md text-slate-500 hover:bg-slate-50">
+              <X />
+            </button>
+          </div>
         </div>
+
+        {loadingDetail ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="animate-spin w-10 h-10 text-indigo-600" />
+          </div>
+        ) : (
+          <div className="mt-4 overflow-auto max-h-[44vh] space-y-4">
+            {selectedPaper.questions.map((q, i) => (
+              <div key={i} className="p-4 bg-gradient-to-r from-slate-50 to-white border border-gray-100 rounded-lg w-full break-words">
+                <div className="flex justify-between items-start">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-slate-600">Câu {i + 1}</div>
+                    <h3 className="text-md font-medium text-slate-800 whitespace-pre-wrap break-words">{q.content}</h3>
+                    <div className="text-xs text-slate-500 mt-1">
+                      Độ khó: <span className="font-medium text-indigo-600">{difficultyText(q.difficulty)}</span>
+                    </div>
+                    {q.explanation && (
+                      <div className="mt-2 text-sm text-amber-700 italic whitespace-pre-wrap break-words">
+                        Giải thích: {q.explanation}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-indigo-700 font-bold ml-4 flex-shrink-0">{q.point} đ</div>
+                </div>
+
+                <ul className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {q.answers.map((a, j) => (
+                    <li
+                      key={j}
+                      className={`p-2 rounded-md ${
+                        a.correct
+                          ? 'bg-green-50 border border-green-100 text-green-700 font-semibold'
+                          : 'bg-white border border-gray-100 text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="font-semibold w-6">{String.fromCharCode(65 + j)}.</div>
+                        <div className="text-sm whitespace-pre-wrap break-words">{a.content}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</div>
+</div>
 
         {/* MODAL CREATE */}
         {showAddModal && (
