@@ -121,12 +121,11 @@ export default function TeacherDashboard() {
                   <button
                     key={item.key}
                     onClick={() => navigate(item.key)}
-                    className={`w-full flex items-center transition-all rounded-xl group relative
-                      ${sidebarOpen ? 'px-4 py-3 gap-3 justify-start' : 'py-3 justify-center'}
-                      ${
-                        isActive
-                          ? 'text-indigo-600 font-semibold bg-indigo-50'
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-indigo-600'
+                    className={`w-full flex items-center cursor-pointer transition-all rounded-xl group relative
+                      ${sidebarOpen ? "px-4 py-3 gap-3 justify-start" : "py-3 justify-center"}
+                      ${isActive
+                        ? "text-indigo-600 font-semibold bg-indigo-50"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-indigo-600"
                       }`}
                     onMouseEnter={e => {
                       if (!sidebarOpen) {
