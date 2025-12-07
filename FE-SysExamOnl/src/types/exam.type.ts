@@ -124,7 +124,10 @@ export interface ExamResult {
   totalScore: number
   status: string
   submittedAt: string
+  exitCount: number
   teacherOverallFeedback: string | null
+  passingScore: number | null
+  isPassed: boolean | null
   questions: Question[]
 }
 

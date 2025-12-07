@@ -34,9 +34,22 @@ export default function JoinExam() {
 
     try {
       const res = await studentApi.joinExam(code.trim())
+      console.log('Join exam response state:', res.data.state)
+
       if (res?.success && res.data) {
-        toast.success(res.message || 'Tham gia kỳ thi thành công!')
-        navigate(`/student/exam/join/${res.data.examSessionId}`)
+        // Check if exam state is JOINED (already completed)
+        console.log('Join exam response state:', res.data.state)
+        if (res.data.state === 'JOINED') {
+          toast.info('Bạn đã tham gia kỳ thi này rồi!')
+          navigate(`/student/exam/join/${res.data.examSessionId}`)
+        } else if (res.data.state === 'OPENING') {
+          toast.success(res.message || 'Tham gia kỳ thi thành công!')
+          navigate(`/student/exam/join/${res.data.examSessionId}`)
+        } else if (res.data.state === 'NOT_OPEN') {
+          toast.warning('Kỳ thi chưa mở. Vui lòng quay lại sau!')
+        } else if (res.data.state === 'CLOSED') {
+          toast.error('Kỳ thi đã đóng!')
+        }
       } else {
         toast.error(res?.message || 'Không thể tham gia kỳ thi')
       }

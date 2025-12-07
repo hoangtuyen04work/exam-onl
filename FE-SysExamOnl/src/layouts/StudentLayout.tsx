@@ -4,20 +4,11 @@ import Footer from '../components/Footer'
 
 export default function StudentLayout() {
   const location = useLocation()
-  const navigate = useNavigate()
   const isStudentExamPage = location.pathname.startsWith('/student/exam')
-
-  const handleHeaderClick = () => {
-    navigate('/student')
-  }
 
   return (
     <>
-      {!isStudentExamPage && (
-        <div onClick={handleHeaderClick} className='cursor-pointer'>
-          <Header /> 
-        </div>
-      )}
+      {!isStudentExamPage && <Header />}
       <Outlet />
       <Footer />
     </>

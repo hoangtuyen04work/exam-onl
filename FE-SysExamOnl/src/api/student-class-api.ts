@@ -17,4 +17,11 @@ export const studentClassApi = {
     const response = await axiosClient.get(`/student/classes/${classId}`);
     return response.data;
   },
+
+  joinClassByCode: async (classCode: string): Promise<BaseResponse<StudentClass>> => {
+    const response = await axiosClient.post('/student/classes/join', null, {
+      params: { classCode },
+    });
+    return response.data;
+  },
 };

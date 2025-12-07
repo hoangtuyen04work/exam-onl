@@ -63,10 +63,27 @@ export default function StudentDashboard() {
             state: res.data.state
           })
         )
-        toast.success('Tham gia kỳ thi thành công!')
-        navigate(`exam/join/${res.data.examSessionId}`)
+
+        // Kiểm tra state và điều hướng phù hợp
+        switch (res.data.state) {
+          case 'JOINED':
+            toast.error('Bạn đã làm bài thi này trước đó')
+            break
+          case 'OPENING':
+            toast.info('Kỳ thi đang mở. Đang chuyển hướng...')
+            navigate(`exam/join/${res.data.examSessionId}`)
+            break
+          case 'NOT_OPEN':
+            toast.warning('Kỳ thi chưa mở. Vui lòng quay lại sau.')
+            break
+          case 'CLOSED':
+            toast.error('Kỳ thi đã đóng.')
+            break
+          default:
+            toast.error('Trạng thái kỳ thi không xác định')
+        }
       } else {
-        toast.error(res?.message + ' Không thể tham gia kỳ thi')
+        toast.error(res?.message || 'Không thể tham gia kỳ thi')
       }
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Lỗi khi tham gia kỳ thi. Vui lòng thử lại.'

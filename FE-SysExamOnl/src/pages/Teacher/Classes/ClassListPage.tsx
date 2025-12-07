@@ -1,5 +1,6 @@
 // src/pages/Teacher/Classes/ClassListPage.tsx
 import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   getAllClasses,
   deleteClass,
@@ -29,6 +30,7 @@ const getUserIdFromToken = (): number => {
 }
 
 const ClassListPage: React.FC = () => {
+  const navigate = useNavigate()
   const [classes, setClasses] = useState<ClassResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -439,9 +441,24 @@ const ClassListPage: React.FC = () => {
                   <div className='flex-1 min-w-0'>
                     <h2 className='text-base font-bold truncate'>{classDetail.name}</h2>
                     <div className='flex items-center gap-2 mt-0.5'>
-                      <span className='px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-[10px]'>
-                        {classDetail.classCode}
-                      </span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(classDetail.classCode)
+                          alert('Đã copy mã lớp: ' + classDetail.classCode)
+                        }}
+                        className='px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-[10px] hover:bg-white/30 transition-colors flex items-center gap-1 group'
+                        title='Click để copy mã lớp'
+                      >
+                        <svg className='w-3 h-3' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z'
+                          />
+                        </svg>
+                        <span className='font-semibold'>{classDetail.classCode}</span>
+                      </button>
                       <span className='text-[10px] text-white/80'>
                         {classDetail.students.length} học sinh • {classDetail.examSessions.length} bài thi
                       </span>
@@ -515,7 +532,7 @@ const ClassListPage: React.FC = () => {
                                       strokeLinecap='round'
                                       strokeLinejoin='round'
                                       strokeWidth={2}
-                                      d='M16 7a4 4 0 11-8 0 4 4 0 018 0zm4 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
+                                      d='M16 7a4 4 0 11-8 0 4 4 0 018 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
                                     />
                                   </svg>
                                   {student.username}
@@ -646,7 +663,11 @@ const ClassListPage: React.FC = () => {
                                   const isExpired = endTime < now
 
                                   return (
-                                    <tr key={exam.id} className='hover:bg-gray-50 transition-colors'>
+                                    <tr 
+                                      key={exam.id} 
+                                      className='hover:bg-gray-50 transition-colors cursor-pointer'
+                                      onClick={() => navigate(`/teacher/exam-sessions/${exam.id}/results`)}
+                                    >
                                       <td className='px-4 py-3 w-1/4'>
                                         <div className='flex items-center gap-2'>
                                           <div className='w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0'>
@@ -718,19 +739,22 @@ const ClassListPage: React.FC = () => {
                                           </span>
                                         )}
                                         {isUpcoming && (
-                                          <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 whitespace-nowrap'>
+                                          <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 gap-1 whitespace-nowrap'>
                                             Sắp diễn ra
                                           </span>
                                         )}
                                         {isExpired && (
-                                          <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 whitespace-nowrap'>
+                                          <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 gap-1 whitespace-nowrap'>
                                             Đã kết thúc
                                           </span>
                                         )}
                                       </td>
                                       <td className='px-4 py-3 w-1/8 text-center'>
                                         <button
-                                          onClick={() => handleRemoveExamSession(exam.id, exam.examSessionName)}
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleRemoveExamSession(exam.id, exam.examSessionName)
+                                          }}
                                           className='inline-flex items-center px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 rounded-lg transition text-xs font-medium gap-1 whitespace-nowrap'
                                           title='Xóa bài thi'
                                         >

@@ -36,3 +36,28 @@ export async function fetchQuestions(): Promise<Question[]> {
   await wait()
   return [...teacherQuestions]
 }
+
+// Exam Session APIs
+import axiosClient from './axiosClient'
+import type { ExamSessionStatistics, StudentResult } from '../types/exam'
+
+export async function updatePassingScore(examSessionId: number, passingScore: number) {
+  const response = await axiosClient.put(`/teacher/exam-sessions/${examSessionId}/passing-score`, {
+    passingScore
+  })
+  return response.data
+}
+
+export async function getExamSessionStatistics(examSessionId: number): Promise<ExamSessionStatistics> {
+  const response = await axiosClient.get(`/teacher/exam-sessions/${examSessionId}/statistics`)
+  return response.data.data
+}
+
+export async function getStudentResults(examSessionId: number, params?: {
+  page?: number
+  size?: number
+  sort?: string
+}): Promise<{ items: StudentResult[], totalPages: number, totalItems: number }> {
+  const response = await axiosClient.get(`/teacher/exam-sessions/${examSessionId}`, { params })
+  return response.data
+}

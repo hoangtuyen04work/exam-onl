@@ -5,6 +5,7 @@ import { StudentClass, StudentClassDetail } from '../../../types/class.type'
 import { ChatBox } from '../../../components/Chat'
 import { classChatApi } from '../../../api/class-chat-api'
 import ReactPaginate from 'react-paginate'
+import { notification } from 'antd'
 
 // Decode JWT to get userId
 const getUserIdFromToken = (): number => {
@@ -31,6 +32,9 @@ const ClassListPage = () => {
   const [activeTab, setActiveTab] = useState<'exams' | 'chat'>('exams')
   const [allowStudentChat, setAllowStudentChat] = useState(true)
   const [showClassInfo, setShowClassInfo] = useState(false)
+  const [showJoinModal, setShowJoinModal] = useState(false)
+  const [joinClassCode, setJoinClassCode] = useState('')
+  const [joiningClass, setJoiningClass] = useState(false)
 
   // Exam pagination
   const [examPage, setExamPage] = useState(0)
@@ -124,6 +128,38 @@ const ClassListPage = () => {
     }
   }
 
+  const handleJoinClass = async () => {
+    if (!joinClassCode.trim()) {
+      notification.warning({
+        message: 'Cảnh báo',
+        description: 'Vui lòng nhập mã lớp học'
+      })
+      return
+    }
+
+    setJoiningClass(true)
+    try {
+      const response = await studentClassApi.joinClassByCode(joinClassCode.trim())
+      if (response.success) {
+        notification.success({
+          message: 'Thành công',
+          description: 'Tham gia lớp học thành công!'
+        })
+        setShowJoinModal(false)
+        setJoinClassCode('')
+        loadClasses() // Reload the class list
+      }
+    } catch (error: any) {
+      console.error('Failed to join class:', error)
+      notification.error({
+        message: 'Lỗi',
+        description: error.response?.data?.message || 'Không thể tham gia lớp học'
+      })
+    } finally {
+      setJoiningClass(false)
+    }
+  }
+
   const ExamTable = ({ exams, page, totalPages, onPageChange }) => (
     <div>
       <table className='min-w-full bg-white'>
@@ -166,8 +202,20 @@ const ClassListPage = () => {
       <div className='w-80 bg-white border-r border-gray-200 flex flex-col'>
         {/* Header */}
         <div className='px-4 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600'>
-          <h1 className='text-xl font-bold text-white'>Lớp học của tôi</h1>
-          <p className='text-blue-100 text-xs mt-1'>{classes.length} lớp học</p>
+          <div className='flex items-center justify-between mb-2'>
+            <h1 className='text-xl font-bold text-white'>Lớp học của tôi</h1>
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className='px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm font-medium transition-colors flex items-center gap-1.5'
+              title='Tham gia lớp học'
+            >
+              <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 4v16m8-8H4' />
+              </svg>
+              Tham gia
+            </button>
+          </div>
+          <p className='text-blue-100 text-xs'>{classes.length} lớp học</p>
         </div>
 
         {/* Class List */}
@@ -599,6 +647,109 @@ const ClassListPage = () => {
           </div>
         )}
       </div>
+
+      {/* Join Class Modal */}
+      {showJoinModal && (
+<div className='fixed inset-0 bg-white/10 flex items-center justify-center z-50 p-4'>
+          <div className='bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden'>
+            {/* Header */}
+            <div className='px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600'>
+              <div className='flex items-center justify-between'>
+                <h2 className='text-xl font-bold text-white'>Tham gia lớp học</h2>
+                <button
+                  onClick={() => {
+                    setShowJoinModal(false)
+                    setJoinClassCode('')
+                  }}
+                  className='text-white hover:bg-white/20 rounded-lg p-1 transition-colors'
+                >
+                  <svg className='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className='p-6'>
+              <div className='mb-4'>
+                <label className='block text-sm font-medium text-gray-700 mb-2'>Mã lớp học</label>
+                <input
+                  type='text'
+                  value={joinClassCode}
+                  onChange={(e) => setJoinClassCode(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleJoinClass()}
+                  placeholder='Nhập mã lớp học (vd: CS101)'
+                  className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center font-semibold text-lg uppercase'
+                  disabled={joiningClass}
+                />
+              </div>
+
+              <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4'>
+                <div className='flex items-start gap-2'>
+                  <svg
+                    className='w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                    />
+                  </svg>
+                  <div className='text-sm text-blue-800'>
+                    <p className='font-medium mb-1'>Lưu ý:</p>
+                    <ul className='list-disc list-inside space-y-1'>
+                      <li>Nhập mã lớp học được cung cấp bởi giảng viên</li>
+                      <li>Mã lớp học phân biệt chữ hoa chữ thường</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className='flex gap-3'>
+                <button
+                  onClick={() => {
+                    setShowJoinModal(false)
+                    setJoinClassCode('')
+                  }}
+                  className='flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors'
+                  disabled={joiningClass}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleJoinClass}
+                  disabled={joiningClass || !joinClassCode.trim()}
+                  className='flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2'
+                >
+                  {joiningClass ? (
+                    <>
+                      <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
+                      <span>Đang tham gia...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                        <path
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                          strokeWidth={2}
+                          d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+                        />
+                      </svg>
+                      <span>Tham gia</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -28,6 +28,7 @@ import { useDispatch } from 'react-redux'
 import { loginSuccess } from '../store/slices/authSlice'
 import ExamSessionDetail from '../pages/Teacher/Dashboard/Tabs/ESListUser'
 import ExamSubmissionDetail from '../pages/Teacher/Dashboard/Tabs/ExamSubmissionDetail'
+import ExamResultsPage from '../pages/Teacher/Dashboard/Tabs/ExamResultsPage'
 import StudentLayout from '../layouts/StudentLayout'
 import RoleProtected from '../components/Common/RoleProtected'
 
@@ -51,17 +52,22 @@ export default function AppRouter() {
       <Route path='/' element={<Navigate to='/role-select' replace />} />
 
       {/* Auth */}
-      <Route path='/login' element={
-        <RoleProtected>
-        <LoginPage />
-        </RoleProtected>
-        
-        } />
-      <Route path='/register' element={
-        <RoleProtected>
-        <RegisterPage />
-        </RoleProtected>
-        } />
+      <Route
+        path='/login'
+        element={
+          <RoleProtected>
+            <LoginPage />
+          </RoleProtected>
+        }
+      />
+      <Route
+        path='/register'
+        element={
+          <RoleProtected>
+            <RegisterPage />
+          </RoleProtected>
+        }
+      />
       <Route path='/verify-email' element={<VerifyEmailPage />} />
       <Route path='/role-select' element={<RoleSelectPage />} />
 
@@ -107,6 +113,7 @@ export default function AppRouter() {
         <Route path='exam-sessions/list' element={<ExamSessionsList />} />
         <Route path='exam-sessions/detail' element={<ExamSessionDetail />} />
         <Route path='exam-sessions/submission' element={<ExamSubmissionDetail />} />
+        <Route path='exam-sessions/:examSessionId/results' element={<ExamResultsPage />} />
         <Route path='monitoring/:examSessionId' element={<ExamMonitoringPage />} />
       </Route>
 

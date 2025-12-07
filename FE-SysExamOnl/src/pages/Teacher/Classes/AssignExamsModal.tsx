@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { X, Plus, Calendar, Clock, Users, BookOpen, ChevronDown } from 'lucide-react'
 import { getAllExams, createExamSession } from '../../../api/exam-api'
 import type { ExamResponse } from '../../../api/exam-api'
+import { notification } from 'antd'
 
 // Use ExamResponse from exam-api instead
 type Exam = ExamResponse
@@ -29,6 +30,7 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [durationMinutes, setDurationMinutes] = useState<number>(60)
+  const [passingScore, setPassingScore] = useState<string>('')
 
   const examDropdownRef = useRef<HTMLDivElement>(null)
   const examListRef = useRef<HTMLDivElement>(null)
@@ -67,7 +69,10 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
       setExamPage(page)
     } catch (error) {
       console.error('Failed to fetch exams:', error)
-      alert('Không thể tải danh sách đề thi')
+      notification.error({
+        message: 'Lỗi',
+        description: 'Không thể tải danh sách đề thi'
+      })
     } finally {
       setIsLoadingExams(false)
     }
@@ -85,7 +90,10 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
 
   const handleCreateSession = async () => {
     if (!selectedExamId || !sessionName || !startTime || !endTime) {
-      alert('Vui lòng điền đầy đủ thông tin')
+      notification.warning({
+        message: 'Cảnh báo',
+        description: 'Vui lòng điền đầy đủ thông tin'
+      })
       return
     }
 
@@ -101,18 +109,25 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
         name: sessionName,
         startAt: startAtISO,
         expiredAt: expiredAtISO,
-        durationMinutes
+        durationMinutes,
+        passingScore: passingScore ? parseFloat(passingScore) : undefined
       })
 
       // Step 2: Assign session to class
       await onAssign([newSession.examSessionId])
 
-      alert('Tạo và gán đề thi thành công!')
+      notification.success({
+        message: 'Thành công',
+        description: 'Tạo và gán đề thi thành công!'
+      })
       onClose()
       resetForm()
     } catch (error) {
       console.error('Failed to create and assign session:', error)
-      alert('Có lỗi xảy ra khi tạo đề thi')
+      notification.error({
+        message: 'Lỗi',
+        description: 'Có lỗi xảy ra khi tạo đề thi'
+      })
     } finally {
       setIsLoading(false)
     }
@@ -146,6 +161,7 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
     setStartTime('')
     setEndTime('')
     setDurationMinutes(60)
+    setPassingScore('')
     // Reset exam pagination
     setExamPage(0)
     setHasMoreExams(true)
@@ -176,7 +192,7 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
         <div className='bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-t-xl'>
           <div className='flex justify-between items-start'>
             <div>
-              <h2 className='text-2xl font-bold mb-2'>🎓 Giao đề thi cho lớp</h2>
+              <h2 className='text-2xl font-bold mb-2'>Giao đề thi cho lớp</h2>
               <div className='flex items-center gap-4 text-purple-100'>
                 <span className='flex items-center gap-2'>
                   <BookOpen className='w-4 h-4' />
@@ -308,19 +324,34 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
               </div>
             </div>
 
-            {/* Duration */}
-            <div>
-              <label className='block text-sm font-semibold text-gray-700 mb-2'>
-                <Clock className='w-4 h-4 inline mr-1' />
-                Thời gian làm bài (phút)
-              </label>
-              <input
-                type='number'
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                min='1'
-                className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
-              />
+            {/* Duration and Passing Score */}
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div>
+                <label className='block text-sm font-semibold text-gray-700 mb-2'>
+                  <Clock className='w-4 h-4 inline mr-1' />
+                  Thời gian làm bài (phút)
+                </label>
+                <input
+                  type='number'
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                  min='1'
+                  className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                />
+              </div>
+              <div>
+                <label className='block text-sm font-semibold text-gray-700 mb-2'>Điểm sàn (0-100)</label>
+                <input
+                  type='number'
+                  value={passingScore}
+                  onChange={(e) => setPassingScore(e.target.value)}
+                  min='0'
+                  max='100'
+                  step='0.01'
+                  placeholder='VD: 50 (không bắt buộc)'
+                  className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent'
+                />
+              </div>
             </div>
 
             {/* Preview */}
@@ -351,6 +382,12 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
                     <span className='text-gray-600'>Thời gian làm bài:</span>
                     <span className='font-semibold text-gray-900'>{durationMinutes} phút</span>
                   </div>
+                  {passingScore && (
+                    <div className='flex justify-between'>
+                      <span className='text-gray-600'>Điểm sàn:</span>
+                      <span className='font-semibold text-purple-600'>{passingScore}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
