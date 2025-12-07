@@ -18,12 +18,17 @@ import StudentList from '../pages/Teacher/Dashboard/Tabs/StudentsTab'
 import CreateEditExam from '../pages/Teacher/Exams/CreateEditExam'
 import ExamSessionsList from '../pages/Teacher/Dashboard/Tabs/ExamSessionsList'
 import ExamMonitoringPage from '../pages/Teacher/Dashboard/Tabs/ExamMonitoringPage'
+import ClassListPage from '../pages/Teacher/Classes'
+import ClassDetailPage from '../pages/Teacher/Classes/ClassDetailPage'
+import ClassEditPage from '../pages/Teacher/Classes/ClassEditPage'
+import { ClassListPage as StudentClassListPage } from '../pages/Student/Classes'
 
 import axiosClient from '../api/axiosClient'
 import { useDispatch } from 'react-redux'
 import { loginSuccess } from '../store/slices/authSlice'
 import ExamSessionDetail from '../pages/Teacher/Dashboard/Tabs/ESListUser'
 import ExamSubmissionDetail from '../pages/Teacher/Dashboard/Tabs/ExamSubmissionDetail'
+import ExamResultsPage from '../pages/Teacher/Dashboard/Tabs/ExamResultsPage'
 import StudentLayout from '../layouts/StudentLayout'
 import RoleProtected from '../components/Common/RoleProtected'
 
@@ -47,19 +52,27 @@ export default function AppRouter() {
       <Route path='/' element={<Navigate to='/role-select' replace />} />
 
       {/* Auth */}
-      <Route path='/login' element={
-        <RoleProtected>
-        <LoginPage />
-        </RoleProtected>
-        
-        } />
-      <Route path='/register' element={
-        <RoleProtected>
-        <RegisterPage />
-        </RoleProtected>
-        } />
+      <Route
+        path='/login'
+        element={
+          <RoleProtected>
+            <LoginPage />
+          </RoleProtected>
+        }
+      />
+      <Route
+        path='/register'
+        element={
+          <RoleProtected>
+            <RegisterPage />
+          </RoleProtected>
+        }
+      />
       <Route path='/verify-email' element={<VerifyEmailPage />} />
       <Route path='/role-select' element={<RoleSelectPage />} />
+
+      {/* Public Exam Routes */}
+      <Route path='/exam/join/:inviteCode' element={<JoinExam />} />
 
       {/* Student Routes */}
       <Route
@@ -71,6 +84,8 @@ export default function AppRouter() {
         }
       >
         <Route index element={<StudentDashboard />} />
+        <Route path='classes' element={<StudentClassListPage />} />
+        <Route path='classes/:classId' element={<StudentClassListPage />} />
         <Route path='exam/join/:examId' element={<ExamPage />} />
         <Route path='exam/join' element={<JoinExam />} />
         <Route path='exam/:examSessionId/result' element={<ResultPage />} />
@@ -91,10 +106,14 @@ export default function AppRouter() {
         <Route path='exams/:examId/edit' element={<CreateEditExam />} />
         <Route path='questions' element={<QuestionBank />} />
         <Route path='students' element={<StudentList />} />
+        <Route path='classes' element={<ClassListPage />} />
+        <Route path='classes/:classId' element={<ClassDetailPage />} />
+        <Route path='classes/:classId/edit' element={<ClassEditPage />} />
         <Route path='settings' element={<div>Settings Page</div>} />
         <Route path='exam-sessions/list' element={<ExamSessionsList />} />
         <Route path='exam-sessions/detail' element={<ExamSessionDetail />} />
         <Route path='exam-sessions/submission' element={<ExamSubmissionDetail />} />
+        <Route path='exam-sessions/:examSessionId/results' element={<ExamResultsPage />} />
         <Route path='monitoring/:examSessionId' element={<ExamMonitoringPage />} />
       </Route>
 

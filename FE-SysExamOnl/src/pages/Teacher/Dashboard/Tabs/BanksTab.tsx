@@ -482,12 +482,24 @@ function CreateFromBankButton({ selectedPaper: selectedPaperProp }: { selectedPa
       name: name.trim(),
       description: description.trim(),
       number: total,
-      easyCount: Number(easyCount || 0),
-      mediumCount: Number(mediumCount || 0),
-      hardCount: Number(hardCount || 0),
+      questionLevels: [
+          {
+            quantity: Number(easyCount || 0),
+            difficulty: 'EASY'
+        },
+                  {
+            quantity: Number(mediumCount || 0),
+            difficulty: 'MEDIUM'
+        },
+                            {
+            quantity: Number(hardCount || 0),
+            difficulty: 'HARD'
+          }
+      ]
     }
 
     try {
+      console.log('Submitting payload:', payload) // Debug log
       await axiosClient.post('/teacher/exams/bank-question', payload)
       toast.success('Tạo bài kiểm tra thành công')
       setOpen(false)

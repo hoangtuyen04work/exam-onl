@@ -114,7 +114,10 @@ export default function ExamPage() {
     }
 
     if (exam.status === 'COMPLETED') {
-      navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+      toast.info('Bạn đã hoàn thành bài thi này. Đang chuyển đến trang kết quả...')
+      setTimeout(() => {
+        navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+      }, 1500)
       return
     }
   }, [exam, examSessionId, navigate, isExamError])
@@ -491,7 +494,7 @@ export default function ExamPage() {
       if (!examSessionId || (hasSubmitted.current && state === 'FINAL')) return
       if (state === 'FINAL') {
         hasSubmitted.current = true
-        sendEvent('SUBMIT') // Thêm từ file 2
+        sendEvent('SUBMIT')
       }
 
       const payload: SubmitPayload = {
@@ -504,31 +507,39 @@ export default function ExamPage() {
       submitMutation.mutate(
         { state, payload },
         {
-          onSuccess: () => {
+          onSuccess: async () => {
             if (state === 'DRAFT') {
               saveToLocalStorage(examSessionId, { savedAnswers: answersRef.current })
+            } else if (state === 'FINAL') {
+              // Cleanup UI state
+              setIsExamStarted(false)
+              setIsTimeExpired(true)
+              exitFullscreen()
+              if (autoSaveRef.current) {
+                clearInterval(autoSaveRef.current)
+                autoSaveRef.current = null
+              }
+              if (timerRef.current) {
+                clearInterval(timerRef.current)
+                timerRef.current = null
+              }
+              localStorage.removeItem(`exam_${examSessionId}`)
+
+              // Fetch result before navigating to ensure fresh data
+              try {
+                await studentApi.getExamResult(examSessionId)
+                navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+              } catch (error) {
+                console.error('Error fetching result:', error)
+                // Navigate anyway, result page will handle the error
+                navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+              }
             }
           }
         }
       )
-
-      if (state === 'FINAL') {
-        setIsExamStarted(false)
-        setIsTimeExpired(true)
-        exitFullscreen()
-        if (autoSaveRef.current) {
-          clearInterval(autoSaveRef.current)
-          autoSaveRef.current = null
-        }
-        if (timerRef.current) {
-          clearInterval(timerRef.current)
-          timerRef.current = null
-        }
-        localStorage.removeItem(`exam_${examSessionId}`)
-        navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-      }
     },
-    [examSessionId, navigate, submitMutation, exitFullscreen, sendEvent] // Thêm sendEvent vào dependencies
+    [examSessionId, navigate, submitMutation, exitFullscreen, sendEvent]
   )
 
   useEffect(() => {
@@ -594,7 +605,7 @@ export default function ExamPage() {
 
   const handleNext = useCallback(() => {
     setCurrentQuestion((prev) => Math.min(prev + 1, (exam?.questions.length || 1) - 1))
-  }, [exam?.questions.length])
+  }, [exam?.questions?.length])
 
   const handlePrev = useCallback(() => {
     setCurrentQuestion((prev) => Math.max(prev - 1, 0))

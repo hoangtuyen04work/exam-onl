@@ -34,7 +34,8 @@ export default function ResultPage() {
       return data.data as ExamResult
     },
     enabled: !!examSessionId,
-    staleTime: 1000 * 60 * 5
+    staleTime: 0, // Always refetch to get fresh data
+    refetchOnMount: 'always' // Always refetch when component mounts
   })
 
   const [openExplanationId, setOpenExplanationId] = useState<number | null>(null)
@@ -82,11 +83,13 @@ export default function ResultPage() {
   const totalQuestions = result.questions.length
   const correctCount = result.questions.filter((q) => q.answers.some((a) => a.correct && a.selected)).length
   const wrongCount = totalQuestions - correctCount
-  const score = totalQuestions > 0 ? ((correctCount / totalQuestions) * 10).toFixed(2) : '0.00'
+  const score = result.totalScore?.toFixed(2) || '0.00'
   const percentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0
 
-  const statusColor = percentage >= 70 ? 'text-emerald-500' : percentage >= 50 ? 'text-amber-500' : 'text-rose-500'
-  const statusGradient = percentage >= 70 ? '#10b981' : percentage >= 50 ? '#f59e0b' : '#f43f5e'
+  // Determine status based on isPassed if passingScore exists, otherwise use percentage
+  const hasPassed = result.isPassed !== null ? result.isPassed : percentage >= 50
+  const statusColor = hasPassed ? 'text-emerald-500' : 'text-rose-500'
+  const statusGradient = hasPassed ? '#10b981' : '#f43f5e'
 
   return (
     <div className='min-h-screen bg-gray-50 py-10 px-4'>
@@ -178,12 +181,49 @@ export default function ResultPage() {
             </div>
           </div>
 
-          <div className='px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between text-sm text-gray-500 font-light'>
-            <div className='flex items-center gap-2'>
-              <Clock className='w-4 h-4' />
-              <span>Thời gian nộp:</span>
+          <div className='px-6 py-4 bg-gray-50/50 border-b border-gray-100 space-y-2'>
+            <div className='flex items-center justify-between text-sm text-gray-500 font-light'>
+              <div className='flex items-center gap-2'>
+                <Clock className='w-4 h-4' />
+                <span>Thời gian nộp:</span>
+              </div>
+              <span className='text-gray-700 font-normal'>{toLocalStringISO(result.submittedAt)}</span>
             </div>
-            <span className='text-gray-700 font-normal'>{toLocalStringISO(result.submittedAt)}</span>
+
+            {result.passingScore !== null && (
+              <div className='flex items-center justify-between text-sm'>
+                <span className='text-gray-500 font-light'>Điểm sàn:</span>
+                <span className='text-purple-600 font-semibold'>{result.passingScore.toFixed(2)}</span>
+              </div>
+            )}
+
+            {result.isPassed !== null && (
+              <div className='flex items-center justify-between text-sm'>
+                <span className='text-gray-500 font-light'>Kết quả:</span>
+                <span
+                  className={`font-semibold flex items-center gap-1 ${result.isPassed ? 'text-emerald-600' : 'text-rose-600'}`}
+                >
+                  {result.isPassed ? (
+                    <>
+                      <CheckCircle className='w-4 h-4' />
+                      Đạt yêu cầu
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className='w-4 h-4' />
+                      Chưa đạt
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {result.exitCount > 0 && (
+              <div className='flex items-center justify-between text-sm'>
+                <span className='text-gray-500 font-light'>Số lần thoát:</span>
+                <span className='text-orange-600 font-semibold'>{result.exitCount}</span>
+              </div>
+            )}
           </div>
 
           <AnimatePresence>

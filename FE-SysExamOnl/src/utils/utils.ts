@@ -64,5 +64,5 @@ export const loadFromLocalStorage = (examSessionId: number) => {
 }
 
 export const getBaseUrl = () => {
-  return (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/+$/, '') || ''
+  return (import.meta.env.VITE_API_BASE_EXPOSE as string | undefined)?.replace(/\/+$/, '') || ''
 }
