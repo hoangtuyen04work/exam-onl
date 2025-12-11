@@ -1,5 +1,6 @@
 // src/api/exam-api.ts
 import axiosClient from './axiosClient';
+import type { PageResponse } from '../types/class.type'; 
 
 interface BaseResponse<T> {
   code: number;
@@ -7,17 +8,6 @@ interface BaseResponse<T> {
   data: T;
 }
 
-interface PageResponse<T> {
-  code: number;
-  message: string;
-  data: {
-    items: T[];
-    totalElements: number;
-    totalPages: number;
-    size: number;
-    number: number;
-  };
-}
 
 // Exam Types
 export interface ExamResponse {
@@ -45,6 +35,7 @@ export interface ExamSessionCreationRequest {
   startAt: string; // ISO 8601 OffsetDateTime format: 2024-11-27T14:30:00+07:00
   expiredAt: string; // ISO 8601 OffsetDateTime format: 2024-11-27T16:30:00+07:00
   durationMinutes: number;
+  passingScore: number;
 }
 
 const EXAM_API_BASE = '/teacher/exams';
@@ -56,12 +47,14 @@ const EXAM_SESSION_API_BASE = '/teacher/exam-sessions';
  * Get all exams with pagination
  */
 export async function getAllExams(page = 0, size = 10): Promise<ExamResponse[]> {
-  const { data } = await axiosClient.get<ExamResponse[]>(EXAM_API_BASE, {
-    params: { page, size }
-  });
+  const { data } = await axiosClient.get<PageResponse<ExamResponse>>(
+    EXAM_API_BASE,
+    {
+      params: { page, size },
+    }
+  );
   return data.items;
 }
-
 /**
  * Get exam by ID (basic info)
  */
@@ -86,7 +79,7 @@ export async function getAllExamSessions(
   page = 0,
   size = 100
 ): Promise<ExamSessionResponse[]> {
-  const { data } = await axiosClient.get<ExamSessionResponse[]>(
+  const { data } = await axiosClient.get<PageResponse<ExamSessionResponse>>(
     `${EXAM_SESSION_API_BASE}/search`,
     {
       params: {

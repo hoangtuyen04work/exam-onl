@@ -1,12 +1,11 @@
 // src/api/axiosClient.ts
-import axios, {
+import axios from 'axios';
+import type {
   AxiosInstance,
-  AxiosRequestConfig,
   AxiosResponse,
   AxiosError,
   InternalAxiosRequestConfig,
 } from 'axios';
-
 // Lấy base URL từ .env (Vite chuẩn)
 const baseURL = (import.meta.env.VITE_API_BASE_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
 
@@ -62,7 +61,7 @@ api.interceptors.request.use(
     // Debug log (chỉ ở dev)
     if (import.meta.env.DEV) {
       const method = config.method?.toUpperCase() ?? 'GET';
-      const url = config.url ? `${baseURL}${config.url}`.replace(/\/+/g, '/') : 'unknown';
+      const url = config.url ? `${baseURL}${config.url}`.replaceAll(/\/+/g, '/') : 'unknown';
       const data = config.params ?? config.data ?? {};
       console.debug('[api] REQ', method, url, data);
     }
@@ -91,7 +90,6 @@ api.interceptors.response.use(
     // Xử lý hết hạn token
     if (status === 401) {
       setAuthToken(null);
-      // window.location.href = '/login'; // bật nếu cần redirect
     }
 
     return Promise.reject(error);

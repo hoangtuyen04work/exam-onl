@@ -1,36 +1,38 @@
-import { useEffect, useCallback } from 'react'
+// import { useEffect, useCallback } from 'react'
 
-export function useExamTimer(onTimeUp: () => void) {
-  const dispatch = useAppDispatch()
 
-  useEffect(() => {
-    if (timeRemaining === 0) {
-      onTimeUp()
-      return
-    }
 
-    // Ngừng đếm nếu thời gian đã hết
-    if (timeRemaining < 0) return
+// export function useExamTimer(onTimeUp: () => void) {
+//   const dispatch = useAppDispatch()
 
-    const interval = setInterval(() => {
-      dispatch(decrementTime())
-    }, 1000)
+//   useEffect(() => {
+//     if (timeRemaining === 0) {
+//       onTimeUp()
+//       return
+//     }
 
-    return () => clearInterval(interval)
-  }, [timeRemaining, dispatch, onTimeUp])
+//     // Ngừng đếm nếu thời gian đã hết
+//     if (timeRemaining < 0) return
 
-  const formatTime = useCallback((seconds: number) => {
-    if (seconds < 0) seconds = 0
+//     const interval = setInterval(() => {
+//       dispatch(decrementTime())
+//     }, 1000)
 
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const secs = seconds % 60
+//     return () => clearInterval(interval)
+//   }, [timeRemaining, dispatch, onTimeUp])
 
-    if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-    }
-    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }, [])
+//   const formatTime = useCallback((seconds: number) => {
+//     if (seconds < 0) seconds = 0
 
-  return { timeRemaining, formatTime }
-}
+//     const hours = Math.floor(seconds / 3600)
+//     const minutes = Math.floor((seconds % 3600) / 60)
+//     const secs = seconds % 60
+
+//     if (hours > 0) {
+//       return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+//     }
+//     return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+//   }, [])
+
+//   return { timeRemaining, formatTime }
+// }

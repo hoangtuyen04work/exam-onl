@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Eye, EyeOff, ArrowLeft, BookOpen, UserIcon } from 'lucide-react'
+import { Eye, EyeOff, BookOpen, UserIcon } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'

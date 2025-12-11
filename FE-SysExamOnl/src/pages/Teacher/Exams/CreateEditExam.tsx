@@ -1,5 +1,5 @@
 // src/components/teacher/CreateEditExam.tsx
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Plus, Trash2, Save, ArrowUp } from 'lucide-react'
 import { useCreateEditExam } from '../Exams/HookExam/HookCreateEditExam'
 

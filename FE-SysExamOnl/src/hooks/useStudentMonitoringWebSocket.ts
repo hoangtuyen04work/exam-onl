@@ -15,7 +15,6 @@ export const useStudentMonitoringWebSocket = (
 ) => {
   const clientRef = useRef<Client | null>(null);
   const lastFocusState = useRef<boolean>(true);
-  const baseURL = (import.meta.env.VITE_API_BASE_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
   const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
 
 

@@ -396,14 +396,6 @@ export default function ExamPage() {
   }, [examSessionId, sendEventLog])
 
   // === FULLSCREEN LOGIC ===
-  const handleEndExamForced = useCallback(() => {
-    if (examSessionStudentIdRef.current) {
-      console.log('[DEBUG] Fullscreen exit detected - sending EXIT event')
-      sendEventLog('EXIT')
-      toast.error('Thoát toàn màn hình — bài thi kết thúc!')
-      setTimeout(() => navigate('/student'), 1500)
-    }
-  }, [navigate, sendEventLog])
 
   // === FULLSCREEN CHANGE LISTENER (Additional to hook) ===
   // Thêm listener riêng để đảm bảo gọi sendEventLog khi thoát fullscreen
@@ -480,7 +472,9 @@ export default function ExamPage() {
   const { requestFullscreen, exitFullscreen } = useFullScreen({
     onExit: () => {
       sendEvent('LEAVE') // Thêm từ file 2
-      submitExamRef.current('FINAL')
+      if (submitExamRef.current) {
+        submitExamRef.current('FINAL')
+      }
       toast.error('Thoát toàn màn hình — bài thi kết thúc!')
       setTimeout(() => navigate('/student'), 1500)
     },
@@ -526,14 +520,9 @@ export default function ExamPage() {
               localStorage.removeItem(`exam_${examSessionId}`)
 
               // Fetch result before navigating to ensure fresh data
-              try {
-                await studentApi.getExamResult(examSessionId)
+
                 navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-              } catch (error) {
-                console.error('Error fetching result:', error)
-                // Navigate anyway, result page will handle the error
-                navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-              }
+              
             }
           }
         }
