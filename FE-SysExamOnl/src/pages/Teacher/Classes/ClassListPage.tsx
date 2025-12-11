@@ -13,7 +13,7 @@ import type { ClassResponse, ClassDetailResponse } from '../../../types/class.ty
 import ClassFormModal from './ClassFormModal'
 import AddStudentsModal from './AddStudentsModal'
 import AssignExamsModal from './AssignExamsModal'
-import { ChatBox, ChatSettings } from '../../../components/Chat'
+import { ChatBox } from '../../../components/Chat'
 import { classChatApi } from '../../../api/class-chat-api'
 import ReactPaginate from 'react-paginate'
 
@@ -209,42 +209,6 @@ const ClassListPage: React.FC = () => {
     )
   }
 
-  const ExamTable = ({ exams, page, totalPages, onPageChange }) => (
-    <div>
-      <table className='min-w-full bg-white'>
-        <thead>
-          <tr>
-            <th className='py-2'>Tên bài thi</th>
-            <th className='py-2'>Thời gian bắt đầu</th>
-            <th className='py-2'>Thời gian kết thúc</th>
-            <th className='py-2'>Thời lượng</th>
-          </tr>
-        </thead>
-        <tbody>
-          {exams.map((exam) => (
-            <tr key={exam.id}>
-              <td className='py-2'>{exam.name}</td>
-              <td className='py-2'>{new Date(exam.startAt).toLocaleString('vi-VN')}</td>
-              <td className='py-2'>{new Date(exam.expiredAt).toLocaleString('vi-VN')}</td>
-              <td className='py-2'>{exam.durationMinutes} phút</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className='flex justify-between mt-4'>
-        <button onClick={() => onPageChange(page - 1)} disabled={page === 0}>
-          Trước
-        </button>
-        <span>
-          Trang {page + 1} / {totalPages}
-        </span>
-        <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages - 1}>
-          Sau
-        </button>
-      </div>
-    </div>
-  )
-
   return (
     <div className='container mx-auto px-4 py-6'>
       {error && <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4'>{error}</div>}
@@ -299,7 +263,7 @@ const ClassListPage: React.FC = () => {
                             ✏️
                           </button>
                           <button
-                            onClick={() => handleDelete(cls.id, cls.name)}
+                            onClick={() => handleDelete(cls.classId, cls.name)}
                             className='text-red-600 hover:text-red-800 text-xs px-1'
                             title='Xóa'
                           >
@@ -496,7 +460,7 @@ const ClassListPage: React.FC = () => {
                       </div>
                     ) : (
                       <div className='grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3'>
-                        {classDetail.students.map((student, index) => (
+                        {classDetail.students.map((student) => (
                           <div
                             key={student.id}
                             className='relative bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-lg transition-all group p-4'
@@ -663,8 +627,8 @@ const ClassListPage: React.FC = () => {
                                   const isExpired = endTime < now
 
                                   return (
-                                    <tr 
-                                      key={exam.id} 
+                                    <tr
+                                      key={exam.id}
                                       className='hover:bg-gray-50 transition-colors cursor-pointer'
                                       onClick={() => navigate(`/teacher/exam-sessions/${exam.id}/results`)}
                                     >

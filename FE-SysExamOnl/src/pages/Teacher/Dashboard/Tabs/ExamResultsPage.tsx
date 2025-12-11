@@ -41,7 +41,7 @@ export default function ExamResultsPage() {
       setStudents(results.items)
     } catch (error: any) {
       notification.error({
-        message: 'Lỗi',
+        title: 'Lỗi',
         description: 'Không thể tải dữ liệu'
       })
     } finally {
@@ -55,7 +55,7 @@ export default function ExamResultsPage() {
     const score = parseFloat(newPassingScore)
     if (isNaN(score) || score < 0) {
       notification.warning({
-        message: 'Cảnh báo',
+        title: 'Cảnh báo',
         description: 'Điểm sàn phải là số không âm'
       })
       return
@@ -64,14 +64,14 @@ export default function ExamResultsPage() {
     try {
       await updatePassingScore(Number(examSessionId), score)
       notification.success({
-        message: 'Thành công',
+        title: 'Thành công',
         description: 'Cập nhật điểm sàn thành công'
       })
       setShowPassingScoreModal(false)
       loadData()
     } catch (error: any) {
       notification.error({
-        message: 'Lỗi',
+        title: 'Lỗi',
         description: 'Không thể cập nhật điểm sàn'
       })
     }

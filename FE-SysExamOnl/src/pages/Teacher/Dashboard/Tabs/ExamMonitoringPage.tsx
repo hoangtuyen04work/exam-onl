@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import { LogIn, LogOut, Clock } from 'lucide-react'
@@ -36,8 +36,7 @@ type StudentDetail = {
 export default function ExamMonitoringPage() {
   const [onlineStudents, setOnlineStudents] = useState<Set<number>>(new Set())
   const { examSessionId: paramId } = useParams<{ examSessionId: string }>()
-  const [examSessionId, setExamSessionId] = useState(paramId || '28')
-  const [stompClient, setStompClient] = useState<Client | null>(null)
+  const [examSessionId] = useState(paramId || '28')
   const [connected, setConnected] = useState(false)
 
   const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || ''
@@ -177,7 +176,6 @@ export default function ExamMonitoringPage() {
     }
 
     client.activate()
-    setStompClient(client)
 
     return () => {
       client.deactivate()

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { studentClassApi } from '../../../api/student-class-api'
-import { StudentClass, StudentClassDetail } from '../../../types/class.type'
+import type { StudentClass, StudentClassDetail } from '../../../types/class.type'
 import { ChatBox } from '../../../components/Chat'
 import { classChatApi } from '../../../api/class-chat-api'
 import ReactPaginate from 'react-paginate'
@@ -54,6 +54,7 @@ const ClassListPage = () => {
   const loadClasses = async () => {
     try {
       setLoading(true)
+      console.log("Loading classes for page", page)
       const response = await studentClassApi.getMyClasses(page, 50)
       if (response && response.items) {
         setClasses(response.items)
@@ -70,6 +71,7 @@ const ClassListPage = () => {
     try {
       setLoadingDetail(true)
       const response = await studentClassApi.getClassDetail(classId)
+      console.log("OKOK", response)
       if (response.success && response.data) {
         setClassDetail(response.data)
       }
@@ -97,30 +99,6 @@ const ClassListPage = () => {
     navigate(`/student/classes/${classId}`, { replace: true })
   }
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
-  const getExamStatus = (startAt: string, expiredAt: string) => {
-    const now = new Date()
-    const start = new Date(startAt)
-    const expired = new Date(expiredAt)
-
-    if (now < start) {
-      return { text: 'Sắp diễn ra', color: 'text-blue-600 bg-blue-100' }
-    } else if (now > expired) {
-      return { text: 'Đã kết thúc', color: 'text-gray-600 bg-gray-100' }
-    } else {
-      return { text: 'Đang diễn ra', color: 'text-green-600 bg-green-100' }
-    }
-  }
 
   const handleStartExam = (inviteLink: string) => {
     if (inviteLink) {
@@ -131,7 +109,7 @@ const ClassListPage = () => {
   const handleJoinClass = async () => {
     if (!joinClassCode.trim()) {
       notification.warning({
-        message: 'Cảnh báo',
+        title: 'Cảnh báo',
         description: 'Vui lòng nhập mã lớp học'
       })
       return
@@ -142,7 +120,7 @@ const ClassListPage = () => {
       const response = await studentClassApi.joinClassByCode(joinClassCode.trim())
       if (response.success) {
         notification.success({
-          message: 'Thành công',
+          title: 'Thành công',
           description: 'Tham gia lớp học thành công!'
         })
         setShowJoinModal(false)
@@ -152,7 +130,7 @@ const ClassListPage = () => {
     } catch (error: any) {
       console.error('Failed to join class:', error)
       notification.error({
-        message: 'Lỗi',
+        title: 'Lỗi',
         description: error.response?.data?.message || 'Không thể tham gia lớp học'
       })
     } finally {
@@ -160,41 +138,7 @@ const ClassListPage = () => {
     }
   }
 
-  const ExamTable = ({ exams, page, totalPages, onPageChange }) => (
-    <div>
-      <table className='min-w-full bg-white'>
-        <thead>
-          <tr>
-            <th className='py-2'>Tên bài thi</th>
-            <th className='py-2'>Thời gian bắt đầu</th>
-            <th className='py-2'>Thời gian kết thúc</th>
-            <th className='py-2'>Thời gian làm</th>
-          </tr>
-        </thead>
-        <tbody>
-          {exams.map((exam) => (
-            <tr key={exam.id}>
-              <td className='py-2'>{exam.name}</td>
-              <td className='py-2'>{formatDateTime(exam.startAt)}</td>
-              <td className='py-2'>{formatDateTime(exam.expiredAt)}</td>
-              <td className='py-2'>{exam.durationMinutes} phút</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className='flex justify-between mt-4'>
-        <button onClick={() => onPageChange(page - 1)} disabled={page === 0}>
-          Trước
-        </button>
-        <span>
-          Trang {page + 1} của {totalPages}
-        </span>
-        <button onClick={() => onPageChange(page + 1)} disabled={page >= totalPages - 1}>
-          Sau
-        </button>
-      </div>
-    </div>
-  )
+
 
   return (
     <div className='h-screen flex overflow-hidden bg-gray-50'>

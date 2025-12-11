@@ -70,7 +70,7 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
     } catch (error) {
       console.error('Failed to fetch exams:', error)
       notification.error({
-        message: 'Lỗi',
+        title: 'Lỗi',
         description: 'Không thể tải danh sách đề thi'
       })
     } finally {
@@ -91,7 +91,7 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
   const handleCreateSession = async () => {
     if (!selectedExamId || !sessionName || !startTime || !endTime) {
       notification.warning({
-        message: 'Cảnh báo',
+        title: 'Cảnh báo',
         description: 'Vui lòng điền đầy đủ thông tin'
       })
       return
@@ -110,14 +110,14 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
         startAt: startAtISO,
         expiredAt: expiredAtISO,
         durationMinutes,
-        passingScore: passingScore ? parseFloat(passingScore) : undefined
+        passingScore: passingScore ? parseFloat(passingScore) : 0
       })
 
       // Step 2: Assign session to class
       await onAssign([newSession.examSessionId])
 
       notification.success({
-        message: 'Thành công',
+        title: 'Thành công',
         description: 'Tạo và gán đề thi thành công!'
       })
       onClose()
@@ -125,7 +125,7 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
     } catch (error) {
       console.error('Failed to create and assign session:', error)
       notification.error({
-        message: 'Lỗi',
+        title: 'Lỗi',
         description: 'Có lỗi xảy ra khi tạo đề thi'
       })
     } finally {

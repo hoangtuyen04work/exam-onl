@@ -1,3 +1,3 @@
-import QuestionContent from './QuestionContent'
+// import QuestionContent from './QuestionContent'
 
-export default QuestionContent
+// export default QuestionContent

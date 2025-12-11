@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { mockStudents } from '../../../../data/mockData'
-import { Search, Filter, Plus, Edit, Trash2, Mail, Phone, User, Users, UserCheck, UserX } from 'lucide-react'
+import { Search, Filter, Plus, Edit, Trash2, Mail, User, Users, UserCheck, UserX } from 'lucide-react'
 
 export default function StudentList() {
   const [students, setStudents] = useState(mockStudents)

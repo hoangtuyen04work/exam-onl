@@ -9,7 +9,6 @@ interface ChatSettingsProps {
 const ChatSettings = ({ classId, initialAllowStudentChat, onSettingChange }: ChatSettingsProps) => {
   const [allowStudentChat, setAllowStudentChat] = useState(initialAllowStudentChat)
   const [loading, setLoading] = useState(false)
-  const baseURL = (import.meta.env.VITE_API_BASE_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
   const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || '';
 
   const handleToggle = async () => {

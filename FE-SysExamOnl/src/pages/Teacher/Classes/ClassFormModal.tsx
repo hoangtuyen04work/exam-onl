@@ -37,7 +37,7 @@ const ClassFormModal: React.FC<ClassFormModalProps> = ({ classData, onClose }) =
     try {
       setLoading(true)
       if (classData) {
-        await updateClass(classData.id, formData)
+        await updateClass(classData.classId, formData)
       } else {
         await createClass(formData)
       }

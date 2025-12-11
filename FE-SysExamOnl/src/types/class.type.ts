@@ -1,7 +1,8 @@
 // Types for Class Management APIs
 
 export interface ClassResponse {
-  id: number;
+  classId: number;
+  classCode: string;
   name: string;
   description?: string;
   teacherId: number;
