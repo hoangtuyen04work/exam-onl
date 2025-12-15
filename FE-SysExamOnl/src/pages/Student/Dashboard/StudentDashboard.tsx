@@ -68,6 +68,7 @@ export default function StudentDashboard() {
         switch (res.data.state) {
           case 'JOINED':
             toast.error('Bạn đã làm bài thi này trước đó')
+            navigate(`exam/join/${res.data.examSessionId}`)
             break
           case 'OPENING':
             toast.info('Kỳ thi đang mở. Đang chuyển hướng...')

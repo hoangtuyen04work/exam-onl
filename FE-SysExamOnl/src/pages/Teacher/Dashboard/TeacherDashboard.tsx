@@ -1,7 +1,7 @@
 // src/layouts/TeacherDashboard.tsx
 import React, { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Home, FileText, Database, Users, Settings, LogOut, Menu, X, BookOpen } from 'lucide-react'
+import { Home, FileText, Database, LogOut, Menu, X, BookOpen } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 function Tooltip({ children, targetRect }: { children: React.ReactNode; targetRect: DOMRect | null }) {
@@ -54,9 +54,7 @@ export default function TeacherDashboard() {
     { key: '/teacher', icon: Home, label: 'Màn hình chính' },
     { key: '/teacher/exams', icon: FileText, label: 'Đề thi' },
     { key: '/teacher/questions', icon: Database, label: 'Ngân hàng câu hỏi' },
-    { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' },
-    { key: '/teacher/students', icon: Users, label: 'Thí sinh' },
-    { key: '/teacher/settings', icon: Settings, label: 'Cài đặt' }
+    { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' }
   ]
 
   const activeTabKey =
