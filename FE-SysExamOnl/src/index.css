@@ -19,6 +19,10 @@ body {
   animation: fadeSlide 0.3s ease;
 }
 
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
 .stats-card {
   @apply bg-white rounded-xl border shadow p-6 transition cursor-pointer;
 }

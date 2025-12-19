@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
 import { LogIn, LogOut, Clock } from 'lucide-react'
@@ -8,7 +8,7 @@ import { vi } from 'date-fns/locale/vi'
 
 interface StudentEvent {
   examSessionId: number
-  event: 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'SUBMIT'
+  event: 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'FOCUS_REGAINED' | 'SUBMIT' | 'TAB_SWITCH' | 'DISCONNECTED'
 }
 
 interface StudentEventBroadcast {
@@ -20,27 +20,28 @@ interface StudentEventBroadcast {
 interface StudentStatusResponse {
   userId: number
   username: string
-  status: 'IN_PROGRESS' | 'COMPLETED'
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'DISCONNECTED'
   timestamp: string
+}
+
+type StudentDetail = {
+  name: string
+  lastEvent: StudentEventBroadcast | null
+  currentStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'UNKNOWN'
+  timestamp?: string
+  focusLostCount?: number
+  tabSwitchCount?: number
 }
 
 export default function ExamMonitoringPage() {
   const [onlineStudents, setOnlineStudents] = useState<Set<number>>(new Set())
   const { examSessionId: paramId } = useParams<{ examSessionId: string }>()
-  const [examSessionId, setExamSessionId] = useState(paramId || '28')
-  const [stompClient, setStompClient] = useState<Client | null>(null)
+  const [examSessionId] = useState(paramId || '28')
   const [connected, setConnected] = useState(false)
-  const [studentDetails, setStudentDetails] = useState<
-    Map<
-      number,
-      {
-        name: string
-        lastEvent: StudentEventBroadcast | null
-        currentStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'UNKNOWN'
-        timestamp?: string
-      }
-    >
-  >(new Map())
+
+  const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || ''
+
+  const [studentDetails, setStudentDetails] = useState<Map<number, StudentDetail>>(new Map())
 
   const token = localStorage.getItem('authToken') || ''
 
@@ -50,12 +51,9 @@ export default function ExamMonitoringPage() {
 
     const fetchParticipants = async () => {
       try {
-        const response = await fetch(
-          `http://localhost:8888/exam-online-system/api/teacher/exam-sessions/monitoring/${examSessionId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        )
+        const response = await fetch(`${serverPort}/api/teacher/exam-sessions/monitoring/${examSessionId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
 
         if (!response.ok) {
           console.error('Lỗi fetch danh sách sinh viên:', response.status)
@@ -102,9 +100,10 @@ export default function ExamMonitoringPage() {
       alert('Vui lòng đăng nhập để xem monitoring!')
       return
     }
+    console.log('Kết nối tới WebSocket...', serverPort)
 
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8888/exam-online-system/ws'),
+      webSocketFactory: () => new SockJS(serverPort + '/ws'),
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },
@@ -177,7 +176,6 @@ export default function ExamMonitoringPage() {
     }
 
     client.activate()
-    setStompClient(client)
 
     return () => {
       client.deactivate()

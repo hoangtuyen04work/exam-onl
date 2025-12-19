@@ -5,7 +5,7 @@ import axiosClient from '../../api/axiosClient.ts'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 // import { useDispatch } from 'react-redux'
-import { ArrowLeft, BookOpen, UserIcon } from 'lucide-react'
+import {  BookOpen, UserIcon } from 'lucide-react'
 
 interface RegisterPayload {
   email: string

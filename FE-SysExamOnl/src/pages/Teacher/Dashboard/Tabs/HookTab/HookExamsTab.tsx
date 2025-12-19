@@ -10,7 +10,7 @@ interface ExamItem {
   name: string
   description: string
   totalPoint: string
-  numberQuestions: number   
+  numberQuestions: number
   startTime: string
   endTime: string
   durationMinutes: number
@@ -43,9 +43,11 @@ export const useExamsTab = () => {
   const [modalData, setModalData] = useState<SessionResult | null>(null)
   const [showTimeModal, setShowTimeModal] = useState(false)
   const [selectedExamId, setSelectedExamId] = useState<number | string | null>(null)
+  const [sessionName, setSessionName] = useState('')
   const [startAt, setStartAt] = useState('')
   const [expiredAt, setExpiredAt] = useState('')
   const [duration, setDuration] = useState('60')
+  const [passingScore, setPassingScore] = useState('')
   const [creating, setCreating] = useState(false)
 
   const navigate = useNavigate()
@@ -74,7 +76,7 @@ export const useExamsTab = () => {
               durationMinutes: item.durationMinutes ?? 0
             }))
           : []
-          console.log('Fetched exams:', items);
+        console.log('Fetched exams:', items)
         setList(items)
       } catch (err) {
         console.error(err)
@@ -88,7 +90,7 @@ export const useExamsTab = () => {
   }, [navigate]) // dependency đúng
 
   const toggleSelect = (examId: number | string) => {
-    setSelectedExams(prev => {
+    setSelectedExams((prev) => {
       const copy = new Map(prev)
       copy.set(examId, !copy.get(examId))
       return copy
@@ -96,30 +98,34 @@ export const useExamsTab = () => {
   }
 
   const selectAll = () => {
-    const allSelected = list.length > 0 && list.every(exam => selectedExams.get(exam.id))
-    setSelectedExams(allSelected ? new Map() : new Map(list.map(exam => [exam.id, true] as [number | string, boolean])))
+    const allSelected = list.length > 0 && list.every((exam) => selectedExams.get(exam.id))
+    setSelectedExams(
+      allSelected ? new Map() : new Map(list.map((exam) => [exam.id, true] as [number | string, boolean]))
+    )
   }
 
   const openTimeModal = (examId: number | string) => {
     setSelectedExamId(examId)
-   const now = new Date();
+    const now = new Date()
 
-// Format đúng cho input datetime-local
-const formatLocal = (d: Date) => {
-  const offset = d.getTimezoneOffset();
-  const local = new Date(d.getTime() - offset * 60000);
-  return local.toISOString().slice(0, 16);
-};
+    // Format đúng cho input datetime-local
+    const formatLocal = (d: Date) => {
+      const offset = d.getTimezoneOffset()
+      const local = new Date(d.getTime() - offset * 60000)
+      return local.toISOString().slice(0, 16)
+    }
 
-setStartAt(formatLocal(now));
-setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)));
+    setStartAt(formatLocal(now))
+    setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)))
     setDuration('60')
+    setPassingScore('')
+    setSessionName('')
     setShowTimeModal(true)
   }
 
   const handleCreateSession = async () => {
-    if (!selectedExamId || !startAt || !expiredAt) {
-      toast.error('Vui lòng chọn đầy đủ thời gian!')
+    if (!selectedExamId || !startAt || !expiredAt || !sessionName.trim()) {
+      toast.error('Vui lòng điền đầy đủ thông tin!')
       return
     }
 
@@ -134,7 +140,9 @@ setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)));
 
     const availableMinutes = Math.floor((end.getTime() - start.getTime()) / 60000)
     if (durationMin > availableMinutes) {
-      toast.error(`Thời gian làm bài (${durationMin} phút) không được vượt quá thời gian mở phiên (${availableMinutes} phút)!`)
+      toast.error(
+        `Thời gian làm bài (${durationMin} phút) không được vượt quá thời gian mở phiên (${availableMinutes} phút)!`
+      )
       return
     }
 
@@ -142,11 +150,11 @@ setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)));
     try {
       const payload = {
         examId: Number(selectedExamId),
-        name: 'Phiên thi tùy chỉnh',
-        description: 'Tạo từ giao diện giáo viên',
+        name: sessionName.trim(),
         durationMinutes: durationMin,
         startAt: start.toISOString(),
-        expiredAt: end.toISOString()
+        expiredAt: end.toISOString(),
+        passingScore: passingScore ? parseFloat(passingScore) : undefined
       }
 
       const res = await axiosClient.post('/teacher/exam-sessions', payload)
@@ -165,12 +173,11 @@ setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)));
   }
 
   const formatDateTime = (iso: string) => {
-  const d = new Date(iso);
-  const offset = d.getTimezoneOffset();
-  const local = new Date(d.getTime() - offset * 60000);
-  return format(local, 'dd/MM/yyyy HH:mm');
-};
-
+    const d = new Date(iso)
+    const offset = d.getTimezoneOffset()
+    const local = new Date(d.getTime() - offset * 60000)
+    return format(local, 'dd/MM/yyyy HH:mm')
+  }
 
   return {
     list,
@@ -179,9 +186,11 @@ setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)));
     modalData,
     showTimeModal,
     selectedExamId,
+    sessionName,
     startAt,
     expiredAt,
     duration,
+    passingScore,
     creating,
     DURATIONS,
 
@@ -192,9 +201,11 @@ setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)));
     formatDateTime,
     setModalData,
     setShowTimeModal,
+    setSessionName,
     setStartAt,
     setExpiredAt,
     setDuration,
+    setPassingScore,
     navigate
   }
 }
