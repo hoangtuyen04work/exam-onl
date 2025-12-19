@@ -11,6 +11,13 @@ interface Answer {
   correct: boolean
 }
 
+interface AnswerDTO {
+  id?: number | string
+  answerId?: number | string
+  content?: string
+  correct?: boolean
+}
+
 interface Question {
   id?: number | string
   questionId?: number | string
@@ -20,6 +27,43 @@ interface Question {
   explanation: string
   shuffleAnswers: boolean
   answers: Answer[]
+}
+
+interface QuestionDTO {
+  id?: number | string
+  questionId?: number | string
+  content?: string
+  point?: number
+  difficulty?: 'EASY' | 'MEDIUM' | 'HARD'
+  explanation?: string
+  shuffleAnswers?: boolean
+  answers?: AnswerDTO[]
+}
+
+interface ExamDTO {
+  id?: number | string
+  name?: string
+  description?: string
+  durationMinutes?: number
+  questions?: QuestionDTO[]
+}
+
+interface ApiErrorShape {
+  response?: {
+    data?: {
+      message?: string
+    }
+  }
+}
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'object' && error !== null) {
+    const maybe = error as ApiErrorShape
+    const message = maybe.response?.data?.message
+    if (typeof message === 'string' && message.trim().length > 0) return message
+  }
+  if (error instanceof Error && error.message) return error.message
+  return fallback
 }
 
 export const useCreateEditExam = () => {
@@ -60,13 +104,13 @@ export const useCreateEditExam = () => {
       setIsLoading(true)
       try {
         const res = await api.get(`/teacher/exams/${examId}`)
-        const data = res.data?.data ?? res.data
+        const data: ExamDTO = (res.data?.data ?? res.data) as ExamDTO
         setName(data?.name ?? '')
         setDescription(data?.description ?? '')
         setDurationMinutes(data?.durationMinutes ?? 60) // ← Load thời gian cũ
         setQuestions(
           Array.isArray(data?.questions)
-            ? data.questions.map((q: any) => ({
+            ? data.questions.map((q: QuestionDTO) => ({
                 id: q.id ?? q.questionId,
                 questionId: q.questionId ?? q.id,
                 content: q.content ?? '',
@@ -74,7 +118,7 @@ export const useCreateEditExam = () => {
                 difficulty: q.difficulty ?? 'EASY',
                 explanation: q.explanation ?? '',
                 shuffleAnswers: q.shuffleAnswers ?? true,
-                answers: (q.answers ?? []).map((a: any) => ({
+                answers: (q.answers ?? []).map((a: AnswerDTO) => ({
                   id: a.id ?? a.answerId,
                   answerId: a.answerId ?? a.id,
                   content: a.content ?? '',
@@ -83,8 +127,8 @@ export const useCreateEditExam = () => {
               }))
             : []
         )
-      } catch (err: any) {
-        toast.error(err?.response?.data?.message || 'Không tải được đề thi')
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err, 'Không tải được đề thi'))
         navigate('/teacher/exams')
       } finally {
         setIsLoading(false)
@@ -113,7 +157,7 @@ export const useCreateEditExam = () => {
     ])
   }
 
-  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+  const updateQuestion = (index: number, field: keyof Question, value: string | number | boolean | 'EASY' | 'MEDIUM' | 'HARD' | Answer[]) => {
     setQuestions(prev => {
       const copy = [...prev]
       copy[index] = { ...copy[index], [field]: value }
@@ -207,8 +251,8 @@ export const useCreateEditExam = () => {
         toast.success('Tạo đề thi thành công!')
       }
       setTimeout(() => navigate('/teacher/exams'), 800)
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Lưu đề thi thất bại!')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Lưu đề thi thất bại!'))
     } finally {
       setIsSaving(false)
     }
@@ -221,8 +265,8 @@ export const useCreateEditExam = () => {
       await api.delete(`/teacher/exams/${examId}`)
       toast.success('Xóa thành công!')
       setTimeout(() => navigate('/teacher/exams'), 800)
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Xóa thất bại!')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Xóa thất bại!'))
     } finally {
       setIsDeleting(false)
     }

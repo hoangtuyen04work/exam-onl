@@ -16,6 +16,36 @@ interface ExamItem {
   durationMinutes: number
 }
 
+interface ExamApiItem {
+  id?: string | number
+  examId?: string | number
+  name?: string
+  description?: string
+  totalPoint?: string
+  numberQuestions?: number
+  startTime?: string
+  endTime?: string
+  durationMinutes?: number
+}
+
+interface ApiErrorShape {
+  response?: {
+    data?: {
+      message?: string
+    }
+  }
+}
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'object' && error !== null) {
+    const maybe = error as ApiErrorShape
+    const message = maybe.response?.data?.message
+    if (typeof message === 'string' && message.trim()) return message
+  }
+  if (error instanceof Error && error.message) return error.message
+  return fallback
+}
+
 interface SessionResult {
   examSessionId: number
   code: string
@@ -64,8 +94,9 @@ export const useExamsTab = () => {
       try {
         setLoading(true)
         const res = await axiosClient.get('/teacher/exams', { params: { page: 0, size: 50 } })
-        const items = Array.isArray(res.data.items)
-          ? res.data.items.map((item: any) => ({
+        const rawItems = res.data.items as ExamApiItem[] | undefined
+        const items: ExamItem[] = Array.isArray(rawItems)
+          ? rawItems.map((item) => ({
               id: item.id ?? item.examId ?? '',
               name: item.name ?? '',
               description: item.description ?? '',
@@ -78,9 +109,9 @@ export const useExamsTab = () => {
           : []
         console.log('Fetched exams:', items)
         setList(items)
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(err)
-        toast.error('Không tải được danh sách đề thi')
+        toast.error(getErrorMessage(err, 'Không tải được danh sách đề thi'))
       } finally {
         setLoading(false)
       }
@@ -165,8 +196,8 @@ export const useExamsTab = () => {
       } else {
         toast.error(res.data?.message || 'Lỗi server')
       }
-    } catch (err) {
-      toast.error('Không thể tạo phiên thi!')
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Không thể tạo phiên thi!'))
     } finally {
       setCreating(false)
     }

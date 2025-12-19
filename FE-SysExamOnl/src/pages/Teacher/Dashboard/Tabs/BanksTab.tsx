@@ -382,7 +382,7 @@ export default function QuestionPaperBank() {
                         <select
                           className="border border-gray-200 rounded-lg p-2 text-sm"
                           value={q.difficulty}
-                          onChange={e => setNewQuestions(prev => prev.map((qq, i) => i === qIdx ? { ...qq, difficulty: e.target.value as any } : qq))}
+                          onChange={e => setNewQuestions(prev => prev.map((qq, i) => i === qIdx ? { ...qq, difficulty: e.target.value as 'EASY' | 'MEDIUM' | 'HARD' } : qq))}
                         >
                           <option value="EASY">Dễ</option>
                           <option value="MEDIUM">Trung bình</option>

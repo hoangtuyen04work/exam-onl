@@ -63,12 +63,7 @@ export default function ExamsTab() {
   const selectedCount = Array.from(selectedExams.values()).filter(Boolean).length
 
   return (
-<<<<<<< HEAD
-     <div className="pb-10">
-
-=======
     <div className='pb-8'>
->>>>>>> a0a9992948f5cd0898f0e961b73084fd9cfcedab
       {/* HEADER */}
       <div className='flex flex-col gap-4 mb-4'>
         <div className='flex items-center justify-between'>
@@ -148,34 +143,6 @@ export default function ExamsTab() {
           </div>
 
           {/* GRID */}
-<<<<<<< HEAD
-          <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
-
-  {currentList.map((exam) => (
-    <div
-      key={exam.id}
-      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-3 flex flex-col h-full"
-    >
-      <div className="flex items-start gap-2 flex-1">
-        <input
-          type="checkbox"
-          checked={!!selectedExams.get(exam.id)}
-          onChange={() => toggleSelect(exam.id)}
-          className="w-4 h-4 accent-blue-600 mt-1"
-        />
-
-        <div
-          onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-          className="flex-1 cursor-pointer"
-        >
-          <h3 className="font-semibold text-blue-700 text-base line-clamp-2 break-words">
-            {exam.name}
-          </h3>
-
-          <p className="text-[11px] text-gray-500 mt-1 line-clamp-2 break-words">
-            {exam.description || 'Không có mô tả.'}
-          </p>
-=======
           <div className='grid gap-4 grid-cols-[repeat(auto-fill,minmax(250px,1fr))]'>
             {currentList.map((exam) => (
               <div
@@ -205,64 +172,33 @@ export default function ExamsTab() {
                     <span className='text-[10px] text-gray-600 block mt-1.5'>{exam.numberQuestions} câu</span>
                   </div>
                 </div>
->>>>>>> a0a9992948f5cd0898f0e961b73084fd9cfcedab
 
-                {/* PHẦN NÚT HÀNH ĐỘNG - Luôn ở dưới cùng */}
-                <div className='flex flex-wrap gap-3 text-[11px] mt-3 pt-2 border-t border-gray-300'>
-                  <button
-                    onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-                    className='text-blue-600 hover:underline flex items-center gap-1'
-                  >
-                    <Edit2 className='w-3.5 h-3.5' /> Sửa
-                  </button>
-
-<<<<<<< HEAD
-      <div className="flex flex-wrap gap-3 text-[11px] mt-3 pt-2 border-t border-gray-300">
+      {/* PHẦN NÚT HÀNH ĐỘNG - Luôn ở dưới cùng */}
+      <div className='flex flex-wrap gap-3 text-[11px] mt-3 pt-2 border-t border-gray-300'>
         <button
           onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-          className="text-blue-600 hover:underline flex items-center gap-1"
+          className='text-blue-600 hover:underline flex items-center gap-1'
         >
-          <Edit2 className="w-3.5 h-3.5" /> Sửa
+          <Edit2 className='w-3.5 h-3.5' /> Sửa
         </button>
 
         <button
-          onClick={() =>
-            navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })
-          }
-          className="text-green-600 hover:underline flex items-center gap-1"
+          onClick={() => navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })}
+          className='text-green-600 hover:underline flex items-center gap-1'
         >
-          <CheckCircle className="w-3.5 h-3.5" /> Đã giao
+          <CheckCircle className='w-3.5 h-3.5' /> Đã giao
         </button>
 
         <button
           onClick={() => openTimeModal(exam.id)}
-          className="text-red-600 hover:underline flex items-center gap-1"
+          className='text-red-600 hover:underline flex items-center gap-1'
         >
-          <Clock className="w-3.5 h-3.5" /> Giao đề
+          <Clock className='w-3.5 h-3.5' /> Giao đề
         </button>
       </div>
     </div>
   ))}
 </div>
-=======
-                  <button
-                    onClick={() => navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })}
-                    className='text-green-600 hover:underline flex items-center gap-1'
-                  >
-                    <CheckCircle className='w-3.5 h-3.5' /> Đã giao
-                  </button>
->>>>>>> a0a9992948f5cd0898f0e961b73084fd9cfcedab
-
-                  <button
-                    onClick={() => openTimeModal(exam.id)}
-                    className='text-red-600 hover:underline flex items-center gap-1'
-                  >
-                    <Clock className='w-3.5 h-3.5' /> Giao đề
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
         </>
       )}
 

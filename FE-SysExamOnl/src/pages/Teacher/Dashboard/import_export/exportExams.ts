@@ -9,7 +9,9 @@ interface Answer {
   content: string;
   correct: boolean;
 }
-
+interface excelData {
+  [key: string]: string | number;
+}
 interface Question {
   questionId: number;
   content: string;
@@ -52,7 +54,7 @@ export const exportExams = async (examIds: number[], examNames: string[]) => {
 
       toast.update(toastId, { render: `Đang tạo file Excel cho "${exam.name}"...` });
 
-      const excelData: any[] = [];
+      const excelData: excelData[] = [];
 
       // Tên đề thi
       excelData.push({ STT: `ĐỀ THI: ${exam.name}` });
@@ -124,9 +126,10 @@ export const exportExams = async (examIds: number[], examNames: string[]) => {
 
       successCount++;
 
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
       failed.push(examName);
-      console.error(`[ERROR] Export thất bại "${examName}":`, err?.message);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error(`[ERROR] Export thất bại "${examName}":`, errorMessage);
     }
   }
 
