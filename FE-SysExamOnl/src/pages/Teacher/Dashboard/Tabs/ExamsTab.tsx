@@ -62,7 +62,7 @@ export default function ExamsTab() {
   const selectedCount = Array.from(selectedExams.values()).filter(Boolean).length;
 
   return (
-     <div className="pb-6">
+     <div className="pb-10">
 
       {/* HEADER */}
       <div className="flex flex-col gap-4 mb-4">
@@ -141,33 +141,30 @@ export default function ExamsTab() {
           </div>
 
           {/* GRID */}
-          {/* GRID */}
-<div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
+          <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
 
   {currentList.map((exam) => (
     <div
       key={exam.id}
-      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-3 flex flex-col justify-between h-full"
-      style={{ minHeight: '180px' }} // Đảm bảo chiều cao tối thiểu
+      className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-3 flex flex-col h-full"
     >
-      {/* PHẦN NỘI DUNG CHÍNH */}
       <div className="flex items-start gap-2 flex-1">
         <input
           type="checkbox"
           checked={!!selectedExams.get(exam.id)}
           onChange={() => toggleSelect(exam.id)}
-          className="w-4 h-4 accent-blue-600 mt-1 flex-shrink-0"
+          className="w-4 h-4 accent-blue-600 mt-1"
         />
 
         <div
           onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-          className="flex-1 cursor-pointer min-w-0"
+          className="flex-1 cursor-pointer"
         >
           <h3 className="font-semibold text-blue-700 text-base line-clamp-2 break-words">
             {exam.name}
           </h3>
 
-          <p className="text-sm text-gray-500 mt-1 line-clamp-2 break-words">
+          <p className="text-[11px] text-gray-500 mt-1 line-clamp-2 break-words">
             {exam.description || 'Không có mô tả.'}
           </p>
 
@@ -177,7 +174,6 @@ export default function ExamsTab() {
         </div>
       </div>
 
-      {/* PHẦN NÚT HÀNH ĐỘNG - Luôn ở dưới cùng */}
       <div className="flex flex-wrap gap-3 text-[11px] mt-3 pt-2 border-t border-gray-300">
         <button
           onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}

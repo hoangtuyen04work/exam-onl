@@ -19,6 +19,8 @@ export default function QuestionPaperBank() {
     formatDate, difficultyText
   } = useBankQuestion()
 
+  const [searchTerm, setSearchTerm] = useState('');
+
   useEffect(() => {
     // preserve scroll position and lock background scroll robustly
     const prevBodyOverflow = document.body.style.overflow
@@ -50,6 +52,14 @@ export default function QuestionPaperBank() {
     }
   }, [showAddModal])
 
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredPapers = normalizedSearch
+    ? papers.filter(p =>
+        (p.name || '').toLowerCase().includes(normalizedSearch) ||
+        (p.description || '').toLowerCase().includes(normalizedSearch)
+      )
+    : papers;
+
   return (
     <>
       {showAddModal && (
@@ -67,9 +77,18 @@ export default function QuestionPaperBank() {
                   type="text"
                   placeholder="Tìm kiếm đề thi..."
                   className="outline-none text-sm placeholder-slate-400 w-56 bg-transparent"
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
                 />
-                <button className="text-slate-500 hover:text-slate-700">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="text-slate-500 hover:text-slate-700"
+                  title={searchTerm ? 'Xóa tìm kiếm' : 'Tìm kiếm'}
+                >
+                  {searchTerm ? <X className="w-4 h-4" /> : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                  )}
                 </button>
               </div>
 
@@ -94,7 +113,9 @@ export default function QuestionPaperBank() {
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
         <h3 className="text-lg font-medium text-slate-800">Danh sách ngân hàng</h3>
-        <span className="text-sm text-slate-500">({papers.length})</span>
+        <span className="text-sm text-slate-500">
+          ({filteredPapers.length}{normalizedSearch ? ` / ${papers.length}` : ''})
+        </span>
       </div>
       <div className="flex items-center gap-2">
         <button onClick={triggerImport} className="p-2 rounded-md hover:bg-slate-50 text-slate-600" title="Nhập">
@@ -109,10 +130,12 @@ export default function QuestionPaperBank() {
         <div className="flex justify-center py-10">
           <Loader2 className="animate-spin w-7 h-7 text-indigo-600" />
         </div>
-      ) : papers.length === 0 ? (
-        <div className="text-center py-8 text-slate-500">Chưa có ngân hàng đề</div>
+      ) : filteredPapers.length === 0 ? (
+        <div className="text-center py-8 text-slate-500">
+          {normalizedSearch ? 'Không tìm thấy ngân hàng phù hợp' : 'Chưa có ngân hàng đề'}
+        </div>
       ) : (
-        papers.map(p => (
+        filteredPapers.map(p => (
           <div
             key={p.bankQuestionId}
             onClick={() => fetchPaperDetail(p.bankQuestionId)}
@@ -165,7 +188,7 @@ export default function QuestionPaperBank() {
     </div>
 
     {/* PAGINATION */}
-    {totalPages > 1 && (
+    {!normalizedSearch && totalPages > 1 && (
       <div className="flex items-center justify-center gap-3 mt-4">
         <button
           onClick={() => fetchPapers(page - 1)}
