@@ -1,15 +1,23 @@
-import { Navigate } from "react-router-dom";
-import type { ReactNode } from "react";
+import { Navigate } from 'react-router-dom'
+import type { ReactNode } from 'react'
 
 interface RoleProtectedProps {
-  children: ReactNode;
+  children: ReactNode
 }
 
-export default function RoleProtected({  children }: RoleProtectedProps) {
-  const role = localStorage.getItem("selectedRole");
-  if (!role) {
-  return <Navigate to="/role-select" replace />;
-}
+// Component này dùng để redirect người dùng đã đăng nhập về trang dashboard
+export default function RoleProtected({ children }: RoleProtectedProps) {
+  const token = localStorage.getItem('authToken')
+  const role = localStorage.getItem('role')
 
-  return children;
+  // Nếu đã login, redirect về dashboard tương ứng
+  if (token && role) {
+    if (role === 'teacher') {
+      return <Navigate to='/teacher' replace />
+    } else {
+      return <Navigate to='/student' replace />
+    }
+  }
+
+  return children
 }
