@@ -14,7 +14,6 @@ import ErrorPage from '../components/ErrorPage'
 import HomeTab from '../pages/Teacher/Dashboard/Tabs/HomeTab'
 import ExamList from '../pages/Teacher/Dashboard/Tabs/ExamsTab'
 import QuestionBank from '../pages/Teacher/Dashboard/Tabs/BanksTab'
-import StudentList from '../pages/Teacher/Dashboard/Tabs/StudentsTab'
 import CreateEditExam from '../pages/Teacher/Exams/CreateEditExam'
 import ExamSessionsList from '../pages/Teacher/Dashboard/Tabs/ExamSessionsList'
 import ExamMonitoringPage from '../pages/Teacher/Dashboard/Tabs/ExamMonitoringPage'
@@ -30,6 +29,7 @@ import ExamSessionDetail from '../pages/Teacher/Dashboard/Tabs/ESListUser'
 import ExamSubmissionDetail from '../pages/Teacher/Dashboard/Tabs/ExamSubmissionDetail'
 import ExamResultsPage from '../pages/Teacher/Dashboard/Tabs/ExamResultsPage'
 import StudentLayout from '../layouts/StudentLayout'
+import SettingsTab from '../pages/Teacher/Dashboard/Tabs/SettingsTab'
 
 export default function AppRouter() {
   const dispatch = useDispatch()
@@ -93,11 +93,11 @@ export default function AppRouter() {
         <Route path='exams/create' element={<CreateEditExam />} />
         <Route path='exams/:examId/edit' element={<CreateEditExam />} />
         <Route path='questions' element={<QuestionBank />} />
-        <Route path='students' element={<StudentList />} />
         <Route path='classes' element={<ClassListPage />} />
         <Route path='classes/:classId' element={<ClassDetailPage />} />
         <Route path='classes/:classId/edit' element={<ClassEditPage />} />
-        <Route path='settings' element={<div>Settings Page</div>} />
+        <Route path='students' element={<div>Students Page</div>} />
+        <Route path='settings' element={<SettingsTab />} />
         <Route path='exam-sessions/list' element={<ExamSessionsList />} />
         <Route path='exam-sessions/detail' element={<ExamSessionDetail />} />
         <Route path='exam-sessions/submission' element={<ExamSubmissionDetail />} />

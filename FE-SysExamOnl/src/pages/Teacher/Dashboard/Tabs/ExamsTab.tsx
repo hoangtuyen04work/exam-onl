@@ -173,32 +173,32 @@ export default function ExamsTab() {
                   </div>
                 </div>
 
-                {/* PHẦN NÚT HÀNH ĐỘNG - Luôn ở dưới cùng */}
-                <div className='flex flex-wrap gap-3 text-[11px] mt-3 pt-2 border-t border-gray-300'>
-                  <button
-                    onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
-                    className='text-blue-600 hover:underline flex items-center gap-1'
-                  >
-                    <Edit2 className='w-3.5 h-3.5' /> Sửa
-                  </button>
+      {/* PHẦN NÚT HÀNH ĐỘNG - Luôn ở dưới cùng */}
+      <div className='flex flex-wrap gap-3 text-[11px] mt-3 pt-2 border-t border-gray-300'>
+        <button
+          onClick={() => navigate(`/teacher/exams/${exam.id}/edit`)}
+          className='text-blue-600 hover:underline flex items-center gap-1'
+        >
+          <Edit2 className='w-3.5 h-3.5' /> Sửa
+        </button>
 
-                  <button
-                    onClick={() => navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })}
-                    className='text-green-600 hover:underline flex items-center gap-1'
-                  >
-                    <CheckCircle className='w-3.5 h-3.5' /> Đã giao
-                  </button>
+        <button
+          onClick={() => navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })}
+          className='text-green-600 hover:underline flex items-center gap-1'
+        >
+          <CheckCircle className='w-3.5 h-3.5' /> Đã giao
+        </button>
 
-                  <button
-                    onClick={() => openTimeModal(exam.id)}
-                    className='text-red-600 hover:underline flex items-center gap-1'
-                  >
-                    <Clock className='w-3.5 h-3.5' /> Giao đề
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+        <button
+          onClick={() => openTimeModal(exam.id)}
+          className='text-red-600 hover:underline flex items-center gap-1'
+        >
+          <Clock className='w-3.5 h-3.5' /> Giao đề
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
         </>
       )}
 

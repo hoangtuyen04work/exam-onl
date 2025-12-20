@@ -1,7 +1,7 @@
 // src/layouts/TeacherDashboard.tsx
 import React, { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Home, FileText, Database, Users, Settings, LogOut, Menu, X, BookOpen } from 'lucide-react'
+import { Home, FileText, Database, Settings, LogOut, Menu, X, BookOpen } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useDispatch } from 'react-redux'
 import { logout } from '../../../store/slices/authSlice'
@@ -51,14 +51,13 @@ export default function TeacherDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [hoveredButtonRect, setHoveredButtonRect] = useState<DOMRect | null>(null)
 
-  const teacherName = localStorage.getItem('teacherName') || 'Giáo viên'
+  const teacherName = localStorage.getItem('name') 
 
   const menuItems = [
     { key: '/teacher', icon: Home, label: 'Màn hình chính' },
     { key: '/teacher/exams', icon: FileText, label: 'Đề thi' },
     { key: '/teacher/questions', icon: Database, label: 'Ngân hàng câu hỏi' },
     { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' },
-    { key: '/teacher/students', icon: Users, label: 'Thí sinh' },
     { key: '/teacher/settings', icon: Settings, label: 'Cài đặt' }
   ]
 
@@ -151,7 +150,7 @@ export default function TeacherDashboard() {
           <div className='p-4 border-t border-gray-200/50'>
             <div className={`flex items-center gap-3 ${!sidebarOpen && 'justify-center'}`}>
               <img
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(teacherName)}&background=6366f1&color=fff&bold=true&size=128`}
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(teacherName || 'Teacher')}&background=6366f1&color=fff&bold=true&size=128`}
                 alt='avatar'
                 className='w-11 h-11 rounded-full ring-4 ring-indigo-100 shadow-lg'
               />

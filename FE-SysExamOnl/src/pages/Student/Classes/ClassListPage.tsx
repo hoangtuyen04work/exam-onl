@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { studentClassApi } from '../../../api/student-class-api'
 import type { StudentClass, StudentClassDetail } from '../../../types/class.type'
@@ -40,18 +40,7 @@ const ClassListPage = () => {
   const [examPage, setExamPage] = useState(0)
   const examsPerPage = 10
 
-  useEffect(() => {
-    loadClasses()
-  }, [page])
-
-  useEffect(() => {
-    if (selectedClassId) {
-      loadClassDetail(selectedClassId)
-      loadChatSettings(selectedClassId)
-    }
-  }, [selectedClassId])
-
-  const loadClasses = async () => {
+  const loadClasses = useCallback(async () => {
     try {
       setLoading(true)
       console.log("Loading classes for page", page)
@@ -65,7 +54,18 @@ const ClassListPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page])
+
+  useEffect(() => {
+    loadClasses()
+  }, [loadClasses])
+
+  useEffect(() => {
+    if (selectedClassId) {
+      loadClassDetail(selectedClassId)
+      loadChatSettings(selectedClassId)
+    }
+  }, [selectedClassId])
 
   const loadClassDetail = async (classId: number) => {
     try {
@@ -127,11 +127,12 @@ const ClassListPage = () => {
         setJoinClassCode('')
         loadClasses() // Reload the class list
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to join class:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Không thể tham gia lớp học'
       notification.error({
         title: 'Lỗi',
-        description: error.response?.data?.message || 'Không thể tham gia lớp học'
+        description: errorMessage
       })
     } finally {
       setJoiningClass(false)

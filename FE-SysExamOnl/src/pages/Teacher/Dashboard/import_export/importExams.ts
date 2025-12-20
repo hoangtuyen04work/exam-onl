@@ -22,7 +22,7 @@ export const importExams = async (file: File) => {
     const buffer = await file.arrayBuffer(); 
     const workbook = XLSX.read(buffer, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows: any[] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    const rows: (string | number | undefined)[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
     if (rows.length === 0) {
       toast.error("File Excel rỗng!");
@@ -116,8 +116,14 @@ export const importExams = async (file: File) => {
     toast.success(
       `TẠO ĐỀ THÀNH CÔNG! ID: ${examId} | ${finalQuestions.length} câu`
     );
-  } catch (err: any) {
-    const msg = err?.response?.data?.message || err.message;
+  } catch (err: unknown) {
+    let msg = 'Unknown error';
+    if (err instanceof Error) {
+      msg = err.message;
+    } else if (err && typeof err === 'object' && 'response' in err) {
+      const errObj = err as { response?: { data?: { message?: string } } };
+      msg = errObj.response?.data?.message || 'Unknown error';
+    }
     toast.error("Lỗi: " + msg);
     console.error(err);
   }

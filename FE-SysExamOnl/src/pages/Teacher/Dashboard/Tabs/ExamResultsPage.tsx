@@ -1,5 +1,5 @@
 // src/pages/Teacher/Dashboard/Tabs/ExamResultsPage.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { notification } from 'antd'
 import { getExamSessionStatistics, getStudentResults, updatePassingScore } from '../../../../api/teacher-api'
@@ -21,13 +21,7 @@ export default function ExamResultsPage() {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [searchTerm, setSearchTerm] = useState('')
 
-  useEffect(() => {
-    if (examSessionId) {
-      loadData()
-    }
-  }, [examSessionId])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!examSessionId) return
 
     try {
@@ -39,7 +33,7 @@ export default function ExamResultsPage() {
 
       setStatistics(stats)
       setStudents(results.items)
-    } catch (error: any) {
+    } catch {
       notification.error({
         title: 'Lỗi',
         description: 'Không thể tải dữ liệu'
@@ -47,7 +41,13 @@ export default function ExamResultsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [examSessionId])
+
+  useEffect(() => {
+    if (examSessionId) {
+      loadData()
+    }
+  }, [examSessionId, loadData])
 
   const handleUpdatePassingScore = async () => {
     if (!examSessionId || !newPassingScore) return
@@ -69,7 +69,7 @@ export default function ExamResultsPage() {
       })
       setShowPassingScoreModal(false)
       loadData()
-    } catch (error: any) {
+    } catch {
       notification.error({
         title: 'Lỗi',
         description: 'Không thể cập nhật điểm sàn'
