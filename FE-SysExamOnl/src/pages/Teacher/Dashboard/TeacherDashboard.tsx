@@ -1,7 +1,7 @@
 // src/layouts/TeacherDashboard.tsx
 import React, { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Home, FileText, Database, Settings, LogOut, Menu, X, BookOpen } from 'lucide-react'
+import { Home, FileText, Database, LogOut, Menu, X, BookOpen } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useDispatch } from 'react-redux'
 import { logout } from '../../../store/slices/authSlice'
@@ -57,8 +57,12 @@ export default function TeacherDashboard() {
     { key: '/teacher', icon: Home, label: 'Màn hình chính' },
     { key: '/teacher/exams', icon: FileText, label: 'Đề thi' },
     { key: '/teacher/questions', icon: Database, label: 'Ngân hàng câu hỏi' },
+<<<<<<< HEAD
     { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' },
     { key: '/teacher/settings', icon: Settings, label: 'Cài đặt' }
+=======
+    { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' }
+>>>>>>> fdd75a4b0b0cfacdbb5e28560ed251e21c83d0f2
   ]
 
   const activeTabKey =

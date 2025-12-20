@@ -18,7 +18,6 @@ export default function ExamPage() {
 
   const examSessionId = examId ? Number(examId) : null
   const token = localStorage.getItem('authToken') || '' // Thêm từ file 2
-
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [timeLeft, setTimeLeft] = useState(0)
@@ -47,8 +46,6 @@ export default function ExamPage() {
   }, [answers, isExamStarted, examSessionStudentId])
 
   const debouncedAnswers = useDebounce(answers, 500)
-
-  // Thêm WebSocket hook từ file 2 (đặt trước các phần khác để cung cấp sendEvent)
   const { sendEvent } = useStudentMonitoringWebSocket(examSessionId, token, isExamStarted)
 
   const {
@@ -97,7 +94,7 @@ export default function ExamPage() {
 
     // Restore answers
     const restoredAnswers: Record<number, number> = {}
-    exam.questions.forEach((q) => {
+    exam.questions?.forEach((q) => {
       const selectedAnswer = q.answers.find((a) => a.selected)
       if (selectedAnswer) {
         restoredAnswers[q.questionId] = selectedAnswer.answerId
@@ -396,6 +393,14 @@ export default function ExamPage() {
   }, [examSessionId, sendEventLog])
 
   // === FULLSCREEN LOGIC ===
+  const handleEndExamForced = useCallback(() => {
+    if (examSessionStudentIdRef.current) {
+      console.log('[DEBUG] Fullscreen exit detected - sending EXIT event')
+      sendEventLog('EXIT')
+      toast.error('Thoát toàn màn hình — bài thi kết thúc!')
+      setTimeout(() => navigate('/student'), 1500)
+    }
+  }, [navigate, sendEventLog])
 
   // === FULLSCREEN CHANGE LISTENER (Additional to hook) ===
   // Thêm listener riêng để đảm bảo gọi sendEventLog khi thoát fullscreen
@@ -469,15 +474,13 @@ export default function ExamPage() {
     }
   }, [isExamStarted, sendEventLog])
 
+  const handleExit = () => {
+    handleEndExamForced()
+    sendEvent('LEAVE')
+  }
+
   const { requestFullscreen, exitFullscreen } = useFullScreen({
-    onExit: () => {
-      sendEvent('LEAVE') // Thêm từ file 2
-      if (submitExamRef.current) {
-        submitExamRef.current('FINAL')
-      }
-      toast.error('Thoát toàn màn hình — bài thi kết thúc!')
-      setTimeout(() => navigate('/student'), 1500)
-    },
+    onExit: handleExit,
     enabled: true,
     requiredFullscreen: true
   })
@@ -486,10 +489,7 @@ export default function ExamPage() {
   const submitExam = useCallback(
     (state: 'DRAFT' | 'FINAL') => {
       if (!examSessionId || (hasSubmitted.current && state === 'FINAL')) return
-      if (state === 'FINAL') {
-        hasSubmitted.current = true
-        sendEvent('SUBMIT')
-      }
+      if (state === 'FINAL') hasSubmitted.current = true
 
       const payload: SubmitPayload = {
         examSessionId,
@@ -501,32 +501,29 @@ export default function ExamPage() {
       submitMutation.mutate(
         { state, payload },
         {
-          onSuccess: async () => {
+          onSuccess: () => {
             if (state === 'DRAFT') {
               saveToLocalStorage(examSessionId, { savedAnswers: answersRef.current })
-            } else if (state === 'FINAL') {
-              // Cleanup UI state
-              setIsExamStarted(false)
-              setIsTimeExpired(true)
-              exitFullscreen()
-              if (autoSaveRef.current) {
-                clearInterval(autoSaveRef.current)
-                autoSaveRef.current = null
-              }
-              if (timerRef.current) {
-                clearInterval(timerRef.current)
-                timerRef.current = null
-              }
-              localStorage.removeItem(`exam_${examSessionId}`)
-
-              // Fetch result before navigating to ensure fresh data
-
-                navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-              
             }
           }
         }
       )
+
+      if (state === 'FINAL') {
+        setIsExamStarted(false)
+        setIsTimeExpired(true)
+        exitFullscreen()
+        if (autoSaveRef.current) {
+          clearInterval(autoSaveRef.current)
+          autoSaveRef.current = null
+        }
+        if (timerRef.current) {
+          clearInterval(timerRef.current)
+          timerRef.current = null
+        }
+        localStorage.removeItem(`exam_${examSessionId}`)
+        navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+      }
     },
     [examSessionId, navigate, submitMutation, exitFullscreen, sendEvent]
   )
