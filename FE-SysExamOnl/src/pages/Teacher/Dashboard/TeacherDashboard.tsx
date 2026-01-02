@@ -57,12 +57,7 @@ export default function TeacherDashboard() {
     { key: '/teacher', icon: Home, label: 'Màn hình chính' },
     { key: '/teacher/exams', icon: FileText, label: 'Đề thi' },
     { key: '/teacher/questions', icon: Database, label: 'Ngân hàng câu hỏi' },
-<<<<<<< HEAD
-    { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' },
-    { key: '/teacher/settings', icon: Settings, label: 'Cài đặt' }
-=======
     { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' }
->>>>>>> fdd75a4b0b0cfacdbb5e28560ed251e21c83d0f2
   ]
 
   const activeTabKey =

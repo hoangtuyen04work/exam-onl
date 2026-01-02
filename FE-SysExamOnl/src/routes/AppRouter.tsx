@@ -4,12 +4,14 @@ import LoginPage from '../pages/LoginPage'
 import OAuthCallback from '../pages/LoginPage/AzureCallback'
 import RegisterPage from '../pages/RegisterPage/RegisterPage'
 import VerifyEmailPage from '../pages/VerifyEmailPage/VerifyEmailPage'
+import ForgotPasswordPage from '../pages/ForgotPasswordPage'
 import ProtectedRoute from '../components/Common/ProtectedRoute'
 import TeacherDashboard from '../pages/Teacher/Dashboard/TeacherDashboard'
 import StudentDashboard from '../pages/Student/Dashboard'
 import ExamPage from '../pages/Student/Exam/ExamPage'
 import JoinExam from '../pages/Student/Exam/JoinExam'
 import ResultPage from '../pages/Student/Exam/ResultPage'
+import StudentHistoryPage from '../pages/Student/History'
 import ErrorPage from '../components/ErrorPage'
 import HomeTab from '../pages/Teacher/Dashboard/Tabs/HomeTab'
 import ExamList from '../pages/Teacher/Dashboard/Tabs/ExamsTab'
@@ -58,6 +60,7 @@ export default function AppRouter() {
       <Route path='/auth/azure/callback' element={<OAuthCallback />} />
       <Route path='/register' element={<RegisterPage />} />
       <Route path='/verify-email' element={<VerifyEmailPage />} />
+      <Route path='/forgot-password' element={<ForgotPasswordPage />} />
 
       {/* Public Exam Routes */}
       <Route path='/exam/join/:inviteCode' element={<JoinExam />} />
@@ -74,6 +77,7 @@ export default function AppRouter() {
         <Route index element={<StudentDashboard />} />
         <Route path='classes' element={<StudentClassListPage />} />
         <Route path='classes/:classId' element={<StudentClassListPage />} />
+        <Route path='history' element={<StudentHistoryPage />} />
         <Route path='exam/join/:examId' element={<ExamPage />} />
         <Route path='exam/join' element={<JoinExam />} />
         <Route path='exam/:examSessionId/result' element={<ResultPage />} />

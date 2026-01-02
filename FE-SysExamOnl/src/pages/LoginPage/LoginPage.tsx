@@ -231,6 +231,15 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              <div className='text-right mt-1'>
+                <button
+                  type='button'
+                  className='text-xs text-blue-600 underline hover:text-blue-800'
+                  onClick={() => navigate('/forgot-password')}
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
             </div>
 
             <button

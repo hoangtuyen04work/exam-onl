@@ -205,49 +205,7 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
   }
 
   return (
-    <div className='flex flex-col h-full bg-white rounded-lg shadow-md border border-gray-200'>
-      {/* Header - Clickable for settings */}
-      <div
-        className='px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg cursor-pointer hover:from-blue-700 hover:to-blue-800 transition-all'
-        onClick={() => userRole === 'TEACHER' && setShowSettings(!showSettings)}
-      >
-        <div className='flex items-center justify-between'>
-          <div className='flex items-center gap-2'>
-            <div className='w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center'>
-              <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
-                />
-              </svg>
-            </div>
-            <div>
-              <h3 className='text-sm font-bold'>Chat Lớp Học</h3>
-              <p className='text-[10px] text-blue-100'>{canSendMessage ? 'Trực tuyến' : 'Chat đã tắt'}</p>
-            </div>
-          </div>
-          <div className='flex items-center gap-2'>
-            {!canSendMessage && (
-              <span className='px-2 py-0.5 bg-red-500/20 backdrop-blur-sm rounded-full text-[10px] font-medium'>
-                🔒 Chỉ xem
-              </span>
-            )}
-            {userRole === 'TEACHER' && (
-              <svg
-                className={`w-4 h-4 transition-transform ${showSettings ? 'rotate-180' : ''}`}
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
-              </svg>
-            )}
-          </div>
-        </div>
-      </div>
-
+    <div className='flex flex-col h-full'>
       {/* Settings Panel - Collapsible */}
       {showSettings && userRole === 'TEACHER' && onToggleChatSettings && (
         <div className='px-4 py-3 bg-blue-50 border-b border-blue-100'>
@@ -281,7 +239,7 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className='flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-gray-50/50 overscroll-contain'
+        className='flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50/50 overscroll-contain'
       >
         {/* Loading indicator at top */}
         {loading && hasMore && (
@@ -305,87 +263,76 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
         {messages
           .slice()
           .reverse()
-          .map((message, index, arr) => {
+          .map((message) => {
             const isOwnMessage = Number(message.senderId) === Number(userId)
-            const prevMessage = arr[index - 1]
-            const showAvatar = !prevMessage || Number(prevMessage.senderId) !== Number(message.senderId)
 
             return (
-              <div key={message.id} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-                <div className={`flex ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[75%]`}>
-                  {/* Avatar - Only show if different sender from previous */}
-                  {!isOwnMessage &&
-                    (showAvatar ? (
-                      <div className='w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-md ring-2 ring-white'>
-                        {message.senderName.charAt(0).toUpperCase()}
-                      </div>
-                    ) : (
-                      <div className='w-7 h-7 flex-shrink-0'></div>
-                    ))}
-
-                  {/* Message bubble */}
-                  <div className='flex flex-col'>
-                    {!isOwnMessage && showAvatar && (
-                      <div className='flex items-center gap-1.5 mb-1 px-2.5'>
-                        <span className='text-xs font-semibold text-gray-700'>{message.senderName}</span>
-                        {message.senderRole === 'TEACHER' && (
-                          <span className='px-1.5 py-0.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-[10px] font-medium shadow-sm'>
-                            👨‍🏫 GV
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    <div
-                      className={`rounded-2xl px-3.5 py-2 shadow-sm transition-all hover:shadow-md ${
-                        isOwnMessage
-                          ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-md'
-                          : message.senderRole === 'TEACHER'
-                            ? 'bg-gradient-to-br from-green-50 to-emerald-50 text-gray-800 border border-green-200 rounded-bl-md'
-                            : 'bg-white text-gray-800 border border-gray-200 rounded-bl-md'
-                      }`}
-                    >
-                      <p className='text-sm leading-relaxed whitespace-pre-wrap break-words'>{message.content}</p>
+              <div
+                key={message.id}
+                className={`flex items-start animate-fadeIn ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+              >
+                {/* Teacher/Other Student Message (Left) */}
+                {!isOwnMessage && (
+                  <div className='flex items-start max-w-2xl'>
+                    <div className='w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold mr-3 shrink-0'>
+                      {message.senderRole === 'TEACHER' ? 'GV' : message.senderName.charAt(0).toUpperCase()}
                     </div>
-                    <p
-                      className={`text-[10px] mt-0.5 px-2.5 ${isOwnMessage ? 'text-right text-gray-400' : 'text-left text-gray-400'}`}
-                    >
-                      {formatTime(message.createdAt)}
-                    </p>
+                    <div>
+                      <div className='bg-white border border-slate-200 p-4 rounded-2xl rounded-tl-none shadow-sm'>
+                        <p className='text-xs font-bold text-blue-600 mb-1'>
+                          {message.senderRole === 'TEACHER' ? 'Giáo viên' : message.senderName}
+                        </p>
+                        <p className='text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words'>
+                          {message.content}
+                        </p>
+                      </div>
+                      <span className='text-[10px] text-slate-400 mt-1 block'>{formatTime(message.createdAt)}</span>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Own Message (Right) */}
+                {isOwnMessage && (
+                  <div className='flex items-start justify-end'>
+                    <div className='max-w-xl'>
+                      <div className='bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none shadow-md'>
+                        <p className='text-sm font-medium whitespace-pre-wrap break-words'>{message.content}</p>
+                      </div>
+                      <span className='text-[10px] text-slate-400 mt-1 block text-right font-bold uppercase'>
+                        Đã xem
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input - Compact Design */}
-      <div className='px-3 py-2.5 bg-white border-t border-gray-200 rounded-b-lg'>
-        <div className='flex items-end gap-2'>
+      {/* Input Area - Following UI Design */}
+      <div className='p-4 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]'>
+        <div className='flex items-center space-x-3 max-w-5xl mx-auto'>
+          <button className='text-slate-400 hover:text-blue-600 transition'>
+            <i className='fas fa-paperclip text-xl'></i>
+          </button>
           <div className='flex-1 relative'>
-            <textarea
+            <input
+              type='text'
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={canSendMessage ? '💬 Nhập tin nhắn...' : '🔒 Bạn không có quyền gửi tin nhắn'}
+              placeholder={canSendMessage ? 'Nhập tin nhắn...' : '🔒 Bạn không có quyền gửi tin nhắn'}
               disabled={!canSendMessage}
-              className='w-full px-3.5 py-2.5 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:bg-gray-100 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md'
-              rows={1}
-              style={{ minHeight: '42px', maxHeight: '110px' }}
+              className='w-full bg-slate-100 border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition text-sm disabled:bg-gray-200 disabled:cursor-not-allowed'
             />
-            {newMessage.trim() && (
-              <span className='absolute right-3 bottom-2.5 text-xs text-gray-400'>{newMessage.length}</span>
-            )}
           </div>
           <button
             onClick={handleSendMessage}
             disabled={!newMessage.trim() || !canSendMessage}
-            className='px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95 flex items-center gap-1.5 font-medium'
+            className='bg-blue-600 text-white w-11 h-11 rounded-xl flex items-center justify-center hover:bg-blue-700 shadow-lg shadow-blue-200 transition active:scale-95 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed'
           >
-            <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 19l9 2-9-18-9 18 9-2zm0 0v-8' />
-            </svg>
-            <span className='text-sm'>Gửi</span>
+            <i className='fas fa-paper-plane text-xl'></i>
           </button>
         </div>
       </div>
