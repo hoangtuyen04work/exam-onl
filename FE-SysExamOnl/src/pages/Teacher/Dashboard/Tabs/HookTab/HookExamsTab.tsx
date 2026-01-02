@@ -86,7 +86,7 @@ export const useExamsTab = () => {
     const token = localStorage.getItem('authToken')
     if (!token) {
       toast.error('Vui lòng đăng nhập.')
-      navigate('/role-select')
+      navigate('/login')
       return
     }
 

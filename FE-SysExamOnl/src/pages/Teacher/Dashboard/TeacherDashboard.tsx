@@ -1,8 +1,10 @@
 // src/layouts/TeacherDashboard.tsx
 import React, { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Home, FileText, Database, Settings, LogOut, Menu, X, BookOpen } from 'lucide-react'
+import { Home, FileText, Database, LogOut, Menu, X, BookOpen } from 'lucide-react'
 import { createPortal } from 'react-dom'
+import { useDispatch } from 'react-redux'
+import { logout } from '../../../store/slices/authSlice'
 
 function Tooltip({ children, targetRect }: { children: React.ReactNode; targetRect: DOMRect | null }) {
   if (!targetRect) return null
@@ -44,6 +46,7 @@ function Tooltip({ children, targetRect }: { children: React.ReactNode; targetRe
 
 export default function TeacherDashboard() {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [hoveredButtonRect, setHoveredButtonRect] = useState<DOMRect | null>(null)
@@ -54,8 +57,7 @@ export default function TeacherDashboard() {
     { key: '/teacher', icon: Home, label: 'Màn hình chính' },
     { key: '/teacher/exams', icon: FileText, label: 'Đề thi' },
     { key: '/teacher/questions', icon: Database, label: 'Ngân hàng câu hỏi' },
-    { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' },
-    { key: '/teacher/settings', icon: Settings, label: 'Cài đặt' }
+    { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' }
   ]
 
   const activeTabKey =
@@ -63,9 +65,9 @@ export default function TeacherDashboard() {
       ?.key || '/teacher'
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('teacherName')
-    navigate('/login')
+    dispatch(logout())
+    localStorage.clear()
+    navigate('/login', { replace: true })
   }
 
   return (

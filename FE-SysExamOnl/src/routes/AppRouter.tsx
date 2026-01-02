@@ -1,15 +1,17 @@
 import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from '../pages/LoginPage'
-import RoleSelectPage from '../pages/RoleSelectPage/RoleSelectPage'
+import OAuthCallback from '../pages/LoginPage/AzureCallback'
 import RegisterPage from '../pages/RegisterPage/RegisterPage'
 import VerifyEmailPage from '../pages/VerifyEmailPage/VerifyEmailPage'
+import ForgotPasswordPage from '../pages/ForgotPasswordPage'
 import ProtectedRoute from '../components/Common/ProtectedRoute'
 import TeacherDashboard from '../pages/Teacher/Dashboard/TeacherDashboard'
 import StudentDashboard from '../pages/Student/Dashboard'
 import ExamPage from '../pages/Student/Exam/ExamPage'
 import JoinExam from '../pages/Student/Exam/JoinExam'
 import ResultPage from '../pages/Student/Exam/ResultPage'
+import StudentHistoryPage from '../pages/Student/History'
 import ErrorPage from '../components/ErrorPage'
 import HomeTab from '../pages/Teacher/Dashboard/Tabs/HomeTab'
 import ExamList from '../pages/Teacher/Dashboard/Tabs/ExamsTab'
@@ -29,7 +31,6 @@ import ExamSessionDetail from '../pages/Teacher/Dashboard/Tabs/ESListUser'
 import ExamSubmissionDetail from '../pages/Teacher/Dashboard/Tabs/ExamSubmissionDetail'
 import ExamResultsPage from '../pages/Teacher/Dashboard/Tabs/ExamResultsPage'
 import StudentLayout from '../layouts/StudentLayout'
-import RoleProtected from '../components/Common/RoleProtected'
 import SettingsTab from '../pages/Teacher/Dashboard/Tabs/SettingsTab'
 
 export default function AppRouter() {
@@ -49,27 +50,17 @@ export default function AppRouter() {
   return (
     <Routes>
       {/* Trang mặc định */}
-      <Route path='/' element={<Navigate to='/role-select' replace />} />
+      <Route path='/' element={<Navigate to='/login' replace />} />
 
       {/* Auth */}
-      <Route
-        path='/login'
-        element={
-          <RoleProtected>
-            <LoginPage />
-          </RoleProtected>
-        }
-      />
-      <Route
-        path='/register'
-        element={
-          <RoleProtected>
-            <RegisterPage />
-          </RoleProtected>
-        }
-      />
+      <Route path='/login' element={<LoginPage />} />
+      {/* OAuth2 Callback Routes */}
+      <Route path='/oauth2/success' element={<OAuthCallback />} />
+      <Route path='/auth/oauth2/callback' element={<OAuthCallback />} />
+      <Route path='/auth/azure/callback' element={<OAuthCallback />} />
+      <Route path='/register' element={<RegisterPage />} />
       <Route path='/verify-email' element={<VerifyEmailPage />} />
-      <Route path='/role-select' element={<RoleSelectPage />} />
+      <Route path='/forgot-password' element={<ForgotPasswordPage />} />
 
       {/* Public Exam Routes */}
       <Route path='/exam/join/:inviteCode' element={<JoinExam />} />
@@ -86,6 +77,7 @@ export default function AppRouter() {
         <Route index element={<StudentDashboard />} />
         <Route path='classes' element={<StudentClassListPage />} />
         <Route path='classes/:classId' element={<StudentClassListPage />} />
+        <Route path='history' element={<StudentHistoryPage />} />
         <Route path='exam/join/:examId' element={<ExamPage />} />
         <Route path='exam/join' element={<JoinExam />} />
         <Route path='exam/:examSessionId/result' element={<ResultPage />} />
