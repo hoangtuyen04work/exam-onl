@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import type React from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 
@@ -20,24 +21,23 @@ interface ChatBoxProps {
   onToggleChatSettings?: (newValue: boolean) => Promise<void>
 }
 
-const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSettings }: ChatBoxProps) => {
+const ChatBox = ({ classId, userRole, userId, allowStudentChat }: ChatBoxProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [showSettings, setShowSettings] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const stompClientRef = useRef<Client | null>(null)
+  const scrollSnapshot = useRef<number>(0)
   const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || ''
 
   const canSendMessage = userRole === 'TEACHER' || allowStudentChat
 
-  // Fetch messages
+  // Fetch messages (prepend older)
   const fetchMessages = async (pageNum: number = 0) => {
-    if (loading) return
+    if (loading || (!hasMore && pageNum !== 0)) return
 
     try {
       setLoading(true)
@@ -57,24 +57,34 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
       const data = await response.json()
 
       if (data && data.items) {
-        const newMessages = data.items || []
+        // API trả desc -> đảo lại asc để render tự nhiên
+        const fetchedMessages = [...data.items].reverse()
 
-        // Save scroll position before updating messages (for infinite scroll)
-        const container = messagesContainerRef.current
-        const oldScrollHeight = container?.scrollHeight || 0
-
-        setMessages((prev) => (pageNum === 0 ? newMessages : [...prev, ...newMessages]))
-
-        // Restore scroll position after loading more messages
-        if (pageNum > 0 && container) {
-          setTimeout(() => {
-            const newScrollHeight = container.scrollHeight
-            container.scrollTop = newScrollHeight - oldScrollHeight
-          }, 0)
+        if (messagesContainerRef.current && pageNum > 0) {
+          scrollSnapshot.current = messagesContainerRef.current.scrollHeight
         }
+
+        setMessages((prev) => {
+          const newMessages = pageNum === 0 ? fetchedMessages : [...fetchedMessages, ...prev]
+          
+          // Nếu là load lần đầu (page 0), scroll xuống bottom ngay lập tức
+          if (pageNum === 0) {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                const container = messagesContainerRef.current
+                if (container) {
+                  container.scrollTop = container.scrollHeight
+                }
+              })
+            })
+          }
+          
+          return newMessages
+        })
 
         const totalPages = Math.ceil(data.total / data.size)
         setHasMore(data.page < totalPages - 1)
+        setPage(data.page)
       }
     } catch (error) {
       console.error('[ChatBox] Error fetching messages:', error)
@@ -88,21 +98,16 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
     const container = messagesContainerRef.current
     if (!container || loading || !hasMore) return
 
-    // Load more when scrolled to top
-    if (container.scrollTop === 0) {
-      const nextPage = page + 1
-      setPage(nextPage)
-      fetchMessages(nextPage)
+    if (container.scrollTop <= 10) {
+      fetchMessages(page + 1)
     }
   }
 
   // Connect to WebSocket
   useEffect(() => {
     const token = localStorage.getItem('authToken')
-    const wsUrl = `${serverPort}/ws`
-
     const client = new Client({
-      webSocketFactory: () => new SockJS(wsUrl),
+      webSocketFactory: () => new SockJS(`${serverPort}/ws`),
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },
@@ -110,7 +115,18 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
         const topic = `/topic/class/${classId}/chat`
         client.subscribe(topic, (message) => {
           const chatMessage: ChatMessage = JSON.parse(message.body)
-          setMessages((prev) => [chatMessage, ...prev])
+          setMessages((prev) => [...prev, chatMessage])
+
+          // Scroll ngay lập tức xuống bottom nếu đang ở gần cuối
+          requestAnimationFrame(() => {
+            const container = messagesContainerRef.current
+            if (container) {
+              const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200
+              if (isNearBottom) {
+                container.scrollTop = container.scrollHeight
+              }
+            }
+          })
         })
       },
       onStompError: (frame) => {
@@ -120,40 +136,46 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
 
     client.activate()
     stompClientRef.current = client
-
     fetchMessages(0)
 
     return () => {
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate()
-      }
+      client.deactivate()
     }
   }, [classId])
 
-  // Scroll to bottom only on initial load (no animation)
-  useEffect(() => {
-    if (isInitialLoad && messages.length > 0 && messagesContainerRef.current) {
-      // Use scrollTop to prevent page-level scroll
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
-      setIsInitialLoad(false)
-    }
-  }, [messages, isInitialLoad])
+  // Preserve scroll position when loading older messages (infinite scroll)
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
 
-  // Scroll to bottom when new message arrives (only if user is near bottom)
+    // Chỉ xử lý scroll snapshot khi load thêm tin nhắn cũ (page > 0)
+    if (scrollSnapshot.current !== 0) {
+      container.scrollTop = container.scrollHeight - scrollSnapshot.current
+      scrollSnapshot.current = 0
+    }
+  }, [messages])
+
+  // Đảm bảo scroll xuống bottom khi mở chat lần đầu
   useEffect(() => {
-    if (!isInitialLoad) {
+    if (isInitialLoad && messages.length > 0 && !loading) {
       const container = messagesContainerRef.current
       if (container) {
-        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100
-        if (isNearBottom) {
-          container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth'
-          })
-        }
+        // Triple check để đảm bảo scroll xuống thành công
+        container.scrollTop = container.scrollHeight
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight
+          }
+        })
+        setTimeout(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight
+          }
+        }, 50)
       }
+      setIsInitialLoad(false)
     }
-  }, [messages.length])
+  }, [messages, isInitialLoad, loading])
 
   // Send message
   const handleSendMessage = async () => {
@@ -178,15 +200,12 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
       }
 
       setNewMessage('')
-      // Scroll to bottom after sending
-      setTimeout(() => {
+      // Scroll ngay lập tức xuống bottom sau khi gửi
+      requestAnimationFrame(() => {
         if (messagesContainerRef.current) {
-          messagesContainerRef.current.scrollTo({
-            top: messagesContainerRef.current.scrollHeight,
-            behavior: 'smooth'
-          })
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
         }
-      }, 100)
+      })
     } catch (error) {
       console.error('[ChatBox] Error sending message:', error)
     }
@@ -201,52 +220,41 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    const now = new Date()
+
+    // Reset time to compare dates only
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+    const diffTime = today.getTime() - messageDate.getTime()
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+    const timeString = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+
+    if (diffDays === 0) {
+      return `Hôm nay ${timeString}`
+    } else if (diffDays === 1) {
+      return `Hôm qua ${timeString}`
+    } else {
+      const dateString = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      return `${dateString} ${timeString}`
+    }
   }
 
   return (
-    <div className='flex flex-col h-full'>
-      {/* Settings Panel - Collapsible */}
-      {showSettings && userRole === 'TEACHER' && onToggleChatSettings && (
-        <div className='px-4 py-3 bg-blue-50 border-b border-blue-100'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-xs font-medium text-gray-700'>Cho phép học sinh chat</p>
-              <p className='text-[10px] text-gray-500 mt-0.5'>
-                {allowStudentChat ? 'Học sinh có thể gửi tin nhắn' : 'Học sinh chỉ xem được tin nhắn'}
-              </p>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onToggleChatSettings(!allowStudentChat)
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                allowStudentChat ? 'bg-green-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  allowStudentChat ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      )}
-
+    <div className='h-full bg-white rounded-2xl shadow-lg border border-gray-200 flex flex-col overflow-hidden'>
       {/* Messages Container - Infinite Scroll */}
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className='flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gray-50/50 overscroll-contain'
+        className='flex-1 overflow-y-auto px-6 py-4 space-y-3 bg-gradient-to-b from-slate-50 to-white'
       >
         {/* Loading indicator at top */}
         {loading && hasMore && (
           <div className='flex justify-center py-2'>
-            <div className='flex items-center gap-2 text-sm text-gray-500'>
-              <div className='w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin'></div>
-              <span>Đang tải tin nhắn...</span>
+            <div className='flex items-center gap-2 text-xs text-gray-500'>
+              <div className='w-3.5 h-3.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin'></div>
+              <span>Đang tải...</span>
             </div>
           </div>
         )}
@@ -254,67 +262,56 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
         {/* No more messages indicator */}
         {!hasMore && messages.length > 0 && (
           <div className='flex justify-center py-2'>
-            <span className='text-xs text-gray-400 bg-white px-4 py-1 rounded-full shadow-sm'>
-              • Đã tải hết tin nhắn •
+            <span className='text-[10px] text-gray-400 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-200'>
+              Đầu cuộc trò chuyện
             </span>
           </div>
         )}
 
-        {messages
-          .slice()
-          .reverse()
-          .map((message) => {
-            const isOwnMessage = Number(message.senderId) === Number(userId)
+        {messages.map((message) => {
+          const isOwnMessage = Number(message.senderId) === Number(userId)
 
-            return (
-              <div
-                key={message.id}
-                className={`flex items-start animate-fadeIn ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-              >
-                {/* Teacher/Other Student Message (Left) */}
-                {!isOwnMessage && (
-                  <div className='flex items-start max-w-2xl'>
-                    <div className='w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold mr-3 shrink-0'>
-                      {message.senderRole === 'TEACHER' ? 'GV' : message.senderName.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className='bg-white border border-slate-200 p-4 rounded-2xl rounded-tl-none shadow-sm'>
-                        <p className='text-xs font-bold text-blue-600 mb-1'>
-                          {message.senderRole === 'TEACHER' ? 'Giáo viên' : message.senderName}
-                        </p>
-                        <p className='text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words'>
-                          {message.content}
-                        </p>
-                      </div>
-                      <span className='text-[10px] text-slate-400 mt-1 block'>{formatTime(message.createdAt)}</span>
-                    </div>
+          return (
+            <div key={message.id} className={`flex items-end gap-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+              {!isOwnMessage && (
+                <>
+                  <div className='w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0 shadow-sm'>
+                    {message.senderRole === 'TEACHER' ? '👨‍🏫' : message.senderName.charAt(0).toUpperCase()}
                   </div>
-                )}
+                  <div className='max-w-[70%]'>
+                    <div className='bg-white border border-gray-200 px-4 py-2.5 rounded-2xl rounded-bl-md shadow-sm'>
+                      <p className='text-[11px] font-semibold text-blue-600 mb-1'>
+                        {message.senderRole === 'TEACHER' ? 'Giáo viên' : message.senderName}
+                      </p>
+                      <p className='text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words'>
+                        {message.content}
+                      </p>
+                    </div>
+                    <span className='text-[10px] text-gray-400 mt-1 ml-2 block'>{formatTime(message.createdAt)}</span>
+                  </div>
+                </>
+              )}
 
-                {/* Own Message (Right) */}
-                {isOwnMessage && (
-                  <div className='flex items-start justify-end'>
-                    <div className='max-w-xl'>
-                      <div className='bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none shadow-md'>
-                        <p className='text-sm font-medium whitespace-pre-wrap break-words'>{message.content}</p>
-                      </div>
-                      <span className='text-[10px] text-slate-400 mt-1 block text-right font-bold uppercase'>
-                        Đã xem
-                      </span>
-                    </div>
+              {isOwnMessage && (
+                <div className='max-w-[70%]'>
+                  <div className='bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2.5 rounded-2xl rounded-br-md shadow-md'>
+                    <p className='text-sm leading-relaxed whitespace-pre-wrap break-words'>{message.content}</p>
                   </div>
-                )}
-              </div>
-            )
-          })}
-        <div ref={messagesEndRef} />
+                  <span className='text-[10px] text-gray-400 mt-1 mr-2 block text-right'>
+                    {formatTime(message.createdAt)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
-      {/* Input Area - Following UI Design */}
-      <div className='p-4 bg-white border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]'>
-        <div className='flex items-center space-x-3 max-w-5xl mx-auto'>
-          <button className='text-slate-400 hover:text-blue-600 transition'>
-            <i className='fas fa-paperclip text-xl'></i>
+      {/* Input Area - Modern Chat Design */}
+      <div className='p-4 bg-white border-t border-gray-200'>
+        <div className='flex items-center gap-2'>
+          <button className='text-gray-400 hover:text-blue-600 transition-colors p-2 hover:bg-gray-100 rounded-lg'>
+            <i className='fas fa-paperclip text-lg'></i>
           </button>
           <div className='flex-1 relative'>
             <input
@@ -322,17 +319,17 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={canSendMessage ? 'Nhập tin nhắn...' : '🔒 Bạn không có quyền gửi tin nhắn'}
+              placeholder={canSendMessage ? 'Aa' : '🔒 Không thể gửi tin nhắn'}
               disabled={!canSendMessage}
-              className='w-full bg-slate-100 border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition text-sm disabled:bg-gray-200 disabled:cursor-not-allowed'
+              className='w-full bg-gray-100 border-none rounded-full px-4 py-2.5 focus:ring-2 focus:ring-blue-400 focus:bg-white outline-none transition-all text-sm disabled:bg-gray-200 disabled:cursor-not-allowed placeholder:text-gray-400'
             />
           </div>
           <button
             onClick={handleSendMessage}
             disabled={!newMessage.trim() || !canSendMessage}
-            className='bg-blue-600 text-white w-11 h-11 rounded-xl flex items-center justify-center hover:bg-blue-700 shadow-lg shadow-blue-200 transition active:scale-95 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed'
+            className='bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-700 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed'
           >
-            <i className='fas fa-paper-plane text-xl'></i>
+            <i className='fas fa-paper-plane text-sm'></i>
           </button>
         </div>
       </div>

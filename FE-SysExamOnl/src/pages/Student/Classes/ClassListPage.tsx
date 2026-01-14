@@ -31,7 +31,6 @@ const ClassListPage = () => {
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [activeTab, setActiveTab] = useState<'exams' | 'chat'>('chat')
   const [allowStudentChat, setAllowStudentChat] = useState(true)
-  const [showClassInfo, setShowClassInfo] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [joinClassCode, setJoinClassCode] = useState('')
   const [joiningClass, setJoiningClass] = useState(false)

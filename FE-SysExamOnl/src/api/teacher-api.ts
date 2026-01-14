@@ -2,8 +2,8 @@ import type { Exam } from '../types/exam'
 import type { Question } from '../types/question'
 
 let teacherExams: Exam[] = [
-  { id: 'e1', name: 'Toán 12 - Giữa kỳ', subject: 'Toán', duration: 60, date: '2025-10-20', published: true },
-  { id: 'e2', name: 'Văn 12 - Cuối kỳ', subject: 'Ngữ văn', duration: 90, date: '2025-11-10', published: false }
+  { id: 'e1', name: 'Toán 12 - Giữa kỳ', subject: 'Toán', date: '2025-10-20', published: true },
+  { id: 'e2', name: 'Văn 12 - Cuối kỳ', subject: 'Ngữ văn', date: '2025-11-10', published: false }
 ]
 
 const teacherQuestions: Question[] = [

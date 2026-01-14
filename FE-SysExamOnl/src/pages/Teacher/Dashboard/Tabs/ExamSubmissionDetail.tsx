@@ -32,6 +32,7 @@ interface SubmissionData {
 export default function ExamSubmissionDetail() {
   const [data, setData] = useState<SubmissionData | null>(null)
   const [feedback, setFeedback] = useState('')
+  const [questionFeedbacks, setQuestionFeedbacks] = useState<Record<number, string>>({})
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
@@ -55,7 +56,13 @@ export default function ExamSubmissionDetail() {
           setData(submission)
           console.log('Dữ liệu bài làm:', submission)
           setFeedback(submission.teacherOverallFeedback || '')
-          
+
+          // Khởi tạo feedback từng câu
+          const initialFeedbacks: Record<number, string> = {}
+          submission.questions.forEach((q: Question) => {
+            initialFeedbacks[q.questionId] = q.teacherFeedback || ''
+          })
+          setQuestionFeedbacks(initialFeedbacks)
         } else {
           toast.error(res.data.message || 'Không lấy được dữ liệu')
         }
@@ -71,20 +78,41 @@ export default function ExamSubmissionDetail() {
   }, [examSessionStudentId, navigate])
 
   const handleSendFeedback = async () => {
-    if (!feedback.trim()) {
-      toast.error('Vui lòng nhập nhận xét!')
+    if (!feedback.trim() && Object.values(questionFeedbacks).every((f) => !f.trim())) {
+      toast.error('Vui lòng nhập ít nhất một nhận xét!')
       return
     }
 
     setSending(true)
     try {
-      const res = await axiosClient.post(
-        `/teacher/exam-sessions/${examSessionStudentId}`,
-        { teacherOverallFeedBack: feedback.trim() }
-      )
+      // Tạo payload với feedback tổng quát và feedback từng câu
+      const payload: any = {
+        teacherOverallFeedBack: feedback.trim() || null
+      }
+
+      // Thêm feedback cho từng câu nếu có - PHẢI KHỚP VỚI BACKEND DTO
+      const teacherFeedBackRequests = Object.entries(questionFeedbacks)
+        .filter(([_, feedbackText]) => feedbackText.trim())
+        .map(([questionId, feedbackText]) => ({
+          questionId: Number(questionId),
+          teacherFeedBack: feedbackText.trim() // Chú ý: teacherFeedBack không phải teacherFeedback
+        }))
+
+      if (teacherFeedBackRequests.length > 0) {
+        payload.teacherFeedBackRequests = teacherFeedBackRequests // Chú ý: teacherFeedBackRequests không phải questionFeedbacks
+      }
+
+      console.log('=== DEBUG PAYLOAD ===')
+      console.log('Payload gửi lên:', JSON.stringify(payload, null, 2))
+      console.log('Question Feedbacks:', questionFeedbacks)
+      console.log('Filtered List:', teacherFeedBackRequests)
+
+      const res = await axiosClient.post(`/teacher/exam-sessions/${examSessionStudentId}`, payload)
 
       if (res.data.success) {
         toast.success('Đã gửi nhận xét thành công!')
+        // Reload dữ liệu để cập nhật
+        window.location.reload()
       } else {
         toast.error(res.data.message || 'Gửi thất bại')
       }
@@ -94,14 +122,14 @@ export default function ExamSubmissionDetail() {
     } finally {
       setSending(false)
     }
-}
-//hello
+  }
+  //hello
 
   const getAnswerIcon = (correct: boolean, selected: boolean) => {
-    if (selected && correct) return <CheckCircle className="w-4 h-4 text-green-600" />
-    if (selected && !correct) return <XCircle className="w-4 h-4 text-red-600" />
-    if (!selected && correct) return <CheckCircle className="w-4 h-4 text-green-400" />
-    return <HelpCircle className="w-4 h-4 text-gray-400" />
+    if (selected && correct) return <CheckCircle className='w-4 h-4 text-green-600' />
+    if (selected && !correct) return <XCircle className='w-4 h-4 text-red-600' />
+    if (!selected && correct) return <CheckCircle className='w-4 h-4 text-green-400' />
+    return <HelpCircle className='w-4 h-4 text-gray-400' />
   }
 
   const formatTime = (iso?: string) => {
@@ -118,95 +146,90 @@ export default function ExamSubmissionDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600">Đang tải bài làm...</span>
+      <div className='flex items-center justify-center py-20'>
+        <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600'></div>
+        <span className='ml-3 text-gray-600'>Đang tải bài làm...</span>
       </div>
     )
   }
 
   if (!data) {
-    return (
-      <div className="text-center py-20 text-gray-500">
-        Không có dữ liệu bài làm
-      </div>
-    )
+    return <div className='text-center py-20 text-gray-500'>Không có dữ liệu bài làm</div>
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className='p-6 max-w-5xl mx-auto'>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition"
-        >
-          <ArrowLeft className="w-5 h-5" />
+      <div className='flex items-center gap-3 mb-6'>
+        <button onClick={() => navigate(-1)} className='p-2 hover:bg-gray-100 rounded-lg transition'>
+          <ArrowLeft className='w-5 h-5' />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Bài làm – Phiên: {data.examSessionName}
-          </h1>
-          <p className="text-sm text-gray-500">
-            ID: {examSessionStudentId} • Tổng điểm: <strong className="text-green-700">{data.totalScore}</strong>
+          <h1 className='text-2xl font-bold text-gray-800'>Bài làm – Phiên: {data.examSessionName}</h1>
+          <p className='text-sm text-gray-500'>
+            ID: {examSessionStudentId} • Tổng điểm: <strong className='text-green-700'>{data.totalScore}</strong>
           </p>
         </div>
       </div>
 
       {/* Info Card */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+      <div className='bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6'>
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-4 text-sm'>
           <div>
-            <span className="font-medium text-gray-600">Trạng thái:</span>
-            <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-              data.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-              data.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
+            <span className='font-medium text-gray-600'>Trạng thái:</span>
+            <span
+              className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                data.status === 'COMPLETED'
+                  ? 'bg-green-100 text-green-800'
+                  : data.status === 'IN_PROGRESS'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-gray-100 text-gray-800'
+              }`}
+            >
               {data.status === 'COMPLETED' ? 'Đã nộp' : data.status === 'IN_PROGRESS' ? 'Đang làm' : 'Chưa làm'}
             </span>
           </div>
           <div>
-            <span className="font-medium text-gray-600">Nộp lúc:</span>
-            <span className="ml-2 text-gray-800">{formatTime(data.submittedAt)}</span>
+            <span className='font-medium text-gray-600'>Nộp lúc:</span>
+            <span className='ml-2 text-gray-800'>{formatTime(data.submittedAt)}</span>
           </div>
           <div>
-            <span className="font-medium text-gray-600">Tổng câu:</span>
-            <span className="ml-2 text-gray-800">{data.questions.length}</span>
+            <span className='font-medium text-gray-600'>Tổng câu:</span>
+            <span className='ml-2 text-gray-800'>{data.questions.length}</span>
           </div>
         </div>
       </div>
 
       {/* Feedback tổng quát (hiển thị nếu có) */}
       {data.teacherOverallFeedback && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-          <MessageSquare className="w-5 h-5 text-yellow-700 mt-0.5" />
+        <div className='bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 flex items-start gap-3'>
+          <MessageSquare className='w-5 h-5 text-yellow-700 mt-0.5' />
           <div>
-            <p className="font-medium text-yellow-900">Nhận xét hiện tại:</p>
-            <p className="text-yellow-800 mt-1 whitespace-pre-wrap">{data.teacherOverallFeedback}</p>
+            <p className='font-medium text-yellow-900'>Nhận xét hiện tại:</p>
+            <p className='text-yellow-800 mt-1 whitespace-pre-wrap'>{data.teacherOverallFeedback}</p>
           </div>
         </div>
       )}
 
       {/* Ô nhập feedback mới */}
-      <div className="bg-white border rounded-xl p-5 shadow-sm mb-6">
-        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-indigo-600" />
+      <div className='bg-white border rounded-xl p-5 shadow-sm mb-6'>
+        <h3 className='font-semibold text-gray-800 mb-3 flex items-center gap-2'>
+          <MessageSquare className='w-5 h-5 text-indigo-600' />
           Gửi nhận xét cho học sinh
         </h3>
 
         <textarea
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
-          placeholder="Nhập nhận xét chung cho bài làm này..."
-          className="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+          placeholder='Nhập nhận xét chung cho bài làm này...'
+          className='w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition'
           rows={4}
         />
 
-        <div className="mt-3 flex justify-end gap-2">
+        <div className='mt-3 flex justify-end gap-2'>
           <button
             onClick={() => setFeedback(data.teacherOverallFeedback || '')}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
+            className='px-4 py-2 text-sm text-gray-600 hover:text-gray-800 underline'
           >
             Hủy
           </button>
@@ -221,7 +244,7 @@ export default function ExamSubmissionDetail() {
           >
             {sending ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
                 Đang gửi...
               </>
             ) : (
@@ -232,62 +255,164 @@ export default function ExamSubmissionDetail() {
       </div>
 
       {/* Danh sách câu hỏi */}
-      <div className="space-y-6">
+      <div className='space-y-6'>
         {data.questions.map((q, qIndex) => {
-          const correctAnswers = q.answers.filter(a => a.correct).length
-          const selectedCorrect = q.answers.filter(a => a.selected && a.correct).length
-          const hasWrong = q.answers.some(a => a.selected && !a.correct)
-          const isPerfect = selectedCorrect === correctAnswers && !hasWrong
+          const hasSelected = q.answers.some((a) => a.selected)
+          const correctAnswers = q.answers.filter((a) => a.correct).length
+          const selectedCorrect = q.answers.filter((a) => a.selected && a.correct).length
+          const hasWrong = q.answers.some((a) => a.selected && !a.correct)
+          const isPerfect = selectedCorrect === correctAnswers && !hasWrong && hasSelected
+
+          // Xác định màu sắc theo trạng thái
+          let questionBorder, statusBadge, statusBadgeBg, statusIcon
+
+          if (isPerfect) {
+            questionBorder = 'border-l-4 border-l-emerald-500 border border-gray-200'
+            statusBadge = 'Đúng'
+            statusBadgeBg = 'bg-emerald-500'
+            statusIcon = <CheckCircle className='w-5 h-5 text-emerald-600' />
+          } else if (hasWrong || (hasSelected && !isPerfect)) {
+            questionBorder = 'border-l-4 border-l-rose-500 border border-gray-200'
+            statusBadge = 'Sai'
+            statusBadgeBg = 'bg-rose-500'
+            statusIcon = <XCircle className='w-5 h-5 text-rose-600' />
+          } else {
+            questionBorder = 'border-l-4 border-l-amber-500 border border-gray-200'
+            statusBadge = 'Chưa làm'
+            statusBadgeBg = 'bg-amber-500'
+            statusIcon = <HelpCircle className='w-5 h-5 text-amber-600' />
+          }
 
           return (
-            <div key={q.questionId} className="bg-white border rounded-xl p-5 shadow-sm">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-semibold text-gray-800">
-                  Câu {qIndex + 1}: <span dangerouslySetInnerHTML={{ __html: q.content }} />
-                </h3>
-                {isPerfect && <CheckCircle className="w-5 h-5 text-green-600" />}
+            <div key={q.questionId} className={`bg-white rounded-lg p-5 transition-all ${questionBorder}`}>
+              <div className='flex items-start justify-between mb-4'>
+                <div className='flex items-start gap-3 flex-1'>
+                  {statusIcon}
+                  <div>
+                    <div className='flex items-center gap-2 mb-2 flex-wrap'>
+                      <span className='bg-gray-200 text-gray-700 text-xs font-medium px-2.5 py-0.5 rounded'>
+                        Câu {qIndex + 1}
+                      </span>
+                      <span className={`${statusBadgeBg} text-white text-xs font-medium px-2.5 py-0.5 rounded`}>
+                        {statusBadge}
+                      </span>
+                      {q.teacherFeedback && (
+                        <span className='bg-purple-100 text-purple-700 text-xs font-medium px-2 py-0.5 rounded-full inline-flex items-center gap-1'>
+                          <MessageSquare className='w-3 h-3' />
+                          Đã nhận xét
+                        </span>
+                      )}
+                    </div>
+                    <h3 className='font-semibold text-gray-800 text-base'>
+                      <span dangerouslySetInnerHTML={{ __html: q.content }} />
+                    </h3>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2 ml-6">
-                {q.answers.map((ans) => (
-                  <div
-                    key={ans.answerId}
-                    className={`flex items-center gap-2 p-2 rounded-lg border text-sm ${
-                      ans.selected && ans.correct
-                        ? 'bg-green-50 border-green-300'
-                        : ans.selected && !ans.correct
-                        ? 'bg-red-50 border-red-300'
+              <div className='space-y-2 ml-8'>
+                {q.answers.map((ans) => {
+                  const answerStyle =
+                    ans.correct && ans.selected
+                      ? 'bg-emerald-100 border-l-4 border-l-emerald-500 border border-emerald-200'
+                      : ans.selected && !ans.correct
+                        ? 'bg-rose-100 border-l-4 border-l-rose-500 border border-rose-200'
                         : ans.correct
-                        ? 'bg-gray-50 border-gray-200'
-                        : 'bg-white border-gray-200'
-                    }`}
-                  >
-                    {getAnswerIcon(ans.correct, ans.selected)}
-                    <span
-                      className={ans.correct ? 'font-medium' : ''}
-                      dangerouslySetInnerHTML={{ __html: ans.content }}
-                    />
-                    {ans.correct && <span className="text-xs text-green-600 ml-auto">(Đáp án đúng)</span>}
-                  </div>
-                ))}
+                          ? 'bg-emerald-50 border-l-4 border-l-emerald-400 border border-emerald-200'
+                          : 'bg-white border border-gray-200'
+
+                  return (
+                    <div key={ans.answerId} className={`flex items-center gap-3 p-3 rounded-lg text-sm ${answerStyle}`}>
+                      {getAnswerIcon(ans.correct, ans.selected)}
+                      <span
+                        className={ans.correct ? 'font-medium text-gray-900' : 'text-gray-700'}
+                        dangerouslySetInnerHTML={{ __html: ans.content }}
+                      />
+                      {ans.correct && ans.selected && (
+                        <span className='text-xs bg-emerald-600 text-white px-2 py-0.5 rounded font-medium ml-auto'>
+                          Chọn đúng
+                        </span>
+                      )}
+                      {!ans.selected && ans.correct && (
+                        <span className='text-xs bg-emerald-500 text-white px-2 py-0.5 rounded font-medium ml-auto'>
+                          Đáp án đúng
+                        </span>
+                      )}
+                      {ans.selected && !ans.correct && (
+                        <span className='text-xs bg-rose-600 text-white px-2 py-0.5 rounded font-medium ml-auto'>
+                          Chọn sai
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
 
               {/* Giải thích */}
               {q.explanation && (
-                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900">
+                <div className='mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900'>
                   <strong>Giải thích:</strong> {q.explanation}
                 </div>
               )}
 
-              {/* Feedback riêng cho câu */}
+              {/* Feedback riêng cho câu (hiển thị nếu đã có) */}
               {q.teacherFeedback && (
-                <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-900">
-                  <strong>Nhận xét câu này:</strong> {q.teacherFeedback}
+                <div className='mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-900'>
+                  <strong>Nhận xét hiện tại:</strong> {q.teacherFeedback}
                 </div>
               )}
+
+              {/* Ô nhập feedback cho câu này */}
+              <div className='mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg'>
+                <label className='block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between'>
+                  <span>Nhận xét cho câu này:</span>
+                  {questionFeedbacks[q.questionId] && (
+                    <span className='text-xs text-gray-500'>{questionFeedbacks[q.questionId].length} ký tự</span>
+                  )}
+                </label>
+                <textarea
+                  value={questionFeedbacks[q.questionId] || ''}
+                  onChange={(e) => {
+                    const newValue = e.target.value
+                    console.log(`Updating feedback for question ${q.questionId}:`, newValue)
+                    setQuestionFeedbacks((prev) => ({
+                      ...prev,
+                      [q.questionId]: newValue
+                    }))
+                  }}
+                  placeholder='Nhập nhận xét riêng cho câu hỏi này...'
+                  className='w-full p-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-sm'
+                  rows={2}
+                />
+              </div>
             </div>
           )
         })}
+      </div>
+
+      {/* Nút gửi tất cả feedback ở cuối */}
+      <div className='mt-6 flex justify-end'>
+        <button
+          onClick={handleSendFeedback}
+          disabled={sending}
+          className={`px-6 py-3 rounded-lg font-medium transition flex items-center gap-2 ${
+            sending
+              ? 'bg-gray-400 text-white cursor-not-allowed'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'
+          }`}
+        >
+          {sending ? (
+            <>
+              <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+              Đang gửi tất cả nhận xét...
+            </>
+          ) : (
+            <>
+              <MessageSquare className='w-4 h-4' />
+              Gửi tất cả nhận xét
+            </>
+          )}
+        </button>
       </div>
     </div>
   )

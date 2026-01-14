@@ -102,7 +102,7 @@ export default function AppRouter() {
         <Route path='classes/:classId/edit' element={<ClassEditPage />} />
         <Route path='students' element={<div>Students Page</div>} />
         <Route path='settings' element={<SettingsTab />} />
-        <Route path='exam-sessions/list' element={<ExamSessionsList />} />
+        <Route path='exam-sessions' element={<ExamSessionsList />} />
         <Route path='exam-sessions/detail' element={<ExamSessionDetail />} />
         <Route path='exam-sessions/submission' element={<ExamSubmissionDetail />} />
         <Route path='exam-sessions/:examSessionId/results' element={<ExamResultsPage />} />

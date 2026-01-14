@@ -9,8 +9,9 @@ export default function StudentLayout() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const user = useSelector((state: any) => state.auth.user)
-  const isStudentExamPage = location.pathname.startsWith('/student/exam')
-  const [activeTab, setActiveTab] = useState('dashboard')
+  // Chỉ ẩn sidebar khi đang làm bài thi, không ẩn ở trang kết quả
+  const isStudentExamPage = location.pathname.includes('/student/exam/join')
+  const [_activeTab, setActiveTab] = useState('dashboard')
 
   const handleLogout = () => {
     dispatch(logout())
@@ -54,9 +55,7 @@ export default function StudentLayout() {
           <div className='bg-blue-600 p-2 rounded-lg shadow-blue-200 shadow-lg'>
             <i className='fas fa-graduation-cap text-white text-lg'></i>
           </div>
-          <span className='text-xl font-bold tracking-tight text-slate-800'>
-            EXAM<span className='text-blue-600'>PRO</span>
-          </span>
+          <span className='text-xl font-bold tracking-tight text-slate-800'>ExamOnlineSystem</span>
         </div>
 
         <div className='flex items-center space-x-6'>

@@ -1,7 +1,7 @@
 // src/layouts/TeacherDashboard.tsx
 import React, { useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Home, FileText, Database, LogOut, Menu, X, BookOpen } from 'lucide-react'
+import { Home, FileText, Database, LogOut, Menu, X, BookOpen, ClipboardList } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { useDispatch } from 'react-redux'
 import { logout } from '../../../store/slices/authSlice'
@@ -51,13 +51,14 @@ export default function TeacherDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [hoveredButtonRect, setHoveredButtonRect] = useState<DOMRect | null>(null)
 
-  const teacherName = localStorage.getItem('name') 
+  const teacherName = localStorage.getItem('name')
 
   const menuItems = [
     { key: '/teacher', icon: Home, label: 'Màn hình chính' },
     { key: '/teacher/exams', icon: FileText, label: 'Đề thi' },
     { key: '/teacher/questions', icon: Database, label: 'Ngân hàng câu hỏi' },
-    { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' }
+    { key: '/teacher/classes', icon: BookOpen, label: 'Lớp học' },
+    { key: '/teacher/exam-sessions', icon: ClipboardList, label: 'Phiên thi' }
   ]
 
   const activeTabKey =
@@ -174,10 +175,13 @@ export default function TeacherDashboard() {
         </aside>
 
         {/* MAIN CONTENT */}
-        <div className='flex-1 flex flex-col ml-[var(--sidebar-width)]' style={{ marginLeft: sidebarOpen ? 256 : 120 }}>
-          <main className='flex-1  bg-gradient-to-br from-gray-50/50 to-indigo-50/30'>
-            <div className='min-h-full h-full px-2 py-3 lg:px-10 lg:py-10  '>
-              <div className='h-full w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/40 p-7 '>
+        <div
+          className='flex-1 flex flex-col overflow-hidden ml-[var(--sidebar-width)]'
+          style={{ marginLeft: sidebarOpen ? 256 : 120 }}
+        >
+          <main className='flex-1 bg-gradient-to-br from-gray-50/50 to-indigo-50/30 overflow-hidden'>
+            <div className='h-full px-2 py-3 lg:px-10 lg:py-10'>
+              <div className='h-full w-full bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/40 p-7 overflow-auto'>
                 <Outlet />
               </div>
             </div>

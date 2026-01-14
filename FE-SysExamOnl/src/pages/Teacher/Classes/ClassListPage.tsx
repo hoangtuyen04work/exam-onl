@@ -264,16 +264,6 @@ const ClassListPage: React.FC = () => {
                     <div className='flex-1 overflow-hidden'>
                       <p className='text-sm font-bold text-slate-700 truncate'>{cls.name}</p>
                       <p className='text-[11px] text-slate-500 font-mono'>{cls.classCode}</p>
-                      <div className='flex items-center gap-3 mt-1 text-[11px] text-slate-600'>
-                        <span className='flex items-center gap-1'>
-                          <i className='fas fa-user-graduate text-blue-500'></i>
-                          {cls.studentCount || 0}
-                        </span>
-                        <span className='flex items-center gap-1'>
-                          <i className='fas fa-file-alt text-green-500'></i>
-                          {cls.examSessionCount || 0}
-                        </span>
-                      </div>
                     </div>
                   </div>
                   <div className='flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity'>
@@ -436,9 +426,16 @@ const ClassListPage: React.FC = () => {
                   <i className='fas fa-file-alt mr-2'></i> Bài thi
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setSelectedTab('chat')
-                    handleSelectClass(selectedClassId, 'chat')
+                    if (selectedClassId && selectedTab !== 'chat') {
+                      try {
+                        const response = await classChatApi.getChatSettings(selectedClassId)
+                        if (response.success) setAllowStudentChat(response.data)
+                      } catch (error) {
+                        console.error('Failed to load chat settings:', error)
+                      }
+                    }
                   }}
                   className={`px-4 py-3 text-sm font-medium transition border-b-2 ${
                     selectedTab === 'chat'
@@ -481,92 +478,123 @@ const ClassListPage: React.FC = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                      {classDetail.students.map((student) => (
-                        <div
-                          key={student.studentId}
-                          className='relative group bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all'
-                        >
-                          <div className='flex items-center gap-3 mb-3'>
-                            <div className='w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 text-white font-semibold'>
-                              {student.username?.charAt(0).toUpperCase() || 'S'}
+                    <div className='bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden'>
+                      <div className='space-y-0 divide-y divide-gray-100'>
+                        {classDetail.students.map((student, index) => (
+                          <div
+                            key={student.studentId}
+                            className='group hover:bg-gray-50 transition-colors p-4 flex items-center gap-4'
+                          >
+                            {/* STT */}
+                            <div className='flex-shrink-0 w-8 text-center'>
+                              <span className='text-sm font-semibold text-gray-500'>{index + 1}</span>
                             </div>
-                            <div className='flex-1 min-w-0'>
-                              <h4 className='font-semibold text-gray-900 text-sm truncate'>
-                                {student.firstName && student.lastName
-                                  ? `${student.firstName} ${student.lastName}`
-                                  : student.username}
-                              </h4>
+
+                            {/* Avatar */}
+                            <div className='flex-shrink-0'>
+                              <div className='w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm'>
+                                {student.username?.charAt(0).toUpperCase() || 'S'}
+                              </div>
+                            </div>
+
+                            {/* Thông tin học sinh */}
+                            <div className='flex-1 min-w-0 grid grid-cols-1 md:grid-cols-3 gap-3'>
+                              {/* Họ tên & Username */}
+                              <div>
+                                <h4 className='font-semibold text-gray-900 text-sm truncate'>
+                                  {student.firstName && student.lastName
+                                    ? `${student.firstName} ${student.lastName}`
+                                    : student.username}
+                                </h4>
+                                <p className='text-xs text-gray-500 truncate flex items-center gap-1 mt-0.5'>
+                                  <svg
+                                    className='w-3 h-3 text-gray-400 flex-shrink-0'
+                                    fill='none'
+                                    stroke='currentColor'
+                                    viewBox='0 0 24 24'
+                                  >
+                                    <path
+                                      strokeLinecap='round'
+                                      strokeLinejoin='round'
+                                      strokeWidth={2}
+                                      d='M16 7a4 4 0 11-8 0 4 4 0 018 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
+                                    />
+                                  </svg>
+                                  {student.username}
+                                </p>
+                              </div>
+
+                              {/* Email */}
+                              <div className='flex items-center'>
+                                <p className='text-xs text-gray-600 truncate flex items-center gap-1.5'>
+                                  <svg
+                                    className='w-3.5 h-3.5 text-gray-400 flex-shrink-0'
+                                    fill='none'
+                                    stroke='currentColor'
+                                    viewBox='0 0 24 24'
+                                  >
+                                    <path
+                                      strokeLinecap='round'
+                                      strokeLinejoin='round'
+                                      strokeWidth={2}
+                                      d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 012-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
+                                    />
+                                  </svg>
+                                  {student.email}
+                                </p>
+                              </div>
+
+                              {/* Ngày tham gia */}
+                              <div className='flex items-center'>
+                                {student.enrolledAt && (
+                                  <p className='text-xs text-gray-500 flex items-center gap-1.5'>
+                                    <svg
+                                      className='w-3.5 h-3.5 text-gray-400 flex-shrink-0'
+                                      fill='none'
+                                      stroke='currentColor'
+                                      viewBox='0 0 24 24'
+                                    >
+                                      <path
+                                        strokeLinecap='round'
+                                        strokeLinejoin='round'
+                                        strokeWidth={2}
+                                        d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
+                                      />
+                                    </svg>
+                                    <span className='hidden sm:inline'>Tham gia: </span>
+                                    {new Date(student.enrolledAt).toLocaleDateString('vi-VN')}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Nút xóa */}
+                            <div className='flex-shrink-0'>
+                              <button
+                                onClick={() =>
+                                  handleRemoveStudent(
+                                    student.studentId,
+                                    student.firstName && student.lastName
+                                      ? `${student.firstName} ${student.lastName}`
+                                      : student.username
+                                  )
+                                }
+                                className='opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-lg text-red-600 hover:text-red-700'
+                                title='Xóa khỏi lớp'
+                              >
+                                <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                                  <path
+                                    strokeLinecap='round'
+                                    strokeLinejoin='round'
+                                    strokeWidth={2}
+                                    d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                                  />
+                                </svg>
+                              </button>
                             </div>
                           </div>
-                          <p className='text-xs text-gray-600 truncate flex items-center gap-1.5 mb-1.5'>
-                            <svg
-                              className='w-3.5 h-3.5 text-gray-400'
-                              fill='none'
-                              stroke='currentColor'
-                              viewBox='0 0 24 24'
-                            >
-                              <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth={2}
-                                d='M16 7a4 4 0 11-8 0 4 4 0 018 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'
-                              />
-                            </svg>
-                            {student.username}
-                          </p>
-                          <p className='text-xs text-gray-500 truncate flex items-center gap-1.5'>
-                            <svg
-                              className='w-3.5 h-3.5 text-gray-400'
-                              fill='none'
-                              stroke='currentColor'
-                              viewBox='0 0 24 24'
-                            >
-                              <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth={2}
-                                d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 012-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
-                              />
-                            </svg>
-                            {student.email}
-                          </p>
-                          {student.enrolledAt && (
-                            <p className='text-[10px] text-gray-400 mt-2 flex items-center gap-1'>
-                              <svg className='w-3 h-3' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                                <path
-                                  strokeLinecap='round'
-                                  strokeLinejoin='round'
-                                  strokeWidth={2}
-                                  d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-                                />
-                              </svg>
-                              Tham gia: {new Date(student.enrolledAt).toLocaleDateString('vi-VN')}
-                            </p>
-                          )}
-                          <button
-                            onClick={() =>
-                              handleRemoveStudent(
-                                student.studentId,
-                                student.firstName && student.lastName
-                                  ? `${student.firstName} ${student.lastName}`
-                                  : student.username
-                              )
-                            }
-                            className='absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-red-50 hover:bg-red-100 rounded-lg text-red-600 hover:text-red-700'
-                            title='Xóa khỏi lớp'
-                          >
-                            <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                              <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                                strokeWidth={2}
-                                d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -617,9 +645,6 @@ const ClassListPage: React.FC = () => {
                                 </th>
                                 <th className='px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider'>
                                   Kết thúc
-                                </th>
-                                <th className='px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider'>
-                                  Thời lượng
                                 </th>
                                 <th className='px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider'>
                                   Trạng thái
@@ -689,11 +714,6 @@ const ClassListPage: React.FC = () => {
                                           dateStyle: 'short',
                                           timeStyle: 'short'
                                         })}
-                                      </td>
-                                      <td className='px-4 py-3'>
-                                        <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800'>
-                                          {exam.durationMinutes} phút
-                                        </span>
                                       </td>
                                       <td className='px-4 py-3'>
                                         {isActive && (
