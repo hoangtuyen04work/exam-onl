@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import type React from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 
@@ -28,16 +29,16 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
   const [hasMore, setHasMore] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const stompClientRef = useRef<Client | null>(null)
+  const scrollSnapshot = useRef<number>(0)
   const serverPort = (import.meta.env.VITE_SERVER_PORT_EXPOSE as string | undefined)?.replace(/\/+$/, '') || ''
 
   const canSendMessage = userRole === 'TEACHER' || allowStudentChat
 
-  // Fetch messages
+  // Fetch messages (prepend older)
   const fetchMessages = async (pageNum: number = 0) => {
-    if (loading) return
+    if (loading || (!hasMore && pageNum !== 0)) return
 
     try {
       setLoading(true)
@@ -57,24 +58,18 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
       const data = await response.json()
 
       if (data && data.items) {
-        const newMessages = data.items || []
+        // API trả desc -> đảo lại asc để render tự nhiên
+        const fetchedMessages = [...data.items].reverse()
 
-        // Save scroll position before updating messages (for infinite scroll)
-        const container = messagesContainerRef.current
-        const oldScrollHeight = container?.scrollHeight || 0
-
-        setMessages((prev) => (pageNum === 0 ? newMessages : [...prev, ...newMessages]))
-
-        // Restore scroll position after loading more messages
-        if (pageNum > 0 && container) {
-          setTimeout(() => {
-            const newScrollHeight = container.scrollHeight
-            container.scrollTop = newScrollHeight - oldScrollHeight
-          }, 0)
+        if (messagesContainerRef.current) {
+          scrollSnapshot.current = messagesContainerRef.current.scrollHeight
         }
+
+        setMessages((prev) => (pageNum === 0 ? fetchedMessages : [...fetchedMessages, ...prev]))
 
         const totalPages = Math.ceil(data.total / data.size)
         setHasMore(data.page < totalPages - 1)
+        setPage(data.page)
       }
     } catch (error) {
       console.error('[ChatBox] Error fetching messages:', error)
@@ -88,21 +83,16 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
     const container = messagesContainerRef.current
     if (!container || loading || !hasMore) return
 
-    // Load more when scrolled to top
-    if (container.scrollTop === 0) {
-      const nextPage = page + 1
-      setPage(nextPage)
-      fetchMessages(nextPage)
+    if (container.scrollTop <= 10) {
+      fetchMessages(page + 1)
     }
   }
 
   // Connect to WebSocket
   useEffect(() => {
     const token = localStorage.getItem('authToken')
-    const wsUrl = `${serverPort}/ws`
-
     const client = new Client({
-      webSocketFactory: () => new SockJS(wsUrl),
+      webSocketFactory: () => new SockJS(`${serverPort}/ws`),
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },
@@ -110,7 +100,17 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
         const topic = `/topic/class/${classId}/chat`
         client.subscribe(topic, (message) => {
           const chatMessage: ChatMessage = JSON.parse(message.body)
-          setMessages((prev) => [chatMessage, ...prev])
+          setMessages((prev) => [...prev, chatMessage])
+
+          setTimeout(() => {
+            const container = messagesContainerRef.current
+            if (container) {
+              const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200
+              if (isNearBottom) {
+                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+              }
+            }
+          }, 50)
         })
       },
       onStompError: (frame) => {
@@ -120,40 +120,26 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
 
     client.activate()
     stompClientRef.current = client
-
     fetchMessages(0)
 
     return () => {
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate()
-      }
+      client.deactivate()
     }
   }, [classId])
 
-  // Scroll to bottom only on initial load (no animation)
-  useEffect(() => {
-    if (isInitialLoad && messages.length > 0 && messagesContainerRef.current) {
-      // Use scrollTop to prevent page-level scroll
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+  // Preserve scroll & initial bottom align
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    if (isInitialLoad && messages.length > 0) {
+      container.scrollTop = container.scrollHeight
       setIsInitialLoad(false)
+    } else if (scrollSnapshot.current !== 0) {
+      container.scrollTop = container.scrollHeight - scrollSnapshot.current
+      scrollSnapshot.current = 0
     }
   }, [messages, isInitialLoad])
-
-  // Scroll to bottom when new message arrives (only if user is near bottom)
-  useEffect(() => {
-    if (!isInitialLoad) {
-      const container = messagesContainerRef.current
-      if (container) {
-        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100
-        if (isNearBottom) {
-          container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth'
-          })
-        }
-      }
-    }
-  }, [messages.length])
 
   // Send message
   const handleSendMessage = async () => {
@@ -201,7 +187,25 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    const now = new Date()
+
+    // Reset time to compare dates only
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+
+    const diffTime = today.getTime() - messageDate.getTime()
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+    const timeString = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+
+    if (diffDays === 0) {
+      return `Hôm nay ${timeString}`
+    } else if (diffDays === 1) {
+      return `Hôm qua ${timeString}`
+    } else {
+      const dateString = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      return `${dateString} ${timeString}`
+    }
   }
 
   return (
@@ -231,52 +235,43 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
           </div>
         )}
 
-        {messages
-          .slice()
-          .reverse()
-          .map((message) => {
-            const isOwnMessage = Number(message.senderId) === Number(userId)
+        {messages.map((message) => {
+          const isOwnMessage = Number(message.senderId) === Number(userId)
 
-            return (
-              <div
-                key={message.id}
-                className={`flex items-end gap-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-              >
-                {/* Teacher/Other Student Message (Left) */}
-                {!isOwnMessage && (
-                  <>
-                    <div className='w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0 shadow-sm'>
-                      {message.senderRole === 'TEACHER' ? '👨‍🏫' : message.senderName.charAt(0).toUpperCase()}
-                    </div>
-                    <div className='max-w-[70%]'>
-                      <div className='bg-white border border-gray-200 px-4 py-2.5 rounded-2xl rounded-bl-md shadow-sm'>
-                        <p className='text-[11px] font-semibold text-blue-600 mb-1'>
-                          {message.senderRole === 'TEACHER' ? 'Giáo viên' : message.senderName}
-                        </p>
-                        <p className='text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words'>
-                          {message.content}
-                        </p>
-                      </div>
-                      <span className='text-[10px] text-gray-400 mt-1 ml-2 block'>{formatTime(message.createdAt)}</span>
-                    </div>
-                  </>
-                )}
-
-                {/* Own Message (Right) */}
-                {isOwnMessage && (
-                  <div className='max-w-[70%]'>
-                    <div className='bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2.5 rounded-2xl rounded-br-md shadow-md'>
-                      <p className='text-sm leading-relaxed whitespace-pre-wrap break-words'>{message.content}</p>
-                    </div>
-                    <span className='text-[10px] text-gray-400 mt-1 mr-2 block text-right'>
-                      {formatTime(message.createdAt)}
-                    </span>
+          return (
+            <div key={message.id} className={`flex items-end gap-2 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+              {!isOwnMessage && (
+                <>
+                  <div className='w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0 shadow-sm'>
+                    {message.senderRole === 'TEACHER' ? '👨‍🏫' : message.senderName.charAt(0).toUpperCase()}
                   </div>
-                )}
-              </div>
-            )
-          })}
-        <div ref={messagesEndRef} />
+                  <div className='max-w-[70%]'>
+                    <div className='bg-white border border-gray-200 px-4 py-2.5 rounded-2xl rounded-bl-md shadow-sm'>
+                      <p className='text-[11px] font-semibold text-blue-600 mb-1'>
+                        {message.senderRole === 'TEACHER' ? 'Giáo viên' : message.senderName}
+                      </p>
+                      <p className='text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words'>
+                        {message.content}
+                      </p>
+                    </div>
+                    <span className='text-[10px] text-gray-400 mt-1 ml-2 block'>{formatTime(message.createdAt)}</span>
+                  </div>
+                </>
+              )}
+
+              {isOwnMessage && (
+                <div className='max-w-[70%]'>
+                  <div className='bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2.5 rounded-2xl rounded-br-md shadow-md'>
+                    <p className='text-sm leading-relaxed whitespace-pre-wrap break-words'>{message.content}</p>
+                  </div>
+                  <span className='text-[10px] text-gray-400 mt-1 mr-2 block text-right'>
+                    {formatTime(message.createdAt)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {/* Input Area - Modern Chat Design */}

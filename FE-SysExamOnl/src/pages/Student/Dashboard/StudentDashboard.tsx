@@ -124,8 +124,6 @@ export default function StudentDashboard() {
     })
   })
 
-  const completedExams: CompletedExam[] = completedExamsResponse.items
-
   if (isLoadingCompletedExams) {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50'>
@@ -136,39 +134,67 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className='p-12 max-w-4xl mx-auto'>
-      {/* Nhập mã phòng thi */}
-      <div className='text-center mb-12'>
-        <h1 className='text-4xl font-black text-slate-800 mb-4'>Nhập mã phòng thi</h1>
-        <p className='text-slate-500 text-lg font-medium'>Mã phòng thi được giáo viên cung cấp để bắt đầu bài làm.</p>
-      </div>
-      <div className='bg-blue-600 p-1 rounded-[40px] shadow-2xl shadow-blue-200'>
-        <div className='bg-white p-10 rounded-[38px] flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4'>
-          <input
-            type='text'
-            placeholder='VÍ DỤ: TOAN102'
-            value={examCode}
-            onChange={(e) => setExamCode(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === 'Enter' && handleJoinExamByCode()}
-            disabled={loadingJoin}
-            className='flex-1 w-full px-8 py-5 bg-slate-100 rounded-3xl text-2xl font-mono font-bold text-center focus:ring-4 focus:ring-blue-100 outline-none transition uppercase tracking-widest border-2 border-transparent focus:border-blue-500'
-          />
-          <button
-            onClick={handleJoinExamByCode}
-            disabled={loadingJoin || !examCode.trim()}
-            className='w-full md:w-auto bg-blue-600 text-white px-10 py-5 rounded-3xl font-bold text-lg hover:bg-blue-700 transition active:scale-95 shadow-lg shadow-blue-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed'
-          >
-            {loadingJoin ? (
-              <>
-                <Loader2 className='w-5 h-5 animate-spin mr-2' />
-                Đang tham gia...
-              </>
-            ) : (
-              <>
-                Vào thi <i className='fas fa-bolt ml-2'></i>
-              </>
-            )}
-          </button>
+    <div className='min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8'>
+      <div className='max-w-3xl mx-auto'>
+        {/* Welcome Header */}
+        <div className='mb-8'>
+          <h1 className='text-3xl font-bold text-gray-800 mb-2'>Xin chào, {user?.name || 'Học sinh'}!</h1>
+          <p className='text-gray-600'>Chào mừng bạn đến với hệ thống thi trực tuyến</p>
+        </div>
+
+        {/* Main Section - Join Exam */}
+        <div className='bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-8 shadow-lg text-white'>
+          <div className='flex items-center gap-3 mb-4'>
+            <div className='bg-white/20 p-2 rounded-lg backdrop-blur-sm'>
+              <KeyRound className='w-6 h-6' />
+            </div>
+            <h2 className='text-2xl font-bold'>Tham gia kỳ thi</h2>
+          </div>
+          <p className='text-blue-100 mb-6'>Nhập mã phòng thi do giáo viên cung cấp để bắt đầu làm bài</p>
+
+          <div className='flex flex-col sm:flex-row gap-3'>
+            <input
+              type='text'
+              placeholder='VÍ DỤ: TOAN102'
+              value={examCode}
+              onChange={(e) => setExamCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === 'Enter' && handleJoinExamByCode()}
+              disabled={loadingJoin}
+              className='flex-1 px-5 py-4 bg-white rounded-xl text-gray-800 font-mono font-semibold text-center text-lg focus:ring-4 focus:ring-blue-300 outline-none transition uppercase tracking-wider disabled:bg-gray-100 disabled:cursor-not-allowed placeholder:text-gray-400'
+            />
+            <button
+              onClick={handleJoinExamByCode}
+              disabled={loadingJoin || !examCode.trim()}
+              className='px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap shadow-lg hover:shadow-xl active:scale-95'
+            >
+              {loadingJoin ? (
+                <>
+                  <Loader2 className='w-5 h-5 animate-spin' />
+                  Đang xử lý...
+                </>
+              ) : (
+                <>
+                  Vào thi
+                  <ChevronRight className='w-5 h-5' />
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Helper text */}
+          <div className='mt-6 pt-6 border-t border-white/20'>
+            <p className='text-sm text-blue-100 flex items-center gap-2'>
+              <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+                />
+              </svg>
+              <span>Mã phòng thi được giáo viên cung cấp qua email hoặc thông báo lớp học</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>

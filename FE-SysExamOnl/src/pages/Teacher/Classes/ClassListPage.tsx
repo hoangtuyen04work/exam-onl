@@ -264,16 +264,6 @@ const ClassListPage: React.FC = () => {
                     <div className='flex-1 overflow-hidden'>
                       <p className='text-sm font-bold text-slate-700 truncate'>{cls.name}</p>
                       <p className='text-[11px] text-slate-500 font-mono'>{cls.classCode}</p>
-                      <div className='flex items-center gap-3 mt-1 text-[11px] text-slate-600'>
-                        <span className='flex items-center gap-1'>
-                          <i className='fas fa-user-graduate text-blue-500'></i>
-                          {cls.studentCount || 0}
-                        </span>
-                        <span className='flex items-center gap-1'>
-                          <i className='fas fa-file-alt text-green-500'></i>
-                          {cls.examSessionCount || 0}
-                        </span>
-                      </div>
                     </div>
                   </div>
                   <div className='flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity'>
