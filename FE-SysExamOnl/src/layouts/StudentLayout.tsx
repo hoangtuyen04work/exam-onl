@@ -55,7 +55,7 @@ export default function StudentLayout() {
             <i className='fas fa-graduation-cap text-white text-lg'></i>
           </div>
           <span className='text-xl font-bold tracking-tight text-slate-800'>
-            EXAM<span className='text-blue-600'>PRO</span>
+            ExamOnlineSystem
           </span>
         </div>
 

@@ -567,11 +567,7 @@ const ClassDetailPage: React.FC = () => {
                               {session.description}
                             </p>
                           )}
-                          <div className='grid grid-cols-2 gap-2 mb-3'>
-                            <div className='p-2.5 bg-blue-50 rounded-lg'>
-                              <p className='text-[10px] text-blue-600 mb-0.5'>⏱️ Thời gian</p>
-                              <p className='text-xs font-semibold text-gray-900'>{session.durationMinutes} phút</p>
-                            </div>
+                          <div className='grid grid-cols-1 gap-2 mb-3'>
                             <div className='p-2.5 bg-green-50 rounded-lg'>
                               <p className='text-[10px] text-green-600 mb-0.5'>📅 Bắt đầu</p>
                               <p className='text-[10px] font-semibold text-gray-900'>

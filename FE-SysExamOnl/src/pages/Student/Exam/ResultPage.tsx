@@ -40,12 +40,14 @@ export default function ResultPage() {
     queryFn: async (): Promise<ExamResult> => {
       if (!examSessionId) throw new Error('Exam session ID không hợp lệ')
       const { data } = await axiosClient.get(`/student/exam/result/${examSessionId}`)
+      console.log('Kết quả bài thi:', data)
+
       if (!data.success) throw new Error(data.message || 'Không lấy được kết quả')
       return data.data as ExamResult
     },
     enabled: !!examSessionId,
-    staleTime: 0, // Always refetch to get fresh data
-    refetchOnMount: 'always' // Always refetch when component mounts
+    staleTime: 0,
+    refetchOnMount: 'always'
   })
 
   const [openExplanationId, setOpenExplanationId] = useState<number | null>(null)
@@ -92,7 +94,8 @@ export default function ResultPage() {
 
   const totalQuestions = result.questions.length
   const correctCount = result.questions.filter((q) => q.answers.some((a) => a.correct && a.selected)).length
-  const wrongCount = totalQuestions - correctCount
+  const unansweredCount = result.questions.filter((q) => !q.answers.some((a) => a.selected)).length
+  const wrongCount = totalQuestions - correctCount - unansweredCount
   const score = result.totalScore?.toFixed(2) || '0.00'
   const percentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0
 
@@ -112,9 +115,7 @@ export default function ResultPage() {
           <div className='bg-blue-600 p-2 rounded-lg shadow-blue-200 shadow-lg'>
             <i className='fas fa-graduation-cap text-white text-lg'></i>
           </div>
-          <span className='text-xl font-bold tracking-tight text-slate-800'>
-            EXAM<span className='text-blue-600'>PRO</span>
-          </span>
+          <span className='text-xl font-bold tracking-tight text-slate-800'>ExamOnlineSystem</span>
         </div>
 
         <div className='flex items-center space-x-6'>
@@ -201,24 +202,47 @@ export default function ResultPage() {
                 </div>
               </motion.div>
 
-              <div className='grid grid-cols-3 gap-6 w-full max-w-sm'>
+              <div className='grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-2xl'>
                 {[
                   {
                     icon: CheckCircle,
                     label: 'Đúng',
                     value: correctCount,
                     color: 'text-emerald-600',
-                    bg: 'bg-emerald-50'
+                    bg: 'bg-emerald-50',
+                    borderColor: 'border-emerald-200'
                   },
-                  { icon: XCircle, label: 'Sai', value: wrongCount, color: 'text-rose-600', bg: 'bg-rose-50' },
-                  { icon: FileText, label: 'Tổng', value: totalQuestions, color: 'text-indigo-600', bg: 'bg-indigo-50' }
+                  {
+                    icon: XCircle,
+                    label: 'Sai',
+                    value: wrongCount,
+                    color: 'text-rose-600',
+                    bg: 'bg-rose-50',
+                    borderColor: 'border-rose-200'
+                  },
+                  {
+                    icon: Clock,
+                    label: 'Chưa làm',
+                    value: unansweredCount,
+                    color: 'text-amber-600',
+                    bg: 'bg-amber-50',
+                    borderColor: 'border-amber-200'
+                  },
+                  {
+                    icon: FileText,
+                    label: 'Tổng',
+                    value: totalQuestions,
+                    color: 'text-gray-600',
+                    bg: 'bg-gray-50',
+                    borderColor: 'border-gray-200'
+                  }
                 ].map((stat, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 + i * 0.1 }}
-                    className={`${stat.bg} rounded-lg p-3 text-center transition-all border border-gray-100`}
+                    className={`${stat.bg} rounded-lg p-3 text-center border ${(stat as any).borderColor}`}
                   >
                     <stat.icon className={`w-6 h-6 ${stat.color} mx-auto mb-1`} />
                     <p className='text-sm text-gray-500 font-light'>{stat.label}</p>
@@ -297,10 +321,41 @@ export default function ResultPage() {
               <div className='space-y-4'>
                 {' '}
                 {result.questions.map((q, idx) => {
+                  // Phân loại trạng thái câu hỏi
+                  const hasSelected = q.answers.some((a) => a.selected)
                   const isCorrect = q.answers.some((a) => a.correct && a.selected)
+                  const isWrong = hasSelected && !isCorrect
+                  const isUnanswered = !hasSelected
                   const isExpanded = openExplanationId === q.questionId
-                  const questionBorder = isCorrect ? 'border-emerald-200' : 'border-rose-200'
-                  const questionBg = isCorrect ? 'bg-emerald-50/50' : 'bg-rose-50/50'
+
+                  // Màu sắc theo trạng thái
+                  let questionBorder, questionBg, iconColor, statusIcon, statusBadge, statusBadgeBg, statusBadgeText
+
+                  if (isCorrect) {
+                    questionBorder = 'border-l-4 border-l-emerald-500 border border-gray-200'
+                    questionBg = 'bg-emerald-50'
+                    iconColor = 'text-emerald-600'
+                    statusIcon = <CheckCircle className='w-5 h-5' />
+                    statusBadge = 'Đúng'
+                    statusBadgeBg = 'bg-emerald-500'
+                    statusBadgeText = 'text-white'
+                  } else if (isWrong) {
+                    questionBorder = 'border-l-4 border-l-rose-500 border border-gray-200'
+                    questionBg = 'bg-rose-50'
+                    iconColor = 'text-rose-600'
+                    statusIcon = <XCircle className='w-5 h-5' />
+                    statusBadge = 'Sai'
+                    statusBadgeBg = 'bg-rose-500'
+                    statusBadgeText = 'text-white'
+                  } else {
+                    questionBorder = 'border-l-4 border-l-amber-500 border border-gray-200'
+                    questionBg = 'bg-amber-50'
+                    iconColor = 'text-amber-600'
+                    statusIcon = <Clock className='w-5 h-5' />
+                    statusBadge = 'Chưa làm'
+                    statusBadgeBg = 'bg-amber-500'
+                    statusBadgeText = 'text-white'
+                  }
 
                   return (
                     <motion.div
@@ -308,22 +363,33 @@ export default function ResultPage() {
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.04 }}
-                      className={`rounded-xl border-2 transition-all shadow-md ${questionBorder}`}
+                      className={`rounded-lg transition-all ${questionBorder}`}
                     >
                       <button
-                        className={`w-full flex items-start justify-between p-4 text-left transition-colors ${isExpanded ? questionBg : 'hover:bg-gray-50/50'}`}
+                        className={`w-full flex items-start justify-between p-4 text-left transition-colors ${isExpanded ? questionBg : 'bg-white hover:bg-gray-50'}`}
                         onClick={() => toggleQuestion(q.questionId)}
                       >
                         <div className='flex items-start gap-3 flex-grow'>
-                          <span
-                            className={`text-base font-normal ${isCorrect ? 'text-emerald-500' : 'text-rose-500'} flex-shrink-0 pt-0.5`}
-                          >
-                            {isCorrect ? <CheckCircle className='w-5 h-5' /> : <XCircle className='w-5 h-5' />}
+                          <span className={`text-base font-normal ${iconColor} flex-shrink-0 pt-0.5`}>
+                            {statusIcon}
                           </span>
                           <div className='flex-grow'>
-                            <span className='bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full inline-block mb-1'>
-                              Câu {idx + 1}
-                            </span>
+                            <div className='flex items-center gap-2 mb-2 flex-wrap'>
+                              <span className='bg-gray-200 text-gray-700 text-xs font-medium px-2.5 py-0.5 rounded'>
+                                Câu {idx + 1}
+                              </span>
+                              <span
+                                className={`${statusBadgeBg} ${statusBadgeText} text-xs font-medium px-2.5 py-0.5 rounded`}
+                              >
+                                {statusBadge}
+                              </span>
+                              {q.teacherFeedback && (
+                                <span className='bg-purple-100 text-purple-700 text-xs font-medium px-2 py-0.5 rounded-full inline-flex items-center gap-1'>
+                                  <MessageSquare className='w-3 h-3' />
+                                  Nhận xét GV
+                                </span>
+                              )}
+                            </div>
                             <p className='text-base font-light text-gray-800 leading-relaxed'>{q.content}</p>
                           </div>
                         </div>
@@ -349,10 +415,10 @@ export default function ResultPage() {
                             <div className='space-y-2'>
                               {q.answers.map((a) => {
                                 const answerStyle = a.correct
-                                  ? 'bg-emerald-100/80 border-emerald-400 text-emerald-900 ring-1 ring-emerald-400'
+                                  ? 'bg-emerald-100 border-l-4 border-l-emerald-500 border border-emerald-200 text-emerald-900'
                                   : a.selected
-                                    ? 'bg-rose-100/80 border-rose-400 text-rose-900 ring-1 ring-rose-400'
-                                    : 'bg-white border-gray-200 text-gray-700'
+                                    ? 'bg-rose-100 border-l-4 border-l-rose-500 border border-rose-200 text-rose-900'
+                                    : 'bg-white border border-gray-200 text-gray-700'
 
                                 return (
                                   <div
@@ -361,12 +427,12 @@ export default function ResultPage() {
                                   >
                                     <span className='flex-grow'>{a.content}</span>
                                     {a.correct && (
-                                      <span className='ml-2 text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-medium'>
-                                        Đúng
+                                      <span className='ml-2 text-xs bg-emerald-600 text-white px-2 py-0.5 rounded font-medium'>
+                                        Đáp án đúng
                                       </span>
                                     )}
                                     {a.selected && !a.correct && (
-                                      <span className='ml-2 text-xs bg-rose-500 text-white px-2 py-0.5 rounded-full font-medium'>
+                                      <span className='ml-2 text-xs bg-rose-600 text-white px-2 py-0.5 rounded font-medium'>
                                         Bạn chọn
                                       </span>
                                     )}
@@ -375,20 +441,27 @@ export default function ResultPage() {
                               })}
                             </div>
 
-                            {(q.explanation || q.teacherFeedback) && (
-                              <div className='mt-3 p-4 bg-white/80 rounded-lg shadow-inner text-gray-700 space-y-2 border border-gray-100'>
-                                {q.explanation && (
-                                  <p className='text-sm'>
-                                    <strong className='text-indigo-600 font-medium'>Giải thích:</strong>{' '}
-                                    <span className='font-light'>{q.explanation}</span>
-                                  </p>
-                                )}
-                                {q.teacherFeedback && (
-                                  <p className='text-sm border-t pt-2 border-gray-100'>
-                                    <strong className='text-indigo-600 font-medium'>Phản hồi GV:</strong>{' '}
-                                    <span className='font-light'>{q.teacherFeedback}</span>
-                                  </p>
-                                )}
+                            {q.explanation && (
+                              <div className='mt-3 p-4 bg-blue-50/80 rounded-lg shadow-inner text-gray-700 border border-blue-200'>
+                                <div className='flex items-start gap-2'>
+                                  <BookOpen className='w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5' />
+                                  <div>
+                                    <p className='text-xs font-semibold text-blue-700 mb-1'>Giải thích đáp án:</p>
+                                    <p className='text-sm font-light leading-relaxed'>{q.explanation}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {q.teacherFeedback && (
+                              <div className='mt-3 p-4 bg-amber-50/80 rounded-lg shadow-inner text-gray-700 border border-amber-200'>
+                                <div className='flex items-start gap-2'>
+                                  <MessageSquare className='w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5' />
+                                  <div>
+                                    <p className='text-xs font-semibold text-amber-700 mb-1'>Phản hồi của Giáo viên:</p>
+                                    <p className='text-sm font-light leading-relaxed'>{q.teacherFeedback}</p>
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </motion.div>

@@ -3,7 +3,6 @@ export interface Exam {
   name: string
   subject?: string
   date?: string
-  duration?: number // minutes
   published?: boolean
 }
 

@@ -11,9 +11,6 @@ interface ExamItem {
   description: string
   totalPoint: string
   numberQuestions: number
-  startTime: string
-  endTime: string
-  durationMinutes: number
 }
 
 interface ExamApiItem {
@@ -23,9 +20,6 @@ interface ExamApiItem {
   description?: string
   totalPoint?: string
   numberQuestions?: number
-  startTime?: string
-  endTime?: string
-  durationMinutes?: number
 }
 
 interface ApiErrorShape {
@@ -57,15 +51,6 @@ interface SessionResult {
   ownerName: string
 }
 
-export const DURATIONS = [
-  { value: 15, label: '15 phút' },
-  { value: 30, label: '30 phút' },
-  { value: 45, label: '45 phút' },
-  { value: 60, label: '60 phút' },
-  { value: 90, label: '90 phút' },
-  { value: 120, label: '120 phút' }
-]
-
 export const useExamsTab = () => {
   const [list, setList] = useState<ExamItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -76,7 +61,6 @@ export const useExamsTab = () => {
   const [sessionName, setSessionName] = useState('')
   const [startAt, setStartAt] = useState('')
   const [expiredAt, setExpiredAt] = useState('')
-  const [duration, setDuration] = useState('60')
   const [passingScore, setPassingScore] = useState('')
   const [creating, setCreating] = useState(false)
 
@@ -101,10 +85,7 @@ export const useExamsTab = () => {
               name: item.name ?? '',
               description: item.description ?? '',
               totalPoint: item.totalPoint ?? '',
-              numberQuestions: item.numberQuestions ?? 0,
-              startTime: item.startTime ?? '',
-              endTime: item.endTime ?? '',
-              durationMinutes: item.durationMinutes ?? 0
+              numberQuestions: item.numberQuestions ?? 0
             }))
           : []
         console.log('Fetched exams:', items)
@@ -148,7 +129,6 @@ export const useExamsTab = () => {
 
     setStartAt(formatLocal(now))
     setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)))
-    setDuration('60')
     setPassingScore('')
     setSessionName('')
     setShowTimeModal(true)
@@ -162,18 +142,9 @@ export const useExamsTab = () => {
 
     const start = new Date(startAt)
     const end = new Date(expiredAt)
-    const durationMin = Number(duration)
 
     if (end <= start) {
       toast.error('Thời gian kết thúc phải sau thời gian bắt đầu!')
-      return
-    }
-
-    const availableMinutes = Math.floor((end.getTime() - start.getTime()) / 60000)
-    if (durationMin > availableMinutes) {
-      toast.error(
-        `Thời gian làm bài (${durationMin} phút) không được vượt quá thời gian mở phiên (${availableMinutes} phút)!`
-      )
       return
     }
 
@@ -182,7 +153,6 @@ export const useExamsTab = () => {
       const payload = {
         examId: Number(selectedExamId),
         name: sessionName.trim(),
-        durationMinutes: durationMin,
         startAt: start.toISOString(),
         expiredAt: end.toISOString(),
         passingScore: passingScore ? parseFloat(passingScore) : undefined
@@ -220,10 +190,8 @@ export const useExamsTab = () => {
     sessionName,
     startAt,
     expiredAt,
-    duration,
     passingScore,
     creating,
-    DURATIONS,
 
     toggleSelect,
     selectAll,
@@ -235,7 +203,6 @@ export const useExamsTab = () => {
     setSessionName,
     setStartAt,
     setExpiredAt,
-    setDuration,
     setPassingScore,
     navigate
   }

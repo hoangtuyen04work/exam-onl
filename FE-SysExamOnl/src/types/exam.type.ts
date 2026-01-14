@@ -3,9 +3,6 @@ export type JoinExamState = 'NOT_OPEN' | 'OPENING' | 'JOINED' | 'CLOSED'
 export interface JoinResponseData {
   examSessionId: number
   examName: string
-  durationMinutes: number
-  timeStart?: string
-  timeEnd?: string
   studentStatus?: string
   startedAt?: string
 }
@@ -39,7 +36,6 @@ export interface DoExamQuestion {
 export interface DoExamResponseData {
   examSessionId: number
   examName: string
-  durationMinutes: number
   questions: DoExamQuestion[]
 }
 
@@ -133,7 +129,6 @@ export interface ExamResult {
 
 export interface ExamSessionContent {
   examName: string
-  durationMinutes: number
   questions: {
     questionId: number
     content: string
@@ -144,5 +139,4 @@ export interface ExamSessionContent {
     }[]
   }[]
   submitted?: boolean
-  timeLeft?: number
 }

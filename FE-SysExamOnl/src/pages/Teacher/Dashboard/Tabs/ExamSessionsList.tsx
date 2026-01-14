@@ -1,6 +1,6 @@
 // src/pages/teacher/ExamSessionsList.tsx
 import React, { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import axiosClient from '../../../../api/axiosClient'
 import { toast } from 'react-toastify'
 import { ArrowLeft } from 'lucide-react'
@@ -20,25 +20,25 @@ export default function ExamSessionsList() {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const location = useLocation()
-  const examId = location.state?.examId
+  const [searchParams] = useSearchParams()
+
+  // Lấy examId từ URL params hoặc location.state
+  const examId = searchParams.get('examId') || location.state?.examId || null
+
   // pagination
   const [currentPage, setCurrentPage] = React.useState(1)
-  const itemsPerPage = 6
+  const itemsPerPage = 8
   const totalPages = Math.ceil(sessions.length / itemsPerPage)
   const currentList = sessions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   useEffect(() => {
-    if (!examId) {
-      toast.error('Không có ID đề thi!')
-      navigate(-1)
-      return
-    }
-
     const fetchSessions = async () => {
       setLoading(true)
       try {
+        // Nếu có examId thì lọc theo examId, không thì lấy tất cả
+        const params = examId ? { examId } : {}
         const res = await axiosClient.get('/teacher/exam-sessions/search', {
-          params: { examId }
+          params
         })
 
         const listUsers = Array.isArray(res.data.items)
@@ -63,7 +63,7 @@ export default function ExamSessionsList() {
     }
 
     fetchSessions()
-  }, [examId, navigate])
+  }, [examId])
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '—'
@@ -84,7 +84,9 @@ export default function ExamSessionsList() {
             <ArrowLeft className='w-5 h-5' />
           </button>
           <div>
-            <h1 className='text-2xl font-bold text-gray-800'>Các phiên thi đã giao (Đề : {examId})</h1>
+            <h1 className='text-2xl font-bold text-gray-800'>
+              {examId ? `Các phiên thi đã giao (Đề : ${examId})` : 'Tất cả phiên thi'}
+            </h1>
             <p className='text-sm text-gray-500'>
               Tổng: <strong>{sessions.length}</strong> phiên
             </p>
@@ -98,8 +100,10 @@ export default function ExamSessionsList() {
           </div>
         ) : sessions.length === 0 ? (
           <div className='text-center py-12 bg-gray-50 rounded-xl'>
-            <div className='text-6xl mb-4'>Chưa có phiên thi nào</div>
-            <p className='text-gray-500'>Đề này chưa được giao cho bất kỳ phiên nào.</p>
+            <div className='text-6xl mb-4'>📝</div>
+            <p className='text-gray-500'>
+              {examId ? 'Đề này chưa được giao cho bất kỳ phiên nào.' : 'Chưa có phiên thi nào trong hệ thống.'}
+            </p>
           </div>
         ) : (
           <div className='grid gap-4 grid-cols-[repeat(auto-fill,minmax(260px,1fr))]'>

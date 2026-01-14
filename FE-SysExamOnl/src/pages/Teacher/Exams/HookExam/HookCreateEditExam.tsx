@@ -44,7 +44,6 @@ interface ExamDTO {
   id?: number | string
   name?: string
   description?: string
-  durationMinutes?: number
   questions?: QuestionDTO[]
 }
 
@@ -73,7 +72,6 @@ export const useCreateEditExam = () => {
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [durationMinutes, setDurationMinutes] = useState(60) 
   const [questions, setQuestions] = useState<Question[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -107,7 +105,6 @@ export const useCreateEditExam = () => {
         const data: ExamDTO = (res.data?.data ?? res.data) as ExamDTO
         setName(data?.name ?? '')
         setDescription(data?.description ?? '')
-        setDurationMinutes(data?.durationMinutes ?? 60) // ← Load thời gian cũ
         setQuestions(
           Array.isArray(data?.questions)
             ? data.questions.map((q: QuestionDTO) => ({
@@ -139,7 +136,7 @@ export const useCreateEditExam = () => {
   }, [examId, isEdit, navigate])
 
   const addQuestion = () => {
-    setQuestions(prev => [
+    setQuestions((prev) => [
       ...prev,
       {
         content: '',
@@ -157,8 +154,12 @@ export const useCreateEditExam = () => {
     ])
   }
 
-  const updateQuestion = (index: number, field: keyof Question, value: string | number | boolean | 'EASY' | 'MEDIUM' | 'HARD' | Answer[]) => {
-    setQuestions(prev => {
+  const updateQuestion = (
+    index: number,
+    field: keyof Question,
+    value: string | number | boolean | 'EASY' | 'MEDIUM' | 'HARD' | Answer[]
+  ) => {
+    setQuestions((prev) => {
       const copy = [...prev]
       copy[index] = { ...copy[index], [field]: value }
       return copy
@@ -166,7 +167,7 @@ export const useCreateEditExam = () => {
   }
 
   const updateAnswer = (qIndex: number, aIndex: number, content: string) => {
-    setQuestions(prev => {
+    setQuestions((prev) => {
       const copy = [...prev]
       copy[qIndex].answers[aIndex].content = content
       return copy
@@ -174,7 +175,7 @@ export const useCreateEditExam = () => {
   }
 
   const setCorrectAnswer = (qIndex: number, aIndex: number) => {
-    setQuestions(prev => {
+    setQuestions((prev) => {
       const copy = [...prev]
       copy[qIndex].answers = copy[qIndex].answers.map((a, i) => ({
         ...a,
@@ -185,7 +186,7 @@ export const useCreateEditExam = () => {
   }
 
   const addAnswer = (qIndex: number) => {
-    setQuestions(prev => {
+    setQuestions((prev) => {
       const copy = [...prev]
       copy[qIndex].answers.push({ content: '', correct: false })
       return copy
@@ -193,7 +194,7 @@ export const useCreateEditExam = () => {
   }
 
   const removeAnswer = (qIndex: number, aIndex: number) => {
-    setQuestions(prev => {
+    setQuestions((prev) => {
       const copy = [...prev]
       if (copy[qIndex].answers.length <= 2) return prev
       copy[qIndex].answers = copy[qIndex].answers.filter((_, i) => i !== aIndex)
@@ -206,14 +207,15 @@ export const useCreateEditExam = () => {
       toast.warn('Phải có ít nhất 1 câu hỏi!')
       return
     }
-    setQuestions(prev => prev.filter((_, i) => i !== index))
+    setQuestions((prev) => prev.filter((_, i) => i !== index))
   }
 
   const validateBeforeSave = () => {
-    if (!name.trim()) return toast.error('Vui lòng nhập tên đề thi!'), false
-    if (questions.length === 0) return toast.error('Phải có ít nhất 1 câu hỏi!'), false
-    if (questions.some(q => !q.content.trim())) return toast.error('Tất cả câu hỏi phải có nội dung!'), false
-    if (questions.some(q => !q.answers.some(a => a.correct))) return toast.error('Mỗi câu phải có ít nhất 1 đáp án đúng!'), false
+    if (!name.trim()) return (toast.error('Vui lòng nhập tên đề thi!'), false)
+    if (questions.length === 0) return (toast.error('Phải có ít nhất 1 câu hỏi!'), false)
+    if (questions.some((q) => !q.content.trim())) return (toast.error('Tất cả câu hỏi phải có nội dung!'), false)
+    if (questions.some((q) => !q.answers.some((a) => a.correct)))
+      return (toast.error('Mỗi câu phải có ít nhất 1 đáp án đúng!'), false)
     return true
   }
 
@@ -224,7 +226,6 @@ export const useCreateEditExam = () => {
     const commonPayload = {
       name: name.trim(),
       description: description.trim(),
-      durationMinutes, // ← ĐÃ THÊM VÀO PAYLOAD
       questions: questions.map((q, index) => ({
         questionId: isEdit ? (q.id ?? q.questionId) : undefined,
         content: q.content,
@@ -234,7 +235,7 @@ export const useCreateEditExam = () => {
         orderColumn: index,
         shuffleAnswers: q.shuffleAnswers,
         shuffleQuestions: true,
-        answers: q.answers.map(a => ({
+        answers: q.answers.map((a) => ({
           answerId: isEdit ? (a.id ?? a.answerId) : undefined,
           content: a.content,
           correct: a.correct
@@ -279,8 +280,6 @@ export const useCreateEditExam = () => {
     setName,
     description,
     setDescription,
-    durationMinutes,
-    setDurationMinutes,
     questions,
     isLoading,
     isSaving,

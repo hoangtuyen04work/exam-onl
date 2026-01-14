@@ -37,7 +37,7 @@ export default function ExamsTab() {
 
   // === PAGINATION ===
   const [currentPage, setCurrentPage] = React.useState(1)
-  const itemsPerPage = 12
+  const itemsPerPage = 8
   const totalPages = Math.ceil(list.length / itemsPerPage)
   const currentList = list.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
@@ -203,10 +203,6 @@ export default function ExamsTab() {
                       <FileText className='w-4 h-4' />
                       {exam.numberQuestions} câu
                     </span>
-                    <span className='flex items-center gap-1'>
-                      <Clock className='w-4 h-4' />
-                      {exam.durationMinutes} phút
-                    </span>
                   </div>
 
                   {/* Action buttons */}
@@ -219,7 +215,7 @@ export default function ExamsTab() {
                       Sửa
                     </button>
                     <button
-                      onClick={() => navigate('/teacher/exam-sessions/list', { state: { examId: exam.id } })}
+                      onClick={() => navigate(`/teacher/exam-sessions?examId=${exam.id}`)}
                       className='flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors'
                     >
                       <CheckCircle className='w-4 h-4' />
@@ -293,21 +289,6 @@ export default function ExamsTab() {
                       className='w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition'
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className='block text-sm font-medium text-gray-700 mb-1'>Thời gian làm bài</label>
-                  <select
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    className='w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition'
-                  >
-                    {DURATIONS.map((d) => (
-                      <option key={d.value} value={d.value}>
-                        {d.label}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 <div>
