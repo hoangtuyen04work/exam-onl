@@ -17,7 +17,7 @@ export default function OAuthCallback() {
         // Get token from URL params (if backend sends it)
         const token = searchParams.get('token')
         const error = searchParams.get('error')
-        
+
         if (error) {
           toast.error(`Đăng nhập thất bại: ${error}`)
           navigate('/login')
@@ -28,7 +28,7 @@ export default function OAuthCallback() {
           // If no token in URL, try to get from backend session
           const response = await axiosClient.get('/auth/me')
           const userData = response.data?.data || response.data
-          
+
           if (userData?.token) {
             handleSuccessfulLogin(userData)
           } else {
@@ -77,11 +77,11 @@ export default function OAuthCallback() {
   }, [searchParams, navigate, dispatch])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p className="text-gray-600 text-lg">Đang xử lý đăng nhập...</p>
-        <p className="text-gray-400 text-sm mt-2">Vui lòng đợi trong giây lát</p>
+    <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+      <div className='text-center'>
+        <div className='inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4'></div>
+        <p className='text-gray-600 text-lg'>Đang xử lý đăng nhập...</p>
+        <p className='text-gray-400 text-sm mt-2'>Vui lòng đợi trong giây lát</p>
       </div>
     </div>
   )

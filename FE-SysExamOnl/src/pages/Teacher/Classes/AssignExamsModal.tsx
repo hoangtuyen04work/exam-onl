@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
-import { X, Plus, Calendar, Clock, Users, BookOpen, ChevronDown } from 'lucide-react'
+import { X, Calendar, Clock, Users, BookOpen, ChevronDown } from 'lucide-react'
 import { getAllExams, createExamSession } from '../../../api/exam-api'
 import type { ExamResponse } from '../../../api/exam-api'
 import { notification } from 'antd'
@@ -29,6 +29,7 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
   const [sessionName, setSessionName] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
+  const [durationMinutesInput, setDurationMinutesInput] = useState('60')
   const [passingScore, setPassingScore] = useState<string>('')
 
   const examDropdownRef = useRef<HTMLDivElement>(null)
@@ -87,11 +88,21 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
     return exams.find((e) => e.examId === selectedExamId)
   }, [exams, selectedExamId])
 
+  const durationMinutes = Number(durationMinutesInput) || selectedExam?.durationMinutes || 60
+
   const handleCreateSession = async () => {
     if (!selectedExamId || !sessionName || !startTime || !endTime) {
       notification.warning({
         title: 'Cảnh báo',
         description: 'Vui lòng điền đầy đủ thông tin'
+      })
+      return
+    }
+
+    if (durationMinutes <= 0) {
+      notification.warning({
+        title: 'Cảnh báo',
+        description: 'Thời gian làm bài phải lớn hơn 0 phút'
       })
       return
     }
@@ -108,6 +119,7 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
         name: sessionName,
         startAt: startAtISO,
         expiredAt: expiredAtISO,
+        durationMinutes,
         passingScore: passingScore ? parseFloat(passingScore) : 0
       })
 
@@ -143,6 +155,8 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
 
   const handleExamSelect = (examId: number) => {
     setSelectedExamId(examId)
+    const exam = exams.find((e) => e.examId === examId)
+    setDurationMinutesInput(exam?.durationMinutes?.toString() || '60')
     setIsExamDropdownOpen(false)
   }
 
@@ -158,6 +172,7 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
     setSessionName('')
     setStartTime('')
     setEndTime('')
+    setDurationMinutesInput('60')
     setPassingScore('')
     // Reset exam pagination
     setExamPage(0)
@@ -351,6 +366,21 @@ const AssignExamsModal: React.FC<AssignExamsModalProps> = ({ isOpen, onClose, on
                   className='w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all duration-200'
                 />
               </div>
+            </div>
+
+            {/* Duration */}
+            <div>
+              <label className='block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2'>
+                <Clock className='w-4 h-4' />
+                Thời gian làm bài (phút) <span className='text-red-500'>*</span>
+              </label>
+              <input
+                type='number'
+                min='1'
+                value={durationMinutesInput}
+                onChange={(e) => setDurationMinutesInput(e.target.value)}
+                className='w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all duration-200'
+              />
             </div>
 
             {/* Passing Score */}

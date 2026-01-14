@@ -61,6 +61,7 @@ export const useExamsTab = () => {
   const [sessionName, setSessionName] = useState('')
   const [startAt, setStartAt] = useState('')
   const [expiredAt, setExpiredAt] = useState('')
+  const [duration, setDuration] = useState('60')
   const [passingScore, setPassingScore] = useState('')
   const [creating, setCreating] = useState(false)
 
@@ -129,6 +130,7 @@ export const useExamsTab = () => {
 
     setStartAt(formatLocal(now))
     setExpiredAt(formatLocal(new Date(now.getTime() + 3600000)))
+    setDuration('60')
     setPassingScore('')
     setSessionName('')
     setShowTimeModal(true)
@@ -148,6 +150,12 @@ export const useExamsTab = () => {
       return
     }
 
+    const durationNumber = Number(duration)
+    if (!durationNumber || durationNumber <= 0) {
+      toast.error('Thời gian làm bài phải lớn hơn 0 phút!')
+      return
+    }
+
     setCreating(true)
     try {
       const payload = {
@@ -155,6 +163,7 @@ export const useExamsTab = () => {
         name: sessionName.trim(),
         startAt: start.toISOString(),
         expiredAt: end.toISOString(),
+        durationMinutes: durationNumber,
         passingScore: passingScore ? parseFloat(passingScore) : undefined
       }
 
@@ -190,6 +199,7 @@ export const useExamsTab = () => {
     sessionName,
     startAt,
     expiredAt,
+    duration,
     passingScore,
     creating,
 
@@ -203,6 +213,7 @@ export const useExamsTab = () => {
     setSessionName,
     setStartAt,
     setExpiredAt,
+    setDuration,
     setPassingScore,
     navigate
   }

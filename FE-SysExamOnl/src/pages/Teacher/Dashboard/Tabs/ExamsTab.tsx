@@ -3,8 +3,8 @@ import React from 'react'
 import { toast } from 'react-toastify'
 import { exportExams } from '../../Dashboard/import_export/exportExams'
 import { importExams } from '../../Dashboard/import_export/importExams'
-import { useExamsTab, DURATIONS } from '../Tabs/HookTab/HookExamsTab'
-import { Calendar, Check, CheckCircle, Clock, Database, Download, Edit2, FileText, Plus, Upload } from 'lucide-react'
+import { useExamsTab } from '../Tabs/HookTab/HookExamsTab'
+import { Calendar, Check, CheckCircle, Database, Download, Edit2, FileText, Plus, Upload } from 'lucide-react'
 import Pagination from '../../../../components/Common/Pagination'
 
 export default function ExamsTab() {
@@ -289,6 +289,17 @@ export default function ExamsTab() {
                       className='w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition'
                     />
                   </div>
+                </div>
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-1'>Thời gian làm bài (phút)</label>
+                  <input
+                    type='number'
+                    min='1'
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    placeholder='VD: 60'
+                    className='w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition'
+                  />
                 </div>
 
                 <div>

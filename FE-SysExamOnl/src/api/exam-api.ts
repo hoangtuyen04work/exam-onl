@@ -15,6 +15,7 @@ export interface ExamResponse {
   name: string;
   description: string;
   numberQuestions: number;
+  durationMinutes?: number;
 }
 
 // Exam Session Types

@@ -325,7 +325,6 @@ export default function ResultPage() {
                   const hasSelected = q.answers.some((a) => a.selected)
                   const isCorrect = q.answers.some((a) => a.correct && a.selected)
                   const isWrong = hasSelected && !isCorrect
-                  const isUnanswered = !hasSelected
                   const isExpanded = openExplanationId === q.questionId
 
                   // Màu sắc theo trạng thái

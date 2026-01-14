@@ -6,19 +6,11 @@ import { toast } from 'react-toastify'
 import { useQuery } from '@tanstack/react-query'
 import {
   Loader2,
-  User,
-  Landmark,
-  Clock,
   ChevronRight,
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  KeyRound,
-  BookOpen
+  KeyRound
 } from 'lucide-react'
-import { toLocalStringISO } from '../../../utils/utils'
 import { fetchCompletedExams, studentApi } from '../../../api/student-api'
-import type { CompletedExam, UserData } from '../../../types/user.type'
+import type { UserData } from '../../../types/user.type'
 
 export default function StudentDashboard() {
   const navigate = useNavigate()
@@ -96,15 +88,9 @@ export default function StudentDashboard() {
     }
   }
 
-  const handleViewResult = (examSessionId: number) => {
-    navigate(`exam/${examSessionId}/result`)
-  }
-
   const {
-    data: completedExamsResponse = { items: [], page: 0, size: pageSize, total: 0, totalPages: 0 },
-    isLoading: isLoadingCompletedExams,
-    isError: isErrorCompletedExams,
-    error
+    data: _completedExamsResponse = { items: [], page: 0, size: pageSize, total: 0, totalPages: 0 },
+    isLoading: isLoadingCompletedExams
   } = useQuery({
     queryKey: ['completedExams', currentPage],
     queryFn: () => fetchCompletedExams(currentPage, pageSize),

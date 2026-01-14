@@ -262,26 +262,22 @@ export default function ExamSubmissionDetail() {
           const selectedCorrect = q.answers.filter((a) => a.selected && a.correct).length
           const hasWrong = q.answers.some((a) => a.selected && !a.correct)
           const isPerfect = selectedCorrect === correctAnswers && !hasWrong && hasSelected
-          const isUnanswered = !hasSelected
 
           // Xác định màu sắc theo trạng thái
-          let questionBorder, questionBg, statusBadge, statusBadgeBg, statusIcon
+          let questionBorder, statusBadge, statusBadgeBg, statusIcon
 
           if (isPerfect) {
             questionBorder = 'border-l-4 border-l-emerald-500 border border-gray-200'
-            questionBg = 'bg-emerald-50'
             statusBadge = 'Đúng'
             statusBadgeBg = 'bg-emerald-500'
             statusIcon = <CheckCircle className='w-5 h-5 text-emerald-600' />
           } else if (hasWrong || (hasSelected && !isPerfect)) {
             questionBorder = 'border-l-4 border-l-rose-500 border border-gray-200'
-            questionBg = 'bg-rose-50'
             statusBadge = 'Sai'
             statusBadgeBg = 'bg-rose-500'
             statusIcon = <XCircle className='w-5 h-5 text-rose-600' />
           } else {
             questionBorder = 'border-l-4 border-l-amber-500 border border-gray-200'
-            questionBg = 'bg-amber-50'
             statusBadge = 'Chưa làm'
             statusBadgeBg = 'bg-amber-500'
             statusIcon = <HelpCircle className='w-5 h-5 text-amber-600' />

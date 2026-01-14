@@ -11,7 +11,7 @@ export default function StudentLayout() {
   const user = useSelector((state: any) => state.auth.user)
   // Chỉ ẩn sidebar khi đang làm bài thi, không ẩn ở trang kết quả
   const isStudentExamPage = location.pathname.includes('/student/exam/join')
-  const [activeTab, setActiveTab] = useState('dashboard')
+  const [_activeTab, setActiveTab] = useState('dashboard')
 
   const handleLogout = () => {
     dispatch(logout())

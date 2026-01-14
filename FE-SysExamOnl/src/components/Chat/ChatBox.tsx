@@ -21,14 +21,13 @@ interface ChatBoxProps {
   onToggleChatSettings?: (newValue: boolean) => Promise<void>
 }
 
-const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSettings }: ChatBoxProps) => {
+const ChatBox = ({ classId, userRole, userId, allowStudentChat }: ChatBoxProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [showSettings, setShowSettings] = useState(false)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const stompClientRef = useRef<Client | null>(null)
   const scrollSnapshot = useRef<number>(0)
@@ -61,11 +60,27 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
         // API trả desc -> đảo lại asc để render tự nhiên
         const fetchedMessages = [...data.items].reverse()
 
-        if (messagesContainerRef.current) {
+        if (messagesContainerRef.current && pageNum > 0) {
           scrollSnapshot.current = messagesContainerRef.current.scrollHeight
         }
 
-        setMessages((prev) => (pageNum === 0 ? fetchedMessages : [...fetchedMessages, ...prev]))
+        setMessages((prev) => {
+          const newMessages = pageNum === 0 ? fetchedMessages : [...fetchedMessages, ...prev]
+          
+          // Nếu là load lần đầu (page 0), scroll xuống bottom ngay lập tức
+          if (pageNum === 0) {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                const container = messagesContainerRef.current
+                if (container) {
+                  container.scrollTop = container.scrollHeight
+                }
+              })
+            })
+          }
+          
+          return newMessages
+        })
 
         const totalPages = Math.ceil(data.total / data.size)
         setHasMore(data.page < totalPages - 1)
@@ -102,15 +117,16 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
           const chatMessage: ChatMessage = JSON.parse(message.body)
           setMessages((prev) => [...prev, chatMessage])
 
-          setTimeout(() => {
+          // Scroll ngay lập tức xuống bottom nếu đang ở gần cuối
+          requestAnimationFrame(() => {
             const container = messagesContainerRef.current
             if (container) {
               const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200
               if (isNearBottom) {
-                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+                container.scrollTop = container.scrollHeight
               }
             }
-          }, 50)
+          })
         })
       },
       onStompError: (frame) => {
@@ -127,19 +143,39 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
     }
   }, [classId])
 
-  // Preserve scroll & initial bottom align
+  // Preserve scroll position when loading older messages (infinite scroll)
   useLayoutEffect(() => {
     const container = messagesContainerRef.current
     if (!container) return
 
-    if (isInitialLoad && messages.length > 0) {
-      container.scrollTop = container.scrollHeight
-      setIsInitialLoad(false)
-    } else if (scrollSnapshot.current !== 0) {
+    // Chỉ xử lý scroll snapshot khi load thêm tin nhắn cũ (page > 0)
+    if (scrollSnapshot.current !== 0) {
       container.scrollTop = container.scrollHeight - scrollSnapshot.current
       scrollSnapshot.current = 0
     }
-  }, [messages, isInitialLoad])
+  }, [messages])
+
+  // Đảm bảo scroll xuống bottom khi mở chat lần đầu
+  useEffect(() => {
+    if (isInitialLoad && messages.length > 0 && !loading) {
+      const container = messagesContainerRef.current
+      if (container) {
+        // Triple check để đảm bảo scroll xuống thành công
+        container.scrollTop = container.scrollHeight
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight
+          }
+        })
+        setTimeout(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight
+          }
+        }, 50)
+      }
+      setIsInitialLoad(false)
+    }
+  }, [messages, isInitialLoad, loading])
 
   // Send message
   const handleSendMessage = async () => {
@@ -164,15 +200,12 @@ const ChatBox = ({ classId, userRole, userId, allowStudentChat, onToggleChatSett
       }
 
       setNewMessage('')
-      // Scroll to bottom after sending
-      setTimeout(() => {
+      // Scroll ngay lập tức xuống bottom sau khi gửi
+      requestAnimationFrame(() => {
         if (messagesContainerRef.current) {
-          messagesContainerRef.current.scrollTo({
-            top: messagesContainerRef.current.scrollHeight,
-            behavior: 'smooth'
-          })
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
         }
-      }, 100)
+      })
     } catch (error) {
       console.error('[ChatBox] Error sending message:', error)
     }
