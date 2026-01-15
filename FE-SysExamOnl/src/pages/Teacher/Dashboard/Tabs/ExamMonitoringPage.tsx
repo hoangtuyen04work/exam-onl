@@ -8,7 +8,7 @@ import { vi } from 'date-fns/locale/vi'
 
 interface StudentEvent {
   examSessionId: number
-  event: 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'FOCUS_REGAINED' | 'SUBMIT' | 'TAB_SWITCH' | 'DISCONNECTED'
+  event: 'WAITING' | 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'FOCUS_REGAINED' | 'SUBMIT' | 'TAB_SWITCH' | 'DISCONNECTED' | 'RECONNECTED'
 }
 
 interface StudentEventBroadcast {
@@ -20,14 +20,17 @@ interface StudentEventBroadcast {
 interface StudentStatusResponse {
   userId: number
   username: string
-  status: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'DISCONNECTED'
+  fullName: string
+  email: string
+  status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'DISCONNECTED' | 'LEFT'
   timestamp: string
 }
 
 type StudentDetail = {
   name: string
+  email?: string
   lastEvent: StudentEventBroadcast | null
-  currentStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'UNKNOWN'
+  currentStatus: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'UNKNOWN'
   timestamp?: string
   focusLostCount?: number
   tabSwitchCount?: number
@@ -76,10 +79,36 @@ export default function ExamMonitoringPage() {
             onlineSet.add(participant.userId)
           }
 
+          // Map status từ backend sang frontend
+          let currentStatus: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'UNKNOWN' = 'UNKNOWN'
+          switch (participant.status) {
+            case 'WAITING':
+              currentStatus = 'WAITING'
+              break
+            case 'IN_PROGRESS':
+              currentStatus = 'IN_PROGRESS'
+              break
+            case 'COMPLETED':
+              currentStatus = 'COMPLETED'
+              break
+            case 'FOCUS_LOST':
+              currentStatus = 'FOCUS_LOST'
+              break
+            case 'DISCONNECTED':
+              currentStatus = 'DISCONNECTED'
+              break
+            case 'LEFT':
+              currentStatus = 'LEFT'
+              break
+            default:
+              currentStatus = 'UNKNOWN'
+          }
+
           updatedMap.set(participant.userId, {
-            name: participant.username || `Sinh viên ${participant.userId}`,
-            lastEvent: null, // chưa có event mới khi vừa fetch
-            currentStatus: isOnline ? 'IN_PROGRESS' : 'COMPLETED',
+            name: participant.fullName || participant.username || `Sinh viên ${participant.userId}`,
+            email: participant.email,
+            lastEvent: null,
+            currentStatus,
             timestamp: participant.timestamp
           })
         })
@@ -127,15 +156,33 @@ export default function ExamMonitoringPage() {
             const existing = prev.get(broadcast.userId)
 
             // Xác định currentStatus dựa trên event
-            let newStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'UNKNOWN' = 'UNKNOWN'
-            if (broadcast.event.event === 'ENTER') {
-              newStatus = 'IN_PROGRESS'
-            } else if (broadcast.event.event === 'SUBMIT') {
-              newStatus = 'COMPLETED'
-            } else if (broadcast.event.event === 'FOCUS_LOST') {
-              newStatus = 'FOCUS_LOST'
-            } else if (broadcast.event.event === 'LEAVE') {
-              newStatus = 'LEFT'
+            let newStatus: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'UNKNOWN' = 'UNKNOWN'
+            switch (broadcast.event.event) {
+              case 'WAITING':
+                newStatus = 'WAITING'
+                break
+              case 'ENTER':
+                newStatus = 'IN_PROGRESS'
+                break
+              case 'SUBMIT':
+                newStatus = 'COMPLETED'
+                break
+              case 'FOCUS_LOST':
+                newStatus = 'FOCUS_LOST'
+                break
+              case 'LEAVE':
+                newStatus = 'LEFT'
+                break
+              case 'DISCONNECTED':
+                newStatus = 'DISCONNECTED'
+                break
+              case 'FOCUS_REGAINED':
+              case 'RECONNECTED':
+              case 'TAB_SWITCH':
+                newStatus = 'IN_PROGRESS'
+                break
+              default:
+                newStatus = existing?.currentStatus || 'UNKNOWN'
             }
 
             newMap.set(broadcast.userId, {
@@ -148,9 +195,13 @@ export default function ExamMonitoringPage() {
           })
 
           // Cập nhật online/offline
-          if (broadcast.event.event === 'ENTER') {
+          if (broadcast.event.event === 'ENTER' || broadcast.event.event === 'RECONNECTED') {
             setOnlineStudents((prev) => new Set(prev).add(broadcast.userId))
-          } else if (broadcast.event.event === 'LEAVE' || broadcast.event.event === 'SUBMIT') {
+          } else if (
+            broadcast.event.event === 'LEAVE' ||
+            broadcast.event.event === 'SUBMIT' ||
+            broadcast.event.event === 'DISCONNECTED'
+          ) {
             setOnlineStudents((prev) => {
               const next = new Set(prev)
               next.delete(broadcast.userId)
@@ -222,6 +273,11 @@ export default function ExamMonitoringPage() {
             let badgeColor: string
 
             switch (currentStatus) {
+              case 'WAITING':
+                statusLabel = 'Đang chờ vào'
+                isActive = false
+                badgeColor = 'bg-purple-500'
+                break
               case 'IN_PROGRESS':
                 statusLabel = 'Đang làm bài'
                 isActive = true
@@ -241,6 +297,11 @@ export default function ExamMonitoringPage() {
                 statusLabel = 'Đã rời phòng'
                 isActive = false
                 badgeColor = 'bg-red-500'
+                break
+              case 'DISCONNECTED':
+                statusLabel = 'Mất kết nối'
+                isActive = false
+                badgeColor = 'bg-orange-500'
                 break
               default:
                 statusLabel = 'Chưa vào phòng'
@@ -277,7 +338,12 @@ export default function ExamMonitoringPage() {
                   {statusLabel}
                 </div>
                 <p className='text-lg font-semibold text-gray-800'>#{index + 1}</p>
-                <p className='text-base font-medium text-gray-900 mt-1'>{details.name}</p>
+                <p 
+                  className='text-base font-medium text-gray-900 mt-1 cursor-help' 
+                  title={details.email || 'Không có email'}
+                >
+                  {details.name}
+                </p>
                 <p className='text-sm text-gray-600 mt-2 flex items-center gap-1'>
                   <Clock className='w-4 h-4' />
                   {timeDisplay}

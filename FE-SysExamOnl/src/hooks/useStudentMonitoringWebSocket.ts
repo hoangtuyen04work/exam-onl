@@ -5,7 +5,7 @@ import SockJS from 'sockjs-client';
 
 interface StudentEvent {
   examSessionId: number;
-  event: 'ENTER' | 'LEAVE' | 'TAB_SWITCH' | 'SUBMIT' | 'FOCUS_LOST' | 'FOCUS_REGAINED' | 'DISCONNECTED';
+  event: 'WAITING' | 'ENTER' | 'LEAVE' | 'TAB_SWITCH' | 'SUBMIT' | 'FOCUS_LOST' | 'FOCUS_REGAINED' | 'DISCONNECTED' | 'RECONNECTED';
 }
 
 export const useStudentMonitoringWebSocket = (
