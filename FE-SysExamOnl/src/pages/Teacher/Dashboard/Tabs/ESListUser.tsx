@@ -33,7 +33,7 @@ export default function ExamSessionDetail() {
       setLoading(true)
       try {
         const res = await axiosClient.get(`/teacher/exam-sessions/${examSessionId}`)
-        
+
         // Chuẩn Spring Pageable
         const items = Array.isArray(res.data.items) ? res.data.items : []
 
@@ -62,13 +62,33 @@ export default function ExamSessionDetail() {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return { icon: <CheckCircle className="w-5 h-5 text-green-600" />, label: 'Đã nộp', color: 'text-green-700', bg: 'bg-green-50' }
+        return {
+          icon: <CheckCircle className='w-5 h-5 text-green-600' />,
+          label: 'Đã nộp',
+          color: 'text-green-700',
+          bg: 'bg-green-50'
+        }
       case 'IN_PROGRESS':
-        return { icon: <PlayCircle className="w-5 h-5 text-yellow-600" />, label: 'Đang thi', color: 'text-yellow-700', bg: 'bg-yellow-50' }
+        return {
+          icon: <PlayCircle className='w-5 h-5 text-yellow-600' />,
+          label: 'Đang thi',
+          color: 'text-yellow-700',
+          bg: 'bg-yellow-50'
+        }
       case 'NOT_STARTED':
-        return { icon: <Clock className="w-5 h-5 text-gray-500" />, label: 'Chưa thi', color: 'text-gray-600', bg: 'bg-gray-50' }
+        return {
+          icon: <Clock className='w-5 h-5 text-gray-500' />,
+          label: 'Chưa thi',
+          color: 'text-gray-600',
+          bg: 'bg-gray-50'
+        }
       default:
-        return { icon: <XCircle className="w-5 h-5 text-red-600" />, label: 'Lỗi', color: 'text-red-700', bg: 'bg-red-50' }
+        return {
+          icon: <XCircle className='w-5 h-5 text-red-600' />,
+          label: 'Lỗi',
+          color: 'text-red-700',
+          bg: 'bg-red-50'
+        }
     }
   }
 
@@ -85,20 +105,15 @@ export default function ExamSessionDetail() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className='p-6 max-w-6xl mx-auto'>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 hover:bg-gray-100 rounded-lg transition"
-        >
-          <ArrowLeft className="w-5 h-5" />
+      <div className='flex items-center gap-3 mb-6'>
+        <button onClick={() => navigate(-1)} className='p-2 hover:bg-gray-100 rounded-lg transition'>
+          <ArrowLeft className='w-5 h-5' />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Danh sách sinh viên – Phiên #{examSessionId}
-          </h1>
-          <p className="text-sm text-gray-500">
+          <h1 className='text-2xl font-bold text-gray-800'>Danh sách sinh viên – Phiên #{examSessionId}</h1>
+          <p className='text-sm text-gray-500'>
             Tổng: <strong>{students.length}</strong> học sinh
           </p>
         </div>
@@ -106,83 +121,75 @@ export default function ExamSessionDetail() {
 
       {/* Loading / Empty */}
       {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2">Đang tải...</p>
+        <div className='text-center py-12'>
+          <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600'></div>
+          <p className='mt-2'>Đang tải...</p>
         </div>
       ) : students.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-xl">
-          <p className="text-gray-500">Chưa có sinh viên nào tham gia phiên này.</p>
+        <div className='text-center py-12 bg-gray-50 rounded-xl'>
+          <p className='text-gray-500'>Chưa có sinh viên nào tham gia phiên này.</p>
         </div>
       ) : (
         /* Bảng danh sách */
-        <div className="overflow-x-auto bg-white rounded-xl shadow-sm border">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className='overflow-x-auto bg-white rounded-xl shadow-sm border'>
+          <table className='min-w-full divide-y divide-gray-200'>
+            <thead className='bg-gray-50'>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  STT
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className='px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>STT</th>
+                <th className='px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Họ tên
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className='px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Trạng thái
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className='px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Số lần thoát
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className='px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Thời gian nộp
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className='px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
                   Điểm
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                 Hành động
+                <th className='px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider'>
+                  Hành động
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className='bg-white divide-y divide-gray-200'>
               {students.map((s, index) => {
                 const status = getStatusConfig(s.status)
                 return (
-                  <tr key={s.examSessionStudentId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-600 font-medium">
-                      {index + 1}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {s.studentName}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-full ${status.bg}`}>
+                  <tr key={s.examSessionStudentId} className='hover:bg-gray-50'>
+                    <td className='px-4 py-3 text-sm text-gray-600 font-medium'>{index + 1}</td>
+                    <td className='px-4 py-3 text-sm font-medium text-gray-900'>{s.studentName}</td>
+                    <td className='px-4 py-3 text-center'>
+                      <div
+                        className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-full ${status.bg}`}
+                      >
                         {status.icon}
-                        <span className={`text-xs font-medium ${status.color}`}>
-                          {status.label}
-                        </span>
+                        <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className='px-4 py-3 text-center'>
                       {(s.exitCount ?? 0) > 0 ? (
-                        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50">
-                          <AlertTriangle className="w-4 h-4 text-red-500" />
-                          <span className="text-sm font-medium text-red-600">
-                            {s.exitCount}
-                          </span>
+                        <div className='inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50'>
+                          <AlertTriangle className='w-4 h-4 text-red-500' />
+                          <span className='text-sm font-medium text-red-600'>{s.exitCount}</span>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-400">0</span>
+                        <span className='text-sm text-gray-400'>0</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">
-                      {formatTime(s.submittedAt)}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`text-sm font-semibold ${s.score !== undefined ? 'text-green-700' : 'text-gray-400'}`}>
+                    <td className='px-4 py-3 text-xs text-gray-600'>{formatTime(s.submittedAt)}</td>
+                    <td className='px-4 py-3 text-center'>
+                      <span
+                        className={`text-sm font-semibold ${s.score !== undefined ? 'text-green-700' : 'text-gray-400'}`}
+                      >
                         {s.score !== undefined ? s.score.toFixed(1) : '—'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className='px-4 py-3 text-center'>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -190,7 +197,7 @@ export default function ExamSessionDetail() {
                             state: { examSessionStudentId: s.examSessionStudentId }
                           })
                         }}
-                        className="text-blue-600 hover:text-blue-800 text-xs font-medium underline"
+                        className='text-blue-600 hover:text-blue-800 text-xs font-medium underline'
                       >
                         Xem bài
                       </button>

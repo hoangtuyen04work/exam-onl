@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Client } from '@stomp/stompjs'
-import { Clock, Users, CheckCircle, LogOut, Loader2, HourglassIcon } from 'lucide-react'
+import { Clock, Users, CheckCircle, LogOut, Loader2 } from 'lucide-react'
 import SockJS from 'sockjs-client'
 import { formatDistanceToNow } from 'date-fns'
 import { vi } from 'date-fns/locale/vi'
@@ -38,8 +38,8 @@ interface StudentStatusResponse {
   timestamp: string
 }
 
-// 4 trạng thái hiển thị chính
-type DisplayStatus = 'IN_PROGRESS' | 'EXIT_SCREEN' | 'COMPLETED' | 'WAITING'
+// 3 trạng thái hiển thị chính
+type DisplayStatus = 'IN_PROGRESS' | 'EXIT_SCREEN' | 'COMPLETED'
 
 type StudentDetail = {
   name: string
@@ -57,13 +57,14 @@ function mapEventToDisplayStatus(eventType: StudentEventType, currentStatus?: Di
     case 'RECONNECTED':
     case 'FOCUS_REGAINED':
     case 'FOCUS_LOST':
-    case 'TAB_SWITCH':
     case 'WINDOW_RESIZE':
+    case 'WAITING':
       return 'IN_PROGRESS'
 
     // Thoát màn hình
     case 'LEAVE':
     case 'FULLSCREEN_EXIT':
+    case 'TAB_SWITCH':
     case 'DISCONNECTED':
       return 'EXIT_SCREEN'
 
@@ -71,12 +72,8 @@ function mapEventToDisplayStatus(eventType: StudentEventType, currentStatus?: Di
     case 'SUBMIT':
       return 'COMPLETED'
 
-    // Đang đợi
-    case 'WAITING':
-      return 'WAITING'
-
     default:
-      return currentStatus || 'WAITING'
+      return currentStatus || 'IN_PROGRESS'
   }
 }
 
@@ -119,7 +116,7 @@ export default function ExamMonitoringPage() {
         const updatedMap = new Map<number, StudentDetail>()
 
         participants.forEach((participant) => {
-          let displayStatus: DisplayStatus = 'WAITING'
+          let displayStatus: DisplayStatus = 'IN_PROGRESS'
           if (participant.status === 'IN_PROGRESS') {
             displayStatus = 'IN_PROGRESS'
           } else if (participant.status === 'COMPLETED') {
@@ -220,7 +217,6 @@ export default function ExamMonitoringPage() {
   const inProgressCount = studentList.filter(([, d]) => d.currentStatus === 'IN_PROGRESS').length
   const exitScreenCount = studentList.filter(([, d]) => d.currentStatus === 'EXIT_SCREEN').length
   const completedCount = studentList.filter(([, d]) => d.currentStatus === 'COMPLETED').length
-  const waitingCount = studentList.filter(([, d]) => d.currentStatus === 'WAITING').length
 
   // Config cho từng trạng thái
   const getStatusConfig = (status: DisplayStatus) => {
@@ -246,13 +242,12 @@ export default function ExamMonitoringPage() {
           badgeColor: 'bg-blue-500',
           cardBg: 'bg-blue-50 hover:bg-blue-100 border-blue-200'
         }
-      case 'WAITING':
       default:
         return {
-          label: 'Đang đợi',
-          icon: <HourglassIcon className='w-4 h-4' />,
-          badgeColor: 'bg-gray-400',
-          cardBg: 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+          label: 'Đang làm bài',
+          icon: <Loader2 className='w-4 h-4 animate-spin' />,
+          badgeColor: 'bg-green-500',
+          cardBg: 'bg-green-50 hover:bg-green-100 border-green-200'
         }
     }
   }
@@ -280,7 +275,7 @@ export default function ExamMonitoringPage() {
           </div>
 
           {/* Thống kê */}
-          <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mt-6'>
+          <div className='grid grid-cols-3 gap-4 mt-6'>
             <div className='bg-green-50 border border-green-200 rounded-lg p-4 text-center'>
               <p className='text-2xl font-bold text-green-600'>{inProgressCount}</p>
               <p className='text-sm text-green-700'>Đang làm bài</p>
@@ -292,10 +287,6 @@ export default function ExamMonitoringPage() {
             <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 text-center'>
               <p className='text-2xl font-bold text-blue-600'>{completedCount}</p>
               <p className='text-sm text-blue-700'>Đã hoàn thành</p>
-            </div>
-            <div className='bg-gray-50 border border-gray-200 rounded-lg p-4 text-center'>
-              <p className='text-2xl font-bold text-gray-600'>{waitingCount}</p>
-              <p className='text-sm text-gray-700'>Đang đợi</p>
             </div>
           </div>
         </div>
@@ -338,9 +329,7 @@ export default function ExamMonitoringPage() {
 
                 {/* Số lần thoát màn hình */}
                 {details.exitCount > 0 && (
-                  <p className='text-xs text-red-600 mt-2 font-medium'>
-                    ⚠️ Thoát {details.exitCount} lần
-                  </p>
+                  <p className='text-xs text-red-600 mt-2 font-medium'>⚠️ Thoát {details.exitCount} lần</p>
                 )}
 
                 {/* Thời gian */}
