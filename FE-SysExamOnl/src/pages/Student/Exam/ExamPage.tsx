@@ -53,12 +53,14 @@ export default function ExamPage() {
   const debouncedAnswers = useDebounce(answers, 500)
 
   // WebSocket monitoring với đầy đủ thông tin
+  // Tắt auto focus tracking vì component sẽ tự xử lý để tránh duplicate
   const { sendEvent } = useStudentMonitoringWebSocket(
     examSessionId,
     token,
     isExamStarted,
-    examSessionStudentId, // Thêm examSessionStudentId
-    { id: user?.id, name: user?.name } // Thêm thông tin student
+    examSessionStudentId,
+    { id: user?.id, name: user?.name },
+    { enableAutoFocusTracking: false } // Tắt để tự quản lý trong component
   )
 
   const {
@@ -373,30 +375,66 @@ export default function ExamPage() {
   )
 
   // === VISIBILITY CHANGE (Tab Hidden) ===
-  // NOTE: useStudentMonitoringWebSocket đã tự động xử lý FOCUS_LOST/FOCUS_REGAINED
-  // Chỉ cần gửi HTTP API log, không cần gửi WebSocket nữa
+  // Xử lý khi người dùng chuyển tab hoặc ẩn tab
   useEffect(() => {
+    if (!isExamStarted) return
+
     const handleVisibilityChange = () => {
-      if (document.hidden && isExamStartedRef.current) {
-        console.log('[DEBUG] Tab hidden detected - sending EXIT event (HTTP only)')
+      if (!isExamStartedRef.current) return
+
+      if (document.hidden) {
+        console.log('[Monitor] Tab hidden detected - sending TAB_SWITCH event')
         sendEventLog('EXIT')
-        // WebSocket FOCUS_LOST đã được gửi tự động bởi useStudentMonitoringWebSocket
-      } else if (!document.hidden && isExamStartedRef.current) {
-        console.log('[DEBUG] Tab visible again')
-        // WebSocket FOCUS_REGAINED đã được gửi tự động bởi useStudentMonitoringWebSocket
+        sendEvent('TAB_SWITCH', `Tab hidden at ${new Date().toISOString()}`)
+      } else {
+        console.log('[Monitor] Tab visible again - sending FOCUS_REGAINED event')
+        sendEvent('FOCUS_REGAINED', 'Tab visible again')
       }
     }
+
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [sendEventLog])
+  }, [isExamStarted, sendEventLog, sendEvent])
+
+  // === WINDOW BLUR/FOCUS (Chuyển cửa sổ) ===
+  useEffect(() => {
+    if (!isExamStarted) return
+
+    const handleBlur = () => {
+      if (!isExamStartedRef.current) return
+      // Chỉ gửi FOCUS_LOST nếu tab vẫn visible (đang chuyển cửa sổ, không phải tab)
+      if (!document.hidden) {
+        console.log('[Monitor] Window blur detected (not tab switch) - sending FOCUS_LOST event')
+        sendEventLog('EXIT')
+        sendEvent('FOCUS_LOST', 'Window blur detected')
+      }
+    }
+
+    const handleFocus = () => {
+      if (!isExamStartedRef.current) return
+      console.log('[Monitor] Window focus regained')
+      sendEvent('FOCUS_REGAINED', 'Window focus regained')
+    }
+
+    window.addEventListener('blur', handleBlur)
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      window.removeEventListener('blur', handleBlur)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [isExamStarted, sendEventLog, sendEvent])
 
   // === BEFORE UNLOAD (Close/Reload Tab) ===
   useEffect(() => {
+    if (!isExamStarted) return
+
     const handleBeforeUnload = () => {
       if (isExamStartedRef.current) {
+        console.log('[Monitor] Page unload detected - sending final events')
         sendEventLog('SUBMIT_DRAFT')
         sendEventLog('EXIT')
-        sendEvent('LEAVE') // Gửi WebSocket event khi close/reload tab
+        sendEvent('DISCONNECTED', 'Page unload/close detected')
 
         // Lưu local storage lần cuối
         if (examSessionId) {
@@ -410,32 +448,32 @@ export default function ExamPage() {
 
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [examSessionId, sendEventLog, sendEvent])
+  }, [isExamStarted, examSessionId, sendEventLog, sendEvent])
 
   // === FULLSCREEN LOGIC ===
   const handleEndExamForced = useCallback(() => {
     if (examSessionStudentIdRef.current) {
-      console.log('[DEBUG] Fullscreen exit detected - sending EXIT event')
+      console.log('[Monitor] Fullscreen exit detected - ending exam')
       sendEventLog('EXIT')
+      sendEvent('FULLSCREEN_EXIT', 'User exited fullscreen mode')
       toast.error('Thoát toàn màn hình — bài thi kết thúc!')
       setTimeout(() => navigate('/student'), 1500)
     }
-  }, [navigate, sendEventLog])
+  }, [navigate, sendEventLog, sendEvent])
 
-  // === FULLSCREEN CHANGE LISTENER (Additional to hook) ===
-  // Thêm listener riêng để đảm bảo gọi sendEventLog khi thoát fullscreen
-  // Note: handleEndExamForced từ hook cũng sẽ gọi sendEventLog, nhưng listener này đảm bảo không bị miss
+  // === FULLSCREEN CHANGE LISTENER ===
+  // Xử lý khi người dùng thoát fullscreen
   useEffect(() => {
-    if (!isExamStarted) return
+    if (!isExamStarted || !requiresFullscreen) return
 
     const handleFullscreenChange = () => {
       const isFullscreen = !!document.fullscreenElement
-      console.log(`[DEBUG] Fullscreen change detected - isFullscreen: ${isFullscreen}`)
+      console.log(`[Monitor] Fullscreen change detected - isFullscreen: ${isFullscreen}`)
 
       if (!isFullscreen && isExamStartedRef.current) {
-        console.log('[DEBUG] Exited fullscreen (from listener) - sending EXIT event and LEAVE WebSocket')
+        console.log('[Monitor] Exited fullscreen - sending FULLSCREEN_EXIT event')
         sendEventLog('EXIT')
-        sendEvent('LEAVE') // Gửi WebSocket event khi thoát fullscreen
+        sendEvent('FULLSCREEN_EXIT', `Screen size: ${window.innerWidth}x${window.innerHeight}`)
       }
     }
 
@@ -450,39 +488,44 @@ export default function ExamPage() {
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
     }
-  }, [isExamStarted, sendEventLog, sendEvent])
+  }, [isExamStarted, requiresFullscreen, sendEventLog, sendEvent])
 
   // === WINDOW RESIZE LISTENER ===
-  // Gửi event khi resize window (có thể là dấu hiệu thoát fullscreen hoặc minimize)
+  // Detect khi window size thay đổi bất thường (có thể minimize hoặc thoát fullscreen)
   useEffect(() => {
-    if (!isExamStarted) return
+    if (!isExamStarted || !requiresFullscreen) return
 
     let resizeTimer: number | null = null
+    let lastWindowSize = { width: window.innerWidth, height: window.innerHeight }
+    
     const handleResize = () => {
       // Debounce resize để tránh gọi quá nhiều
       if (resizeTimer) {
         clearTimeout(resizeTimer)
       }
 
-      resizeTimer = window.setTimeout(() => {
+      resizeTimer = globalThis.setTimeout(() => {
         const isFullscreen = !!document.fullscreenElement
+        const currentWidth = window.innerWidth
+        const currentHeight = window.innerHeight
+        const screenWidth = window.screen.width
+        const screenHeight = window.screen.height
+
         console.log(
-          `[DEBUG] Window resize detected - isFullscreen: ${isFullscreen}, window size: ${window.innerWidth}x${window.innerHeight}`
+          `[Monitor] Window resize: ${lastWindowSize.width}x${lastWindowSize.height} -> ${currentWidth}x${currentHeight}`
         )
 
-        // Nếu đang trong fullscreen nhưng window size nhỏ hơn màn hình => có thể đã minimize
+        // Nếu đang trong fullscreen nhưng window size giảm đáng kể => có thể đã minimize
         if (isFullscreen && isExamStartedRef.current) {
-          const screenWidth = window.screen.width
-          const screenHeight = window.screen.height
-          const windowWidth = window.innerWidth
-          const windowHeight = window.innerHeight
-
-          // Nếu window nhỏ hơn đáng kể so với screen => có thể đã minimize
-          if (windowWidth < screenWidth * 0.8 || windowHeight < screenHeight * 0.8) {
-            console.log('[DEBUG] Window appears minimized while in fullscreen - sending EXIT event')
+          // Kiểm tra nếu window nhỏ hơn 80% màn hình
+          if (currentWidth < screenWidth * 0.8 || currentHeight < screenHeight * 0.8) {
+            console.log('[Monitor] Window appears minimized while in fullscreen - sending WINDOW_RESIZE event')
             sendEventLog('EXIT')
+            sendEvent('WINDOW_RESIZE', `${lastWindowSize.width}x${lastWindowSize.height} -> ${currentWidth}x${currentHeight}`)
           }
         }
+
+        lastWindowSize = { width: currentWidth, height: currentHeight }
       }, 500)
     }
 
@@ -493,15 +536,14 @@ export default function ExamPage() {
         clearTimeout(resizeTimer)
       }
     }
-  }, [isExamStarted, sendEventLog])
+  }, [isExamStarted, requiresFullscreen, sendEventLog, sendEvent])
 
-  const handleExit = () => {
+  const handleExit = useCallback(() => {
     // Only handle exit and send event if fullscreen is required (Desktop & Android)
     if (requiresFullscreen) {
       handleEndExamForced()
-      sendEvent('LEAVE')
     }
-  }
+  }, [requiresFullscreen, handleEndExamForced])
 
   const { requestFullscreen, exitFullscreen } = useFullScreen({
     onExit: handleExit,
@@ -615,7 +657,8 @@ export default function ExamPage() {
   }, [exam, expiredAt, requestFullscreen, calculateTimeLeft, checkTimeExpired, submitExam, requiresFullscreen])
 
   const handleExitExam = useCallback(async () => {
-    sendEvent('LEAVE') // Thêm từ file 2
+    console.log('[Monitor] User clicked Exit button')
+    sendEvent('LEAVE', 'User clicked exit button')
     sendEventLog('EXIT')
     sendEventLog('SUBMIT_DRAFT')
 

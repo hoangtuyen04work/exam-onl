@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-toastify'
 
 interface FullScreenOptions {
@@ -26,10 +26,11 @@ interface ElementWithFullscreen extends HTMLElement {
 
 export function useFullScreen({ onExit, enabled = true, requiredFullscreen = true }: FullScreenOptions) {
   // Kiểm tra trạng thái màn hình
-  const [isFullscreen, setIsFullScreen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [exitCount, setExitCount] = useState(0) // Đếm số lần thoát fullscreen
 
   // Helper function to get fullscreen element across browsers
-  const getFullscreenElement = (): Element | null => {
+  const getFullscreenElement = useCallback((): Element | null => {
     const doc = document as DocumentWithFullscreen
     return (
       doc.fullscreenElement ||
@@ -38,7 +39,7 @@ export function useFullScreen({ onExit, enabled = true, requiredFullscreen = tru
       doc.msFullscreenElement ||
       null
     )
-  }
+  }, [])
 
   // Theo dõi đóng/mở thoát khỏi fullscreen
   useEffect(() => {
@@ -47,13 +48,19 @@ export function useFullScreen({ onExit, enabled = true, requiredFullscreen = tru
     const checkFullScreen = () => {
       const fullscreenElement = getFullscreenElement()
       const isCurrentFullscreen = !!fullscreenElement
-      setIsFullScreen(isCurrentFullscreen)
+      
+      // Chỉ xử lý khi có sự thay đổi trạng thái
+      if (isCurrentFullscreen !== isFullscreen) {
+        setIsFullscreen(isCurrentFullscreen)
 
-      if (!isCurrentFullscreen) {
-        onExit()
+        if (!isCurrentFullscreen) {
+          setExitCount(prev => prev + 1)
+          console.log(`[Fullscreen] Exit detected (count: ${exitCount + 1})`)
+          onExit()
 
-        if (requiredFullscreen) {
-          toast.warning('Cảnh báo: Bạn đã thoát khỏi chế độ toàn màn hình!')
+          if (requiredFullscreen) {
+            toast.warning('Cảnh báo: Bạn đã thoát khỏi chế độ toàn màn hình!')
+          }
         }
       }
     }
@@ -72,7 +79,7 @@ export function useFullScreen({ onExit, enabled = true, requiredFullscreen = tru
       document.removeEventListener('mozfullscreenchange', checkFullScreen)
       document.removeEventListener('MSFullscreenChange', checkFullScreen)
     }
-  }, [onExit, enabled, requiredFullscreen])
+  }, [onExit, enabled, requiredFullscreen, isFullscreen, exitCount, getFullscreenElement])
 
   const requestFullscreen = async () => {
     try {
@@ -81,31 +88,31 @@ export function useFullScreen({ onExit, enabled = true, requiredFullscreen = tru
       // Try standard API first
       if (elem.requestFullscreen) {
         await elem.requestFullscreen()
-        setIsFullScreen(true)
+        setIsFullscreen(true)
         return true
       }
       // iOS Safari - webkit prefix
       else if (elem.webkitRequestFullscreen) {
         await elem.webkitRequestFullscreen()
-        setIsFullScreen(true)
+        setIsFullscreen(true)
         return true
       }
       // Older iOS Safari
       else if (elem.webkitEnterFullscreen) {
         await elem.webkitEnterFullscreen()
-        setIsFullScreen(true)
+        setIsFullscreen(true)
         return true
       }
       // Firefox
       else if (elem.mozRequestFullScreen) {
         await elem.mozRequestFullScreen()
-        setIsFullScreen(true)
+        setIsFullscreen(true)
         return true
       }
       // IE/Edge
       else if (elem.msRequestFullscreen) {
         await elem.msRequestFullscreen()
-        setIsFullScreen(true)
+        setIsFullscreen(true)
         return true
       } else {
         toast.warning('Trình duyệt không hỗ trợ chế độ toàn màn hình')
