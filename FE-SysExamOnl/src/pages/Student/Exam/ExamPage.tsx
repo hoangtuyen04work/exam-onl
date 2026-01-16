@@ -57,7 +57,15 @@ export default function ExamPage() {
   }, [answers, isExamStarted, examSessionStudentId])
 
   const debouncedAnswers = useDebounce(answers, 500)
-  const { sendEvent } = useStudentMonitoringWebSocket(examSessionId, token, isExamStarted)
+  
+  // WebSocket monitoring với đầy đủ thông tin
+  const { sendEvent } = useStudentMonitoringWebSocket(
+    examSessionId,
+    token,
+    isExamStarted,
+    examSessionStudentId, // Thêm examSessionStudentId
+    { id: user?.id, name: user?.name } // Thêm thông tin student
+  )
 
   const {
     data: examData,
@@ -521,6 +529,9 @@ export default function ExamPage() {
             if (state === 'DRAFT') {
               saveToLocalStorage(examSessionId, { savedAnswers: answersRef.current })
             } else if (state === 'FINAL') {
+              // Gửi WebSocket event SUBMIT khi nộp bài
+              sendEvent('SUBMIT')
+              
               // Đợi một chút để backend tính toán kết quả
               setTimeout(() => {
                 setIsExamStarted(false)
@@ -548,7 +559,7 @@ export default function ExamPage() {
         }
       )
     },
-    [examSessionId, navigate, submitMutation, exitFullscreen, requiresFullscreen]
+    [examSessionId, navigate, submitMutation, exitFullscreen, requiresFullscreen, sendEvent]
   )
 
   useEffect(() => {
