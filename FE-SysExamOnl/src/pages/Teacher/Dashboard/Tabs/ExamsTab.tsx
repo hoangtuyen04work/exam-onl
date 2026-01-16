@@ -4,7 +4,7 @@ import { toast } from 'react-toastify'
 import { exportExams } from '../../Dashboard/import_export/exportExams'
 import { importExams } from '../../Dashboard/import_export/importExams'
 import { useExamsTab } from '../Tabs/HookTab/HookExamsTab'
-import { Calendar, Check, CheckCircle, Database, Download, Edit2, FileText, Plus, Upload } from 'lucide-react'
+import { Calendar, Check, CheckCircle, Database, Download, Edit2, FileText, Plus, Search, Upload, X } from 'lucide-react'
 import Pagination from '../../../../components/Common/Pagination'
 
 export default function ExamsTab() {
@@ -35,11 +35,28 @@ export default function ExamsTab() {
     navigate
   } = useExamsTab()
 
+  // === SEARCH ===
+  const [searchTerm, setSearchTerm] = React.useState('')
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+  
+  // Filter list based on search
+  const filteredList = normalizedSearch
+    ? list.filter(exam =>
+        (exam.name || '').toLowerCase().includes(normalizedSearch) ||
+        (exam.description || '').toLowerCase().includes(normalizedSearch)
+      )
+    : list
+
   // === PAGINATION ===
   const [currentPage, setCurrentPage] = React.useState(1)
   const itemsPerPage = 8
-  const totalPages = Math.ceil(list.length / itemsPerPage)
-  const currentList = list.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const totalPages = Math.ceil(filteredList.length / itemsPerPage)
+  const currentList = filteredList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  // Reset to page 1 when search changes
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm])
 
   const handleExportSelected = () => {
     const ids: number[] = []
@@ -76,6 +93,26 @@ export default function ExamsTab() {
         {/* Toolbar */}
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 mb-6'>
           <div className='flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3'>
+            {/* Search input */}
+            <div className='relative flex-1 sm:flex-none sm:w-64'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
+              <input
+                type='text'
+                placeholder='Tìm kiếm đề thi...'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className='w-full pl-9 pr-9 py-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-gray-50 hover:bg-white'
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600'
+                >
+                  <X className='w-4 h-4' />
+                </button>
+              )}
+            </div>
+
             {/* Import button */}
             <input
               type='file'
@@ -140,39 +177,65 @@ export default function ExamsTab() {
             <p className='text-sm sm:text-base text-gray-600'>Đang tải danh sách đề thi...</p>
           </div>
         </div>
-      ) : list.length === 0 ? (
+      ) : filteredList.length === 0 ? (
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8'>
           <div className='flex flex-col items-center justify-center py-8 sm:py-12 text-center'>
             <div className='w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4'>
-              <FileText className='w-6 h-6 sm:w-8 sm:h-8 text-gray-400' />
+              {normalizedSearch ? (
+                <Search className='w-6 h-6 sm:w-8 sm:h-8 text-gray-400' />
+              ) : (
+                <FileText className='w-6 h-6 sm:w-8 sm:h-8 text-gray-400' />
+              )}
             </div>
-            <h3 className='text-base sm:text-lg font-medium text-gray-900 mb-2'>Chưa có đề thi nào</h3>
+            <h3 className='text-base sm:text-lg font-medium text-gray-900 mb-2'>
+              {normalizedSearch ? 'Không tìm thấy đề thi' : 'Chưa có đề thi nào'}
+            </h3>
             <p className='text-sm sm:text-base text-gray-600 mb-6 px-4'>
-              Bắt đầu bằng cách tạo đề thi mới hoặc tải lên từ file Excel.
+              {normalizedSearch 
+                ? `Không có đề thi nào phù hợp với "${searchTerm}". Hãy thử tìm kiếm khác.`
+                : 'Bắt đầu bằng cách tạo đề thi mới hoặc tải lên từ file Excel.'}
             </p>
-            <button
-              onClick={() => navigate('/teacher/exams/create')}
-              className='px-4 sm:px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base font-medium rounded-lg transition-colors'
-            >
-              Tạo đề thi đầu tiên
-            </button>
+            {normalizedSearch ? (
+              <button
+                onClick={() => setSearchTerm('')}
+                className='px-4 sm:px-5 py-2.5 bg-gray-600 hover:bg-gray-700 text-white text-sm sm:text-base font-medium rounded-lg transition-colors'
+              >
+                Xóa tìm kiếm
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/teacher/exams/create')}
+                className='px-4 sm:px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base font-medium rounded-lg transition-colors'
+              >
+                Tạo đề thi đầu tiên
+              </button>
+            )}
           </div>
         </div>
       ) : (
         <>
-          {/* Select all checkbox */}
+          {/* Search results info & Select all checkbox */}
           <div className='bg-white rounded-t-xl shadow-sm border border-gray-200 border-b-0 p-3 sm:p-4'>
-            <div className='flex items-center gap-2 sm:gap-3'>
-              <input
-                type='checkbox'
-                checked={currentList.length > 0 && currentList.every((e) => selectedExams.get(e.id))}
-                onChange={() => currentList.forEach((e) => toggleSelect(e.id))}
-                className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0'
-              />
-              <span className='text-xs sm:text-sm font-medium text-gray-700'>Chọn tất cả trong trang này</span>
-              {selectedCount > 0 && (
-                <span className='ml-auto text-xs sm:text-sm text-gray-600'>({selectedCount} đề)</span>
-              )}
+            <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3'>
+              <div className='flex items-center gap-2 sm:gap-3'>
+                <input
+                  type='checkbox'
+                  checked={currentList.length > 0 && currentList.every((e) => selectedExams.get(e.id))}
+                  onChange={() => currentList.forEach((e) => toggleSelect(e.id))}
+                  className='w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0'
+                />
+                <span className='text-xs sm:text-sm font-medium text-gray-700'>Chọn tất cả trong trang này</span>
+              </div>
+              <div className='flex items-center gap-2 sm:ml-auto'>
+                {normalizedSearch && (
+                  <span className='text-xs sm:text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded-md'>
+                    Tìm thấy {filteredList.length} / {list.length} đề
+                  </span>
+                )}
+                {selectedCount > 0 && (
+                  <span className='text-xs sm:text-sm text-gray-600'>({selectedCount} đã chọn)</span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -245,7 +308,7 @@ export default function ExamsTab() {
       )}
 
       {/* Pagination */}
-      {list.length > 0 && (
+      {filteredList.length > 0 && (
         <div className='mt-4 sm:mt-6'>
           <Pagination
             currentPage={currentPage}

@@ -50,6 +50,8 @@ export const useBankQuestion = () => {
 
   // Modal state
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingPaper, setEditingPaper] = useState<QuestionPaper | null>(null)
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
   const [newQuestions, setNewQuestions] = useState<Omit<Question, 'questionId'>[]>([
@@ -429,9 +431,80 @@ export const useBankQuestion = () => {
       setPapers((prev) => prev.filter((p) => p.bankQuestionId !== paperId))
       if (papers.length <= 1 && page > 0) fetchPapers(page - 1)
       else fetchPapers(page)
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Xóa thất bại!')
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } }
+      toast.error(error?.response?.data?.message || 'Xóa thất bại!')
     }
+  }
+
+  // ==================== EDIT PAPER ====================
+  const openEditModal = (paper: QuestionPaper) => {
+    setEditingPaper(paper)
+    setNewName(paper.name)
+    setNewDesc(paper.description || '')
+    setNewQuestions(
+      paper.questions.map((q) => ({
+        content: q.content,
+        difficulty: q.difficulty,
+        explanation: q.explanation || '',
+        point: q.point,
+        orderColumn: q.orderColumn,
+        shuffleAnswers: q.shuffleAnswers,
+        shuffleQuestions: q.shuffleQuestions,
+        answers: q.answers.map((a) => ({
+          content: a.content,
+          correct: a.correct
+        }))
+      }))
+    )
+    setShowEditModal(true)
+  }
+
+  const handleUpdatePaper = async () => {
+    if (!editingPaper) return toast.error('Không tìm thấy ngân hàng để cập nhật!')
+    if (!newName.trim()) return toast.error('Vui lòng nhập tên đề thi!')
+    const validQuestions = newQuestions.filter((q) => q.content.trim())
+    if (validQuestions.length === 0) return toast.error('Cần ít nhất 1 câu hỏi!')
+
+    try {
+      const payload = {
+        name: newName.trim(),
+        description: newDesc.trim(),
+        questions: validQuestions.map((q, i) => ({
+          content: q.content.trim(),
+          difficulty: q.difficulty,
+          explanation: q.explanation?.trim() || '',
+          point: Math.max(0.1, q.point || 1),
+          orderColumn: i,
+          shuffleAnswers: q.shuffleAnswers,
+          shuffleQuestions: q.shuffleQuestions,
+          answers: q.answers
+            .filter((a) => a.content.trim())
+            .map((a) => ({ content: a.content.trim(), correct: a.correct }))
+        }))
+      }
+
+      await axiosClient.put(`/bank-questions/${editingPaper.bankQuestionId}`, payload)
+      toast.success('Cập nhật ngân hàng đề thành công!')
+      setShowEditModal(false)
+      setEditingPaper(null)
+      resetAddForm()
+
+      // Refresh data
+      await fetchPapers(page)
+      if (selectedPaper?.bankQuestionId === editingPaper.bankQuestionId) {
+        await fetchPaperDetail(editingPaper.bankQuestionId)
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } }
+      toast.error(error?.response?.data?.message || 'Cập nhật thất bại!')
+    }
+  }
+
+  const closeEditModal = () => {
+    setShowEditModal(false)
+    setEditingPaper(null)
+    resetAddForm()
   }
 
   useEffect(() => {
@@ -452,6 +525,8 @@ export const useBankQuestion = () => {
     page,
     totalPages,
     showAddModal,
+    showEditModal,
+    editingPaper,
     newName,
     setNewName,
     newDesc,
@@ -462,11 +537,15 @@ export const useBankQuestion = () => {
 
     // actions
     setShowAddModal,
+    setShowEditModal,
     setSelectedPaper,
     fetchPapers,
     fetchPaperDetail,
     handleAddPaper,
     handleDeletePaper,
+    handleUpdatePaper,
+    openEditModal,
+    closeEditModal,
     resetAddForm,
     triggerImport,
     handleImportFile,
