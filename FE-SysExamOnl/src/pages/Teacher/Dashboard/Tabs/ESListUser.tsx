@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import axiosClient from '../../../../api/axiosClient'
 import { toast } from 'react-toastify'
-import { ArrowLeft, Clock, PlayCircle, CheckCircle, XCircle } from 'lucide-react'
+import { ArrowLeft, Clock, PlayCircle, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 
 interface Student {
   examSessionStudentId: number
@@ -12,6 +12,7 @@ interface Student {
   status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'
   submittedAt?: string
   score?: number
+  exitCount?: number // Số lần thoát màn hình
 }
 
 export default function ExamSessionDetail() {
@@ -42,7 +43,8 @@ export default function ExamSessionDetail() {
           studentName: it.studentName ?? 'Không tên',
           status: it.status ?? 'NOT_STARTED',
           submittedAt: it.submittedAt,
-          score: it.score
+          score: it.score,
+          exitCount: it.exitCount ?? 0
         }))
 
         setStudents(mapped)
@@ -60,13 +62,13 @@ export default function ExamSessionDetail() {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return { icon: <CheckCircle className="w-5 h-5 text-green-600" />, label: 'Đã nộp', color: 'text-green-700' }
+        return { icon: <CheckCircle className="w-5 h-5 text-green-600" />, label: 'Đã nộp', color: 'text-green-700', bg: 'bg-green-50' }
       case 'IN_PROGRESS':
-        return { icon: <PlayCircle className="w-5 h-5 text-yellow-600" />, label: 'Đang thi', color: 'text-yellow-700' }
+        return { icon: <PlayCircle className="w-5 h-5 text-yellow-600" />, label: 'Đang thi', color: 'text-yellow-700', bg: 'bg-yellow-50' }
       case 'NOT_STARTED':
-        return { icon: <Clock className="w-5 h-5 text-gray-500" />, label: 'Chưa thi', color: 'text-gray-600' }
+        return { icon: <Clock className="w-5 h-5 text-gray-500" />, label: 'Chưa thi', color: 'text-gray-600', bg: 'bg-gray-50' }
       default:
-        return { icon: <XCircle className="w-5 h-5 text-red-600" />, label: 'Lỗi', color: 'text-red-700' }
+        return { icon: <XCircle className="w-5 h-5 text-red-600" />, label: 'Lỗi', color: 'text-red-700', bg: 'bg-red-50' }
     }
   }
 
@@ -119,13 +121,16 @@ export default function ExamSessionDetail() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mã SV
+                  STT
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Họ tên
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trạng thái
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Số lần thoát
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thời gian nộp
@@ -139,43 +144,57 @@ export default function ExamSessionDetail() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {students.map((s) => {
+              {students.map((s, index) => {
                 const status = getStatusConfig(s.status)
                 return (
                   <tr key={s.examSessionStudentId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {s.studentId}
+                    <td className="px-4 py-3 text-sm text-gray-600 font-medium">
+                      {index + 1}
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">
                       {s.studentName}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
+                      <div className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-full ${status.bg}`}>
                         {status.icon}
                         <span className={`text-xs font-medium ${status.color}`}>
                           {status.label}
                         </span>
                       </div>
                     </td>
+                    <td className="px-4 py-3 text-center">
+                      {(s.exitCount ?? 0) > 0 ? (
+                        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-50">
+                          <AlertTriangle className="w-4 h-4 text-red-500" />
+                          <span className="text-sm font-medium text-red-600">
+                            {s.exitCount}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">0</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-xs text-gray-600">
                       {formatTime(s.submittedAt)}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm font-medium text-green-700">
-                      {s.score !== undefined ? s.score.toFixed(1) : '—'}
+                    <td className="px-4 py-3 text-center">
+                      <span className={`text-sm font-semibold ${s.score !== undefined ? 'text-green-700' : 'text-gray-400'}`}>
+                        {s.score !== undefined ? s.score.toFixed(1) : '—'}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-  <button
-    onClick={(e) => {
-      e.stopPropagation() // Ngăn click row
-      navigate('/teacher/exam-sessions/submission', {
-        state: { examSessionStudentId: s.examSessionStudentId }
-      })
-    }}
-    className="text-blue-600 hover:text-blue-800 text-xs font-medium underline"
-  >
-    Xem bài
-  </button>
-</td>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigate('/teacher/exam-sessions/submission', {
+                            state: { examSessionStudentId: s.examSessionStudentId }
+                          })
+                        }}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium underline"
+                      >
+                        Xem bài
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
