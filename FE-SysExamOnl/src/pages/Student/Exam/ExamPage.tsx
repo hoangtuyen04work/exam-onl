@@ -512,6 +512,8 @@ export default function ExamPage() {
       if (state === 'FINAL') {
         setIsExamStarted(false)
         setIsTimeExpired(true)
+        // Remove fullscreen-mode class from body
+        document.body.classList.remove('fullscreen-mode')
         exitFullscreen()
         if (autoSaveRef.current) {
           clearInterval(autoSaveRef.current)
@@ -568,6 +570,8 @@ export default function ExamPage() {
     if (success) {
       setIsExamStarted(true)
       setIsTimeExpired(false)
+      // Add fullscreen-mode class to body for iOS support
+      document.body.classList.add('fullscreen-mode')
       toast.success('Bắt đầu làm bài!')
     }
   }, [exam, expiredAt, requestFullscreen, calculateTimeLeft, checkTimeExpired, submitExam])
@@ -585,6 +589,8 @@ export default function ExamPage() {
     }
 
     setIsExamStarted(false)
+    // Remove fullscreen-mode class from body
+    document.body.classList.remove('fullscreen-mode')
     await exitFullscreen()
     navigate('/student')
   }, [examSessionId, answers, exitFullscreen, navigate, sendEvent, sendEventLog]) // Thêm sendEvent vào dependencies
@@ -677,62 +683,62 @@ export default function ExamPage() {
 
     return (
       <div className='min-h-screen flex items-center justify-center bg-gray-50 p-4'>
-        <div className='bg-white rounded-xl shadow-lg p-8 max-w-2xl w-full'>
-          <div className='text-center mb-6'>
-            <PlayCircle className='w-16 h-16 text-blue-600 mx-auto mb-4' />
-            <h1 className='text-3xl font-bold text-gray-800'>{examName || exam.name}</h1>
+        <div className='bg-white rounded-xl shadow-lg p-4 md:p-8 max-w-2xl w-full'>
+          <div className='text-center mb-4 md:mb-6'>
+            <PlayCircle className='w-12 h-12 md:w-16 md:h-16 text-blue-600 mx-auto mb-3 md:mb-4' />
+            <h1 className='text-xl md:text-3xl font-bold text-gray-800'>{examName || exam.name}</h1>
           </div>
 
-          <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6'>
-            <p className='text-blue-800 text-center font-medium'>
+          <div className='bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6'>
+            <p className='text-blue-800 text-center font-medium text-sm md:text-base'>
               {hasSavedAnswers
                 ? 'Bạn đã làm bài trước đó. Câu trả lời đã lưu sẽ được khôi phục.'
                 : 'Sẵn sàng bắt đầu làm bài!'}
             </p>
           </div>
 
-          <div className='bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm space-y-3'>
+          <div className='bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6 text-xs md:text-sm space-y-2 md:space-y-3'>
             {durationMinutes > 0 && (
-              <div className='flex justify-between'>
+              <div className='flex justify-between items-center'>
                 <span className='font-medium'>Thời gian làm bài:</span>
                 <span className='text-blue-700 font-semibold'>{durationMinutes} phút</span>
               </div>
             )}
             {timeLeft > 0 && (
-              <div className='flex justify-between'>
+              <div className='flex justify-between items-center'>
                 <span className='font-medium'>Thời gian còn lại:</span>
                 <span className='text-blue-700 font-semibold'>{formatTime(timeLeft)}</span>
               </div>
             )}
             {!canStart && (
-              <div className='flex justify-between text-red-600'>
+              <div className='flex justify-between items-center text-red-600'>
                 <span className='font-medium'>Trạng thái:</span>
                 <span className='font-semibold'>Đã hết thời gian làm bài</span>
               </div>
             )}
-            <div className='flex justify-between'>
+            <div className='flex justify-between items-center'>
               <span className='font-medium'>Thí sinh:</span>
-              <span className='text-blue-700'>{user?.name}</span>
+              <span className='text-blue-700 truncate ml-2'>{user?.name}</span>
             </div>
-            <div className='flex justify-between'>
+            <div className='flex justify-between items-center'>
               <span className='font-medium'>Số câu hỏi:</span>
               <span className='text-blue-700 font-semibold'>{exam.questions.length} câu</span>
             </div>
           </div>
 
-          <div className='flex justify-center space-x-4'>
+          <div className='flex flex-col sm:flex-row justify-center gap-3 sm:space-x-4'>
             <button
               onClick={() => navigate('/student')}
-              className='bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition'
+              className='w-full sm:w-auto bg-gray-500 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg hover:bg-gray-600 transition text-sm md:text-base'
             >
               Quay lại
             </button>
             <button
               onClick={handleStartExam}
               disabled={!canStart}
-              className='bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center space-x-2 shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed'
+              className='w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 md:px-8 py-2.5 md:py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center justify-center space-x-2 shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base'
             >
-              <Maximize2 className='w-5 h-5' />
+              <Maximize2 className='w-4 h-4 md:w-5 md:h-5' />
               <span className='font-medium'>{hasSavedAnswers ? 'Tiếp tục làm bài' : 'Bắt đầu thi'}</span>
             </button>
           </div>
@@ -747,17 +753,17 @@ export default function ExamPage() {
   return (
     <div className='min-h-screen bg-white'>
       <header className='sticky top-0 z-50 bg-white shadow-lg border-b border-blue-200'>
-        <div className='max-w-7xl mx-auto flex justify-between items-center px-6 py-4'>
-          <div className='flex flex-col sm:flex-row sm:items-baseline gap-3'>
-            <h1 className='text-xl font-semibold text-blue-700'>{examName || exam.name}</h1>
-            <p className='text-sm text-gray-500 sm:border-l sm:pl-3'>
+        <div className='max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center px-3 md:px-6 py-3 md:py-4 gap-3 sm:gap-0'>
+          <div className='flex flex-col gap-1 md:gap-3 w-full sm:w-auto'>
+            <h1 className='text-base md:text-xl font-semibold text-blue-700 truncate'>{examName || exam.name}</h1>
+            <p className='text-xs md:text-sm text-gray-500'>
               Thí sinh: <span className='font-medium text-gray-800'>{user?.name}</span>
             </p>
           </div>
 
-          <div className='flex items-center gap-4'>
+          <div className='flex items-center gap-2 md:gap-4 w-full sm:w-auto justify-between sm:justify-end'>
             <div
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border shadow-sm ${
+              className={`flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-lg border shadow-sm text-xs md:text-sm ${
                 timeLeft < 300
                   ? 'bg-red-50 border-red-200'
                   : timeLeft < 600
@@ -766,12 +772,12 @@ export default function ExamPage() {
               }`}
             >
               <span
-                className={`text-sm ${timeLeft < 300 ? 'text-red-600' : timeLeft < 600 ? 'text-yellow-600' : 'text-blue-600'}`}
+                className={`${timeLeft < 300 ? 'text-red-600' : timeLeft < 600 ? 'text-yellow-600' : 'text-blue-600'} hidden sm:inline`}
               >
-                Thời gian còn:
+                Thời gian:
               </span>
               <span
-                className={`font-mono text-lg font-bold ${
+                className={`font-mono text-sm md:text-lg font-bold ${
                   timeLeft < 300 ? 'text-red-800' : timeLeft < 600 ? 'text-yellow-800' : 'text-blue-800'
                 }`}
               >
@@ -781,7 +787,7 @@ export default function ExamPage() {
 
             <button
               onClick={handleExitExam}
-              className='hidden md:block bg-white border border-gray-400 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 transition font-normal text-sm shadow-sm'
+              className='hidden md:block bg-white border border-gray-400 text-gray-700 px-3 md:px-4 py-1.5 md:py-2 rounded-lg hover:bg-gray-100 transition font-normal text-xs md:text-sm shadow-sm'
             >
               Thoát
             </button>
@@ -789,7 +795,7 @@ export default function ExamPage() {
             <button
               onClick={() => submitExam('FINAL')}
               disabled={isTimeExpired}
-              className='bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed'
+              className='bg-blue-600 text-white px-3 md:px-5 py-1.5 md:py-2.5 rounded-lg hover:bg-blue-700 flex items-center gap-1 md:gap-2 font-medium shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed text-xs md:text-base'
             >
               <span>Nộp bài</span>
             </button>
@@ -797,20 +803,21 @@ export default function ExamPage() {
         </div>
       </header>
 
-      <main className='max-w-7xl mx-auto px-6 py-10'>
-        <div className='grid grid-cols-1 lg:grid-cols-4 gap-8'>
-          <aside className='lg:col-span-1'>
-            <div className='bg-white rounded-xl shadow-lg p-6 sticky top-20 border border-blue-100'>
-              <h3 className='font-semibold mb-5 text-gray-700 text-base border-b pb-3 border-gray-200'>
+      <main className='max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-10 pb-20 md:pb-10'>
+        <div className='grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-8'>
+          {/* Sidebar - Hide on mobile when doing exam, show as bottom sheet */}
+          <aside className='hidden lg:block lg:col-span-1'>
+            <div className='bg-white rounded-xl shadow-lg p-4 md:p-6 sticky top-20 border border-blue-100'>
+              <h3 className='font-semibold mb-3 md:mb-5 text-gray-700 text-sm md:text-base border-b pb-2 md:pb-3 border-gray-200'>
                 Danh sách câu hỏi ({exam.questions.length})
               </h3>
 
-              <div className='grid grid-cols-5 gap-3'>
+              <div className='grid grid-cols-5 gap-2 md:gap-3'>
                 {exam.questions.map((q, i) => (
                   <button
                     key={q.questionId}
                     onClick={() => setCurrentQuestion(i)}
-                    className={`w-10 h-10 rounded-md text-sm font-medium transition shadow-sm
+                    className={`w-8 h-8 md:w-10 md:h-10 rounded-md text-xs md:text-sm font-medium transition shadow-sm
                   ${
                     i === currentQuestion
                       ? 'bg-blue-600 text-white ring-2 ring-blue-300'
@@ -828,25 +835,25 @@ export default function ExamPage() {
           </aside>
 
           <section className='lg:col-span-3'>
-            <div className='bg-white rounded-xl shadow-lg p-8 border border-blue-100'>
-              <div className='flex justify-between items-center mb-6 border-b pb-4 border-gray-200'>
-                <h2 className='text-lg font-bold text-gray-800'>
+            <div className='bg-white rounded-xl shadow-lg p-4 md:p-8 border border-blue-100'>
+              <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 md:mb-6 border-b pb-3 md:pb-4 border-gray-200 gap-2'>
+                <h2 className='text-base md:text-lg font-bold text-gray-800'>
                   Câu hỏi <span className='text-blue-600'>{currentQuestion + 1}</span> / {total}
                 </h2>
-                <span className='text-sm text-gray-500 italic'>Vui lòng đọc kỹ câu hỏi</span>
+                <span className='text-xs md:text-sm text-gray-500 italic'>Vui lòng đọc kỹ câu hỏi</span>
               </div>
 
-              <div className='mb-8'>
-                <p className='text-gray-800 leading-relaxed text-base border-l-4 border-blue-500 pl-4 py-3 bg-blue-50/70 rounded-r-md'>
+              <div className='mb-6 md:mb-8'>
+                <p className='text-gray-800 leading-relaxed text-sm md:text-base border-l-4 border-blue-500 pl-3 md:pl-4 py-2 md:py-3 bg-blue-50/70 rounded-r-md'>
                   {currentQ.content}
                 </p>
               </div>
 
-              <div className='space-y-3'>
+              <div className='space-y-2 md:space-y-3'>
                 {currentQ.answers.map((opt, index) => (
                   <label
                     key={opt.answerId}
-                    className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition shadow-sm ${
+                    className={`flex items-center space-x-2 md:space-x-3 p-2.5 md:p-3 border rounded-lg cursor-pointer transition shadow-sm ${
                       isTimeExpired ? 'opacity-50 cursor-not-allowed' : ''
                     } ${
                       answers[currentQ.questionId] === opt.answerId
@@ -860,22 +867,22 @@ export default function ExamPage() {
                       checked={answers[currentQ.questionId] === opt.answerId}
                       onChange={() => handleAnswerChange(currentQ.questionId, opt.answerId)}
                       disabled={isTimeExpired}
-                      className='w-4 h-4 text-blue-600 focus:ring-blue-500'
+                      className='w-4 h-4 text-blue-600 focus:ring-blue-500 flex-shrink-0'
                     />
 
-                    <span className='font-medium text-gray-700'>
-                      <span className='font-bold mr-2 text-blue-500'>{String.fromCharCode(65 + index)}.</span>
+                    <span className='font-medium text-gray-700 text-sm md:text-base'>
+                      <span className='font-bold mr-1 md:mr-2 text-blue-500'>{String.fromCharCode(65 + index)}.</span>
                       {opt.content}
                     </span>
                   </label>
                 ))}
               </div>
 
-              <div className='flex justify-between mt-8 pt-6 border-t border-gray-200'>
+              <div className='flex justify-between mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 gap-2'>
                 <button
                   onClick={handlePrev}
                   disabled={currentQuestion === 0}
-                  className='px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-100 disabled:opacity-50 transition shadow-sm font-medium text-sm'
+                  className='px-4 md:px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-100 disabled:opacity-50 transition shadow-sm font-medium text-xs md:text-sm'
                 >
                   ← Câu trước
                 </button>
@@ -883,7 +890,7 @@ export default function ExamPage() {
                 <button
                   onClick={handleNext}
                   disabled={currentQuestion === total - 1}
-                  className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition shadow-sm font-medium text-sm'
+                  className='px-4 md:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition shadow-sm font-medium text-xs md:text-sm'
                 >
                   Câu tiếp →
                 </button>
@@ -893,14 +900,40 @@ export default function ExamPage() {
         </div>
       </main>
 
-      <div className='md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-2xl z-40'>
-        <button
-          onClick={() => submitExam('FINAL')}
-          disabled={isTimeExpired}
-          className='w-full bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 font-medium shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed'
-        >
-          <span>Nộp bài kết thúc</span>
-        </button>
+      <div className='md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40'>
+        {/* Mobile Question Navigator */}
+        <div className='px-3 py-2 border-b border-gray-200 max-h-24 overflow-y-auto'>
+          <div className='flex items-center gap-1.5 flex-wrap'>
+            <span className='text-xs text-gray-600 mr-1'>Câu:</span>
+            {exam.questions.map((q, i) => (
+              <button
+                key={q.questionId}
+                onClick={() => setCurrentQuestion(i)}
+                className={`w-7 h-7 rounded text-xs font-medium transition flex-shrink-0
+                  ${
+                    i === currentQuestion
+                      ? 'bg-blue-600 text-white ring-2 ring-blue-300'
+                      : answers[q.questionId]
+                        ? 'bg-green-100 text-green-700 border border-green-300'
+                        : 'bg-gray-100 text-gray-600 border border-gray-200'
+                  }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <div className='p-3'>
+          <button
+            onClick={() => submitExam('FINAL')}
+            disabled={isTimeExpired}
+            className='w-full bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 font-medium shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm'
+          >
+            <span>Nộp bài kết thúc</span>
+          </button>
+        </div>
       </div>
     </div>
   )
