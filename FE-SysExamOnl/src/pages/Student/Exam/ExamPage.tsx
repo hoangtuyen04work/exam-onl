@@ -13,7 +13,7 @@ import {
   loadFromLocalStorage,
   saveToLocalStorage,
   useDebounce,
-  isAndroidDevice
+  isIOSDevice
 } from '../../../utils/utils'
 import { useStudentMonitoringWebSocket } from '../../../hooks/useStudentMonitoringWebSocket' // Thêm import từ file 2
 
@@ -34,9 +34,9 @@ export default function ExamPage() {
   const [examName, setExamName] = useState<string>('')
   const [isTimeExpired, setIsTimeExpired] = useState(false)
 
-  // Detect device type - Only check Android for fullscreen requirement
-  const isAndroid = isAndroidDevice()
-  const requiresFullscreen = isAndroid // Only require fullscreen on Android
+  // Detect device type - Require fullscreen for desktop and Android, but NOT for iOS
+  const isIOS = isIOSDevice()
+  const requiresFullscreen = !isIOS // Desktop and Android require fullscreen, iOS does not
 
   // === REFS (QUAN TRỌNG: Dùng để truy cập state mới nhất trong Interval/Event) ===
   const autoSaveRef = useRef<number | null>(null)
@@ -488,7 +488,7 @@ export default function ExamPage() {
   }, [isExamStarted, sendEventLog])
 
   const handleExit = () => {
-    // Only handle exit if fullscreen is required (Android)
+    // Only handle exit and send event if fullscreen is required (Desktop & Android)
     if (requiresFullscreen) {
       handleEndExamForced()
       sendEvent('LEAVE')
@@ -497,7 +497,7 @@ export default function ExamPage() {
 
   const { requestFullscreen, exitFullscreen } = useFullScreen({
     onExit: handleExit,
-    enabled: requiresFullscreen, // Only enable fullscreen tracking on Android
+    enabled: requiresFullscreen, // Enable fullscreen tracking on Desktop & Android
     requiredFullscreen: requiresFullscreen
   })
 
@@ -526,7 +526,7 @@ export default function ExamPage() {
                 setIsExamStarted(false)
                 setIsTimeExpired(true)
 
-                // Only exit fullscreen and remove class if on Android
+                // Only exit fullscreen and remove class on Desktop & Android
                 if (requiresFullscreen) {
                   document.body.classList.remove('fullscreen-mode')
                   exitFullscreen()
@@ -587,14 +587,14 @@ export default function ExamPage() {
       return
     }
 
-    // Only require fullscreen on Android, iOS can start exam without fullscreen
+    // Require fullscreen on Desktop & Android, iOS can start exam without fullscreen
     if (requiresFullscreen) {
       const success = await requestFullscreen()
       if (!success) {
         toast.error('Không thể vào chế độ toàn màn hình. Vui lòng thử lại.')
         return
       }
-      // Add fullscreen-mode class to body for Android
+      // Add fullscreen-mode class to body for Desktop & Android
       document.body.classList.add('fullscreen-mode')
     }
 
@@ -617,7 +617,7 @@ export default function ExamPage() {
 
     setIsExamStarted(false)
 
-    // Only exit fullscreen and remove class if on Android
+    // Only exit fullscreen and remove class if on Desktop or Android
     if (requiresFullscreen) {
       document.body.classList.remove('fullscreen-mode')
       await exitFullscreen()
@@ -726,9 +726,13 @@ export default function ExamPage() {
                 ? 'Bạn đã làm bài trước đó. Câu trả lời đã lưu sẽ được khôi phục.'
                 : 'Sẵn sàng bắt đầu làm bài!'}
             </p>
-            {requiresFullscreen && (
+            {requiresFullscreen ? (
               <p className='text-blue-700 text-center text-xs md:text-sm mt-2'>
-                ⚠️ Bài thi sẽ được mở ở chế độ toàn màn hình
+                ⚠️ Bài thi yêu cầu chế độ toàn màn hình (Desktop/Android)
+              </p>
+            ) : (
+              <p className='text-green-700 text-center text-xs md:text-sm mt-2'>
+                ℹ️ Thiết bị iOS - Không yêu cầu toàn màn hình
               </p>
             )}
           </div>

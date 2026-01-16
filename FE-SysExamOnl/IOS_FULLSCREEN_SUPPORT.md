@@ -1,49 +1,29 @@
-# iOS & Android Fullscreen Support Documentation
+# Device-Specific Fullscreen Strategy Documentation
 
 ## Tổng quan
-Hệ thống thi trực tuyến đã được cập nhật để hỗ trợ cả iOS và Android với chiến lược khác nhau:
-- **Androi### 🧪 Test trên thiết bị
+Hệ thống thi trực tuyến đã được cập nhật để hỗ trợ các thiết bị khác nhau với chiến lược phù hợp:
+- **Desktop & Android**: BẮT BUỘC fullscreen khi làm bài thi để đảm bảo tính toàn vẹn của bài thi
+- **iOS (iPhone/iPad)**: Không yêu cầu fullscreen, cho phép làm bài bình thường do giới hạn kỹ thuật của iOS Safari
 
-#### iOS (iPhone/iPad):
-1. Mở Safari trên iPhone/iPad
-2. Truy cập trang thi
-3. Nhấn "Bắt đầu thi" (icon PlayCircle)
-4. Kiểm tra:
-   - [ ] Vào thi thành công **KHÔNG** yêu cầu fullscreen
-   - [ ] Có thể làm bài bình thường
-   - [ ] Notch/dynamic island không che nội dung (safe area)
-   - [ ] Không bị bounce khi scroll
-   - [ ] Có thể thoát và nộp bài bình thường
+## Lý do chiến lược khác nhau giữa các thiết bị
 
-#### Android:
-1. Mở Chrome/Browser trên Android
-2. Truy cập trang thi  
-3. Nhấn "Bắt đầu thi" (icon Maximize2)
-4. Kiểm tra:
-   - [ ] **BẮT BUỘC** vào fullscreen mode
-   - [ ] Nếu không vào được fullscreen → hiện lỗi, không cho làm bài
-   - [ ] Thoát fullscreen → gửi EXIT event
-   - [ ] Hoàn thành thi → tự động thoát fullscreen
+### Desktop & Android - BẮT BUỘC Fullscreen
 
-### 🎯 Behavior Summary
+**Lý do:**
 
-| Tính năng | Android | iOS |
-|-----------|---------|-----|
-| Fullscreen Required | ✅ Bắt buộc | ❌ Không yêu cầu |
-| Start Button Icon | Maximize2 | PlayCircle |
-| Fullscreen Warning | ⚠️ Hiện thông báo | 🔕 Không hiện |
-| Exit on Fullscreen Exit | ✅ Yes | ➖ N/A |
-| Safe Area Support | ➖ N/A | ✅ Yes |
-| Monitoring Method | Fullscreen API | Tab visibility + Events | buộc fullscreen khi làm bài thi
-- **iOS**: Không yêu cầu fullscreen, cho phép làm bài bình thường (do giới hạn của iOS Safari)
+1. **Kiểm soát tốt hơn**: Thiết bị desktop và Android cho phép kiểm soát fullscreen API tốt hơn
+2. **Ngăn gian lận**: Fullscreen giúp ngăn chặn học sinh mở tab khác, sử dụng app khác trong khi thi
+3. **API ổn định**: Fullscreen API hoạt động ổn định và đáng tin cậy trên desktop và Android Chrome
+4. **Trải nghiệm nhất quán**: Desktop và Android có màn hình lớn, fullscreen không ảnh hưởng UX
 
-## Lý do không yêu cầu fullscreen trên iOS
+### iOS - KHÔNG yêu cầu Fullscreen
 
-### Giới hạn kỹ thuật của iOS:
-1. **Limited Fullscreen API**: iOS Safari có hỗ trợ fullscreen nhưng rất hạn chế
-2. **User Experience**: Fullscreen trên iOS thường gây khó chịu cho user
+**Lý do:**
+
+1. **Limited Fullscreen API**: iOS Safari có hỗ trợ fullscreen nhưng rất hạn chế và không ổn định
+2. **User Experience**: Fullscreen trên iOS thường gây khó chịu và có nhiều vấn đề
 3. **Keyboard Issues**: Khi hiện bàn phím, iOS có thể tự động thoát fullscreen
-4. **Alternative Detection**: iOS có cơ chế monitoring khác thay cho fullscreen
+4. **Alternative Monitoring**: iOS vẫn có monitoring qua tab visibility, event tracking, và các cơ chế khác
 
 ## Các thay đổi chính
 
@@ -202,39 +182,84 @@ const { requestFullscreen, exitFullscreen } = useFullScreen({
 - Android Chrome/Firefox
 - Desktop Chrome/Firefox/Edge/Safari
 
-### 🧪 Test trên iOS
+### 🧪 Test trên thiết bị
+
+#### Desktop (Windows/Mac/Linux):
+
+1. Mở Chrome/Firefox/Edge trên desktop
+2. Truy cập trang thi
+3. Nhấn "Bắt đầu thi" (icon Maximize2)
+4. Kiểm tra:
+   - [ ] **BẮT BUỘC** vào fullscreen mode
+   - [ ] Nếu không vào được fullscreen → hiện lỗi, không cho làm bài
+   - [ ] Thoát fullscreen (ESC) → gửi EXIT event và kết thúc bài thi
+   - [ ] Hoàn thành thi → tự động thoát fullscreen
+   - [ ] Warning message: "⚠️ Bài thi yêu cầu chế độ toàn màn hình (Desktop/Android)"
+
+#### Android:
+
+1. Mở Chrome/Browser trên Android
+2. Truy cập trang thi  
+3. Nhấn "Bắt đầu thi" (icon Maximize2)
+4. Kiểm tra:
+   - [ ] **BẮT BUỘC** vào fullscreen mode
+   - [ ] Nếu không vào được fullscreen → hiện lỗi, không cho làm bài
+   - [ ] Thoát fullscreen → gửi EXIT event và kết thúc bài thi
+   - [ ] Hoàn thành thi → tự động thoát fullscreen
+   - [ ] Warning message: "⚠️ Bài thi yêu cầu chế độ toàn màn hình (Desktop/Android)"
+
+#### iOS (iPhone/iPad):
+
 1. Mở Safari trên iPhone/iPad
 2. Truy cập trang thi
-3. Nhấn "Bắt đầu thi"
+3. Nhấn "Bắt đầu thi" (icon PlayCircle)
 4. Kiểm tra:
-   - [ ] Vào fullscreen mode thành công
-   - [ ] Notch/dynamic island được xử lý đúng (không che nội dung)
+   - [ ] Vào thi thành công **KHÔNG** yêu cầu fullscreen
+   - [ ] Có thể làm bài bình thường
+   - [ ] Notch/dynamic island không che nội dung (safe area)
    - [ ] Không bị bounce khi scroll
-   - [ ] Status bar ẩn hoặc trong suốt
-   - [ ] Thoát fullscreen khi nhấn "Thoát" hoặc "Nộp bài"
+   - [ ] Có thể thoát và nộp bài bình thường
+   - [ ] Info message: "ℹ️ Thiết bị iOS - Không yêu cầu toàn màn hình"
 
-### 🎯 Fallback behavior
-Nếu trình duyệt không hỗ trợ Fullscreen API:
-- Hiển thị cảnh báo: "Trình duyệt không hỗ trợ chế độ toàn màn hình"
-- Vẫn cho phép làm bài (không block)
-- Các tính năng khác hoạt động bình thường
+### 🎯 Behavior Summary
+
+| Tính năng | Desktop | Android | iOS |
+|-----------|---------|---------|-----|
+| Fullscreen Required | ✅ Bắt buộc | ✅ Bắt buộc | ❌ Không yêu cầu |
+| Start Button Icon | Maximize2 | Maximize2 | PlayCircle |
+| Fullscreen Warning | ⚠️ Hiện thông báo | ⚠️ Hiện thông báo | ℹ️ Info message |
+| Exit on Fullscreen Exit | ✅ Yes | ✅ Yes | ➖ N/A |
+| Safe Area Support | ➖ N/A | ➖ N/A | ✅ Yes |
+| Monitoring Method | Fullscreen API | Fullscreen API | Tab visibility + Events |
 
 ## Lưu ý quan trọng
 
 ### 📱 Device-Specific Behavior
 
+**Desktop (Windows/Mac/Linux):**
+
+- ✅ **BẮT BUỘC** fullscreen mode
+- ✅ Tự động thoát bài thi nếu thoát fullscreen (nhấn ESC)
+- ✅ Fullscreen API monitoring
+- ✅ Warning message khi bắt đầu thi
+- ⚠️ User phải cho phép fullscreen để làm bài
+
+**Android:**
+
+- ✅ **BẮT BUỘC** fullscreen mode
+- ✅ Tự động thoát bài thi nếu thoát fullscreen
+- ✅ Fullscreen API monitoring
+- ✅ Warning message khi bắt đầu thi
+- ⚠️ User phải cho phép fullscreen để làm bài
+
 **iOS:**
-- ✅ Không yêu cầu fullscreen
+
+- ✅ **KHÔNG** yêu cầu fullscreen
 - ✅ Làm bài thi bình thường như web app
 - ✅ Safe area support cho notch/dynamic island
 - ✅ Monitoring qua tab visibility và event tracking
 - ✅ User experience tối ưu, không bị gián đoạn
-
-**Android:**
-- ✅ BẮT BUỘC fullscreen mode
-- ✅ Tự động thoát bài thi nếu thoát fullscreen
-- ✅ Fullscreen API monitoring
-- ⚠️ User phải cho phép fullscreen để làm bài
+- ℹ️ Info message thông báo không cần fullscreen
 
 ### 🔒 Security
 - Fullscreen (Android) hoặc monitoring (iOS) được kích hoạt khi bắt đầu thi
@@ -299,27 +324,20 @@ const isCurrentlyFullscreen = !!(
 ## Changelog
 
 ### Version 1.2.0 (2026-01-16) - Current
+
 - ✅ **BREAKING CHANGE**: iOS không còn yêu cầu fullscreen
+- ✅ **NEW**: Desktop và Android BẮT BUỘC fullscreen mode
 - ✅ Added device detection (isIOSDevice, isAndroidDevice)
-- ✅ Conditional fullscreen: Only Android requires fullscreen
-- ✅ Different UI icons: Maximize2 (Android) vs PlayCircle (iOS)
-- ✅ Conditional warning message for Android only
+- ✅ Conditional fullscreen: Desktop & Android require fullscreen, iOS does not
+- ✅ Different UI icons: Maximize2 (Desktop/Android) vs PlayCircle (iOS)
+- ✅ Conditional warning message for Desktop/Android only
 - ✅ iOS monitoring via tab visibility instead of fullscreen
 - ✅ Improved user experience on iOS
-- ✅ Maintained strict monitoring on Android
-
-### Version 1.1.0 (2026-01-16) - Deprecated
-- ~~Added iOS fullscreen support~~
-- ~~Added webkit prefix support~~
-- Added safe area insets for notch devices (Still active)
-- Added fullscreen-mode body class (Android only now)
-- Added iOS-specific meta tags (Still active)
-- Improved mobile responsive design (Still active)
-- Added bottom navigation for mobile (Still active)
+- ✅ Maintained strict monitoring on Desktop and Android
 
 ---
 
 **Người cập nhật**: GitHub Copilot  
 **Ngày**: 16/01/2026  
 **Status**: ✅ Ready for Production  
-**Device Strategy**: Android = Fullscreen Required | iOS = Normal Mode
+**Device Strategy**: Desktop & Android = Fullscreen Required | iOS = Normal Mode
