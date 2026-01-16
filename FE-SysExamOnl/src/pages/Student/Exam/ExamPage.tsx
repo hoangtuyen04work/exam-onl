@@ -5,16 +5,23 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import { AlertCircle, Maximize2, PlayCircle, XCircle } from 'lucide-react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { studentApi, type SubmitPayload } from '../../../api/student-api'
 import { useFullScreen } from '../../../hooks/useFullScreen'
-import { getBaseUrl, loadFromLocalStorage, saveToLocalStorage, useDebounce, isAndroidDevice } from '../../../utils/utils'
+import {
+  getBaseUrl,
+  loadFromLocalStorage,
+  saveToLocalStorage,
+  useDebounce,
+  isAndroidDevice
+} from '../../../utils/utils'
 import { useStudentMonitoringWebSocket } from '../../../hooks/useStudentMonitoringWebSocket' // Thêm import từ file 2
 
 export default function ExamPage() {
   const { examId } = useParams<{ examId: string }>()
   const navigate = useNavigate()
   const user = useSelector((state: any) => state.auth.user)
+  const queryClient = useQueryClient()
 
   const examSessionId = examId ? Number(examId) : null
   const token = localStorage.getItem('authToken') || '' // Thêm từ file 2
@@ -126,9 +133,11 @@ export default function ExamPage() {
   const submitMutation = useMutation({
     mutationFn: ({ state, payload }: { state: 'DRAFT' | 'FINAL'; payload: SubmitPayload }) =>
       studentApi.submitExam(state, payload),
-    onSuccess: (_, { state }) => {
+    onSuccess: async (_, { state }) => {
       if (state === 'FINAL') {
         toast.success('Nộp bài thành công!')
+        // Invalidate exam result cache để force refetch
+        await queryClient.invalidateQueries({ queryKey: ['examResult', examSessionId] })
       }
     },
     onError: (error: any) => {
@@ -511,32 +520,33 @@ export default function ExamPage() {
           onSuccess: () => {
             if (state === 'DRAFT') {
               saveToLocalStorage(examSessionId, { savedAnswers: answersRef.current })
+            } else if (state === 'FINAL') {
+              // Đợi một chút để backend tính toán kết quả
+              setTimeout(() => {
+                setIsExamStarted(false)
+                setIsTimeExpired(true)
+
+                // Only exit fullscreen and remove class if on Android
+                if (requiresFullscreen) {
+                  document.body.classList.remove('fullscreen-mode')
+                  exitFullscreen()
+                }
+
+                if (autoSaveRef.current) {
+                  clearInterval(autoSaveRef.current)
+                  autoSaveRef.current = null
+                }
+                if (timerRef.current) {
+                  clearInterval(timerRef.current)
+                  timerRef.current = null
+                }
+                localStorage.removeItem(`exam_${examSessionId}`)
+                navigate(`/student/exam/${examSessionId}/result`, { replace: true })
+              }, 1000) // Đợi 1 giây
             }
           }
         }
       )
-
-      if (state === 'FINAL') {
-        setIsExamStarted(false)
-        setIsTimeExpired(true)
-        
-        // Only exit fullscreen and remove class if on Android
-        if (requiresFullscreen) {
-          document.body.classList.remove('fullscreen-mode')
-          exitFullscreen()
-        }
-        
-        if (autoSaveRef.current) {
-          clearInterval(autoSaveRef.current)
-          autoSaveRef.current = null
-        }
-        if (timerRef.current) {
-          clearInterval(timerRef.current)
-          timerRef.current = null
-        }
-        localStorage.removeItem(`exam_${examSessionId}`)
-        navigate(`/student/exam/${examSessionId}/result`, { replace: true })
-      }
     },
     [examSessionId, navigate, submitMutation, exitFullscreen, requiresFullscreen]
   )
@@ -606,13 +616,13 @@ export default function ExamPage() {
     }
 
     setIsExamStarted(false)
-    
+
     // Only exit fullscreen and remove class if on Android
     if (requiresFullscreen) {
       document.body.classList.remove('fullscreen-mode')
       await exitFullscreen()
     }
-    
+
     navigate('/student')
   }, [examSessionId, answers, exitFullscreen, navigate, sendEvent, sendEventLog, requiresFullscreen])
 
@@ -769,9 +779,7 @@ export default function ExamPage() {
               ) : (
                 <PlayCircle className='w-4 h-4 md:w-5 md:h-5' />
               )}
-              <span className='font-medium'>
-                {hasSavedAnswers ? 'Tiếp tục làm bài' : 'Bắt đầu thi'}
-              </span>
+              <span className='font-medium'>{hasSavedAnswers ? 'Tiếp tục làm bài' : 'Bắt đầu thi'}</span>
             </button>
           </div>
         </div>
