@@ -8,7 +8,7 @@ import { AlertCircle, Maximize2, PlayCircle, XCircle } from 'lucide-react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { studentApi, type SubmitPayload } from '../../../api/student-api'
 import { useFullScreen } from '../../../hooks/useFullScreen'
-import { getBaseUrl, loadFromLocalStorage, saveToLocalStorage, useDebounce, isIOSDevice, isAndroidDevice } from '../../../utils/utils'
+import { getBaseUrl, loadFromLocalStorage, saveToLocalStorage, useDebounce, isAndroidDevice } from '../../../utils/utils'
 import { useStudentMonitoringWebSocket } from '../../../hooks/useStudentMonitoringWebSocket' // Thêm import từ file 2
 
 export default function ExamPage() {
@@ -27,8 +27,7 @@ export default function ExamPage() {
   const [examName, setExamName] = useState<string>('')
   const [isTimeExpired, setIsTimeExpired] = useState(false)
 
-  // Detect device type
-  const isIOS = isIOSDevice()
+  // Detect device type - Only check Android for fullscreen requirement
   const isAndroid = isAndroidDevice()
   const requiresFullscreen = isAndroid // Only require fullscreen on Android
 
