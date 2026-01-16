@@ -376,15 +376,17 @@ export default function ExamPage() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && isExamStartedRef.current) {
-        console.log('[DEBUG] Tab hidden detected - sending EXIT event')
+        console.log('[DEBUG] Tab hidden detected - sending EXIT event and LEAVE WebSocket')
         sendEventLog('EXIT')
+        sendEvent('LEAVE') // Gửi WebSocket event khi chuyển tab
       } else if (!document.hidden && isExamStartedRef.current) {
-        console.log('[DEBUG] Tab visible again')
+        console.log('[DEBUG] Tab visible again - sending ENTER WebSocket')
+        sendEvent('ENTER') // Gửi WebSocket event khi quay lại tab
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [sendEventLog])
+  }, [sendEventLog, sendEvent])
 
   // === BEFORE UNLOAD (Close/Reload Tab) ===
   useEffect(() => {
@@ -392,6 +394,7 @@ export default function ExamPage() {
       if (isExamStartedRef.current) {
         sendEventLog('SUBMIT_DRAFT')
         sendEventLog('EXIT')
+        sendEvent('LEAVE') // Gửi WebSocket event khi close/reload tab
 
         // Lưu local storage lần cuối
         if (examSessionId) {
@@ -405,7 +408,7 @@ export default function ExamPage() {
 
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [examSessionId, sendEventLog])
+  }, [examSessionId, sendEventLog, sendEvent])
 
   // === FULLSCREEN LOGIC ===
   const handleEndExamForced = useCallback(() => {
@@ -428,8 +431,9 @@ export default function ExamPage() {
       console.log(`[DEBUG] Fullscreen change detected - isFullscreen: ${isFullscreen}`)
 
       if (!isFullscreen && isExamStartedRef.current) {
-        console.log('[DEBUG] Exited fullscreen (from listener) - sending EXIT event')
+        console.log('[DEBUG] Exited fullscreen (from listener) - sending EXIT event and LEAVE WebSocket')
         sendEventLog('EXIT')
+        sendEvent('LEAVE') // Gửi WebSocket event khi thoát fullscreen
       }
     }
 
@@ -444,7 +448,7 @@ export default function ExamPage() {
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
     }
-  }, [isExamStarted, sendEventLog])
+  }, [isExamStarted, sendEventLog, sendEvent])
 
   // === WINDOW RESIZE LISTENER ===
   // Gửi event khi resize window (có thể là dấu hiệu thoát fullscreen hoặc minimize)
