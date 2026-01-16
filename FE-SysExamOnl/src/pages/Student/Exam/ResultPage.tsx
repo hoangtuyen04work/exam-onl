@@ -47,7 +47,10 @@ export default function ResultPage() {
     },
     enabled: !!examSessionId,
     staleTime: 0,
-    refetchOnMount: 'always'
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    retry: 3,
+    retryDelay: 1000
   })
 
   const [openExplanationId, setOpenExplanationId] = useState<number | null>(null)
