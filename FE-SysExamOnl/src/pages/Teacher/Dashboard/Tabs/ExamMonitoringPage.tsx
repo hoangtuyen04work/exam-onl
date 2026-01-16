@@ -8,7 +8,7 @@ import { vi } from 'date-fns/locale/vi'
 
 interface StudentEvent {
   examSessionId: number
-  event: 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'FOCUS_REGAINED' | 'SUBMIT' | 'TAB_SWITCH' | 'DISCONNECTED'
+  event: 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'FOCUS_REGAINED' | 'SUBMIT' | 'TAB_SWITCH' | 'DISCONNECTED' | 'RECONNECTED' | 'FULLSCREEN_EXIT' | 'WINDOW_RESIZE'
 }
 
 interface StudentEventBroadcast {
@@ -27,7 +27,7 @@ interface StudentStatusResponse {
 type StudentDetail = {
   name: string
   lastEvent: StudentEventBroadcast | null
-  currentStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'UNKNOWN'
+  currentStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'FULLSCREEN_EXIT' | 'UNKNOWN'
   timestamp?: string
   focusLostCount?: number
   tabSwitchCount?: number
@@ -107,6 +107,10 @@ export default function ExamMonitoringPage() {
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },
+      debug: (str) => {
+        // Log tất cả message để debug
+        console.log('[WS Debug]', str)
+      },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000
@@ -114,10 +118,13 @@ export default function ExamMonitoringPage() {
 
     client.onConnect = () => {
       setConnected(true)
+      console.log('[WS] ✅ Connected to WebSocket, subscribing to /topic/exam/' + examSessionId)
 
       client.subscribe(`/topic/exam/${examSessionId}`, (message) => {
+        console.log('[WS] 📥 Raw message received:', message.body)
         try {
           const broadcast: StudentEventBroadcast = JSON.parse(message.body)
+          console.log('[WS] ✅ Parsed message:', broadcast, 'Event type:', broadcast.event?.event)
 
           const name = broadcast.username || 'Sinh viên ' + broadcast.userId
 
@@ -127,15 +134,32 @@ export default function ExamMonitoringPage() {
             const existing = prev.get(broadcast.userId)
 
             // Xác định currentStatus dựa trên event
-            let newStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'UNKNOWN' = 'UNKNOWN'
-            if (broadcast.event.event === 'ENTER') {
-              newStatus = 'IN_PROGRESS'
-            } else if (broadcast.event.event === 'SUBMIT') {
-              newStatus = 'COMPLETED'
-            } else if (broadcast.event.event === 'FOCUS_LOST') {
-              newStatus = 'FOCUS_LOST'
-            } else if (broadcast.event.event === 'LEAVE') {
-              newStatus = 'LEFT'
+            let newStatus: 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'FULLSCREEN_EXIT' | 'UNKNOWN' = 'UNKNOWN'
+            switch (broadcast.event.event) {
+              case 'ENTER':
+              case 'RECONNECTED':
+              case 'FOCUS_REGAINED':
+                newStatus = 'IN_PROGRESS'
+                break
+              case 'SUBMIT':
+                newStatus = 'COMPLETED'
+                break
+              case 'FOCUS_LOST':
+              case 'TAB_SWITCH':
+              case 'WINDOW_RESIZE':
+                newStatus = 'FOCUS_LOST'
+                break
+              case 'FULLSCREEN_EXIT':
+                newStatus = 'FULLSCREEN_EXIT'
+                break
+              case 'LEAVE':
+                newStatus = 'LEFT'
+                break
+              case 'DISCONNECTED':
+                newStatus = 'DISCONNECTED'
+                break
+              default:
+                newStatus = existing?.currentStatus || 'UNKNOWN'
             }
 
             newMap.set(broadcast.userId, {
@@ -148,9 +172,9 @@ export default function ExamMonitoringPage() {
           })
 
           // Cập nhật online/offline
-          if (broadcast.event.event === 'ENTER') {
+          if (broadcast.event.event === 'ENTER' || broadcast.event.event === 'RECONNECTED' || broadcast.event.event === 'FOCUS_REGAINED') {
             setOnlineStudents((prev) => new Set(prev).add(broadcast.userId))
-          } else if (broadcast.event.event === 'LEAVE' || broadcast.event.event === 'SUBMIT') {
+          } else if (broadcast.event.event === 'LEAVE' || broadcast.event.event === 'SUBMIT' || broadcast.event.event === 'DISCONNECTED' || broadcast.event.event === 'FULLSCREEN_EXIT') {
             setOnlineStudents((prev) => {
               const next = new Set(prev)
               next.delete(broadcast.userId)
@@ -241,6 +265,16 @@ export default function ExamMonitoringPage() {
                 statusLabel = 'Đã rời phòng'
                 isActive = false
                 badgeColor = 'bg-red-500'
+                break
+              case 'FULLSCREEN_EXIT':
+                statusLabel = 'Thoát toàn màn hình'
+                isActive = false
+                badgeColor = 'bg-orange-500'
+                break
+              case 'DISCONNECTED':
+                statusLabel = 'Mất kết nối'
+                isActive = false
+                badgeColor = 'bg-gray-600'
                 break
               default:
                 statusLabel = 'Chưa vào phòng'

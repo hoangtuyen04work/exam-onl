@@ -253,11 +253,34 @@ export const useStudentMonitoringWebSocket = (
       // Gửi LEAVE khi rời trang
       if (client.connected) {
         try {
-          sendEvent('LEAVE');
-          // Đợi một chút để event được gửi trước khi disconnect
+          // Gửi LEAVE event trực tiếp qua client instance thay vì sendEvent
+          // để tránh vấn đề với ref không được cập nhật
+          const currentExamSessionId = examSessionIdRef.current;
+          const currentExamSessionStudentId = examSessionStudentIdRef.current;
+          const currentStudentInfo = studentInfoRef.current;
+          
+          if (currentExamSessionId) {
+            const leaveEventData = {
+              examSessionId: currentExamSessionId,
+              event: 'LEAVE',
+              timestamp: new Date().toISOString(),
+              deviceInfo: `Cleanup disconnect`,
+              examSessionStudentId: currentExamSessionStudentId,
+              studentId: currentStudentInfo?.id,
+              studentName: currentStudentInfo?.name,
+            };
+            
+            client.publish({
+              destination: '/app/student/event',
+              body: JSON.stringify(leaveEventData),
+            });
+            console.log('[WS] ✅ Sent LEAVE event during cleanup:', leaveEventData);
+          }
+          
+          // Đợi lâu hơn để đảm bảo event được gửi trước khi disconnect
           setTimeout(() => {
             client.deactivate();
-          }, 200);
+          }, 500);
         } catch (error) {
           console.error('[WS] Error during cleanup:', error);
           client.deactivate();
