@@ -7,16 +7,45 @@ interface FullScreenOptions {
   requiredFullscreen?: boolean
 }
 
+// Extend Document interface for iOS Safari webkit prefixes
+interface DocumentWithFullscreen extends Document {
+  webkitFullscreenElement?: Element
+  webkitExitFullscreen?: () => Promise<void>
+  mozFullScreenElement?: Element
+  mozCancelFullScreen?: () => Promise<void>
+  msFullscreenElement?: Element
+  msExitFullscreen?: () => Promise<void>
+}
+
+interface ElementWithFullscreen extends HTMLElement {
+  webkitRequestFullscreen?: (options?: FullscreenOptions) => Promise<void>
+  webkitEnterFullscreen?: () => Promise<void>
+  mozRequestFullScreen?: (options?: FullscreenOptions) => Promise<void>
+  msRequestFullscreen?: (options?: FullscreenOptions) => Promise<void>
+}
+
 export function useFullScreen({ onExit, enabled = true, requiredFullscreen = true }: FullScreenOptions) {
   // Kiểm tra trạng thái màn hình
   const [isFullscreen, setIsFullScreen] = useState(false)
+
+  // Helper function to get fullscreen element across browsers
+  const getFullscreenElement = (): Element | null => {
+    const doc = document as DocumentWithFullscreen
+    return (
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement ||
+      null
+    )
+  }
 
   // Theo dõi đóng/mở thoát khỏi fullscreen
   useEffect(() => {
     if (!enabled) return
 
     const checkFullScreen = () => {
-      const fullscreenElement = document.fullscreenElement
+      const fullscreenElement = getFullscreenElement()
       const isCurrentFullscreen = !!fullscreenElement
       setIsFullScreen(isCurrentFullscreen)
 
@@ -29,15 +58,17 @@ export function useFullScreen({ onExit, enabled = true, requiredFullscreen = tru
       }
     }
 
-    // Thêm event listeners cho các trình duyệt khác nhau
+    // Thêm event listeners cho các trình duyệt khác nhau (bao gồm iOS Safari)
     document.addEventListener('fullscreenchange', checkFullScreen)
     document.addEventListener('webkitfullscreenchange', checkFullScreen)
+    document.addEventListener('webkitendfullscreen', checkFullScreen) // iOS specific
     document.addEventListener('mozfullscreenchange', checkFullScreen)
     document.addEventListener('MSFullscreenChange', checkFullScreen)
 
     return () => {
       document.removeEventListener('fullscreenchange', checkFullScreen)
       document.removeEventListener('webkitfullscreenchange', checkFullScreen)
+      document.removeEventListener('webkitendfullscreen', checkFullScreen)
       document.removeEventListener('mozfullscreenchange', checkFullScreen)
       document.removeEventListener('MSFullscreenChange', checkFullScreen)
     }
@@ -45,25 +76,75 @@ export function useFullScreen({ onExit, enabled = true, requiredFullscreen = tru
 
   const requestFullscreen = async () => {
     try {
-      await document.documentElement.requestFullscreen()
-      setIsFullScreen(true)
-      return true
+      const elem = document.documentElement as ElementWithFullscreen
+
+      // Try standard API first
+      if (elem.requestFullscreen) {
+        await elem.requestFullscreen()
+        setIsFullScreen(true)
+        return true
+      }
+      // iOS Safari - webkit prefix
+      else if (elem.webkitRequestFullscreen) {
+        await elem.webkitRequestFullscreen()
+        setIsFullScreen(true)
+        return true
+      }
+      // Older iOS Safari
+      else if (elem.webkitEnterFullscreen) {
+        await elem.webkitEnterFullscreen()
+        setIsFullScreen(true)
+        return true
+      }
+      // Firefox
+      else if (elem.mozRequestFullScreen) {
+        await elem.mozRequestFullScreen()
+        setIsFullScreen(true)
+        return true
+      }
+      // IE/Edge
+      else if (elem.msRequestFullscreen) {
+        await elem.msRequestFullscreen()
+        setIsFullScreen(true)
+        return true
+      } else {
+        toast.warning('Trình duyệt không hỗ trợ chế độ toàn màn hình')
+        console.warn('Fullscreen API not supported')
+        return false
+      }
     } catch (error) {
       toast.error('Lỗi, không thể mở chế độ toàn màn hình')
-      console.error(error)
+      console.error('Fullscreen request error:', error)
       return false
     }
   }
 
   const exitFullscreen = async () => {
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen()
+      const doc = document as DocumentWithFullscreen
+
+      if (getFullscreenElement()) {
+        // Try standard API
+        if (doc.exitFullscreen) {
+          await doc.exitFullscreen()
+        }
+        // iOS Safari - webkit prefix
+        else if (doc.webkitExitFullscreen) {
+          await doc.webkitExitFullscreen()
+        }
+        // Firefox
+        else if (doc.mozCancelFullScreen) {
+          await doc.mozCancelFullScreen()
+        }
+        // IE/Edge
+        else if (doc.msExitFullscreen) {
+          await doc.msExitFullscreen()
+        }
       }
       // Trạng thái isFullScreen sẽ được cập nhật bởi event listener 'fullscreenchange'
     } catch (error) {
       toast.error('Thất bại: Không thể thoát khỏi toàn màn hình')
-      console.error(error)
+      console.error('Exit fullscreen error:', error)
     }
   }
 

@@ -4,6 +4,39 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* iOS Safe Area Support */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+/* iOS Fullscreen Support */
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  height: 100%;
+  overflow-x: clip;
+  /* Support for iOS safe areas */
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
+/* Prevent iOS bounce/overscroll */
+body.fullscreen-mode {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Tùy chỉnh thanh cuộn cho mượt */
 ::-webkit-scrollbar { 
   width: 5px; 
@@ -23,11 +56,6 @@
 /* Đảm bảo không phần tử nào tràn ra */
 * {
   box-sizing: border-box;
-}
-
-/* Nếu vẫn còn (trường hợp cực hiếm) */
-body {
-  overflow-x: clip;
 }
 
 .animate-fadeSlide {
