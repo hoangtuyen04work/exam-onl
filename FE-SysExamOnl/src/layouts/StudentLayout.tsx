@@ -82,43 +82,46 @@ export default function StudentLayout() {
 
       <div className='flex pt-16 h-screen'>
         {/* MAIN SIDEBAR (LEFT BAR) */}
-        <aside className='w-20 md:w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0'>
-          <nav className='flex-1 px-3 py-6 space-y-2'>
+        <aside className='w-16 md:w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0'>
+          <nav className='flex-1 px-2 md:px-3 py-6 space-y-2'>
             <button
               onClick={() => handleTabChange('dashboard')}
-              className={`w-full flex items-center p-3 rounded-xl transition-all group ${
+              className={`w-full flex items-center justify-center md:justify-start p-3 rounded-xl transition-all group ${
                 location.pathname === '/student'
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
                   : 'text-slate-500 hover:bg-slate-50'
               }`}
+              title='Trang chủ'
             >
-              <i className='fas fa-home w-8 text-lg'></i>
-              <span className='font-bold hidden md:block'>Trang chủ</span>
+              <i className='fas fa-home md:w-8 text-lg'></i>
+              <span className='font-bold hidden md:block ml-2'>Trang chủ</span>
             </button>
             <button
               onClick={() => handleTabChange('classes')}
-              className={`w-full flex items-center p-3 rounded-xl transition-all group ${
+              className={`w-full flex items-center justify-center md:justify-start p-3 rounded-xl transition-all group ${
                 location.pathname.startsWith('/student/classes')
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
                   : 'text-slate-500 hover:bg-slate-50'
               }`}
+              title='Lớp học'
             >
-              <i className='fas fa-users w-8 text-lg'></i>
-              <span className='font-bold hidden md:block'>Lớp học</span>
+              <i className='fas fa-users md:w-8 text-lg'></i>
+              <span className='font-bold hidden md:block ml-2'>Lớp học</span>
             </button>
             <button
               onClick={() => handleTabChange('history')}
-              className={`w-full flex items-center p-3 rounded-xl transition-all group ${
+              className={`w-full flex items-center justify-center md:justify-start p-3 rounded-xl transition-all group ${
                 location.pathname.startsWith('/student/history')
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-100'
                   : 'text-slate-500 hover:bg-slate-50'
               }`}
+              title='Lịch sử thi'
             >
-              <i className='fas fa-clipboard-list w-8 text-lg'></i>
-              <span className='font-bold hidden md:block'>Lịch sử thi</span>
+              <i className='fas fa-clipboard-list md:w-8 text-lg'></i>
+              <span className='font-bold hidden md:block ml-2'>Lịch sử thi</span>
             </button>
           </nav>
-          <div className='p-4 border-t border-slate-100'>
+          <div className='p-2 md:p-4 border-t border-slate-100'>
             <div className='bg-slate-50 rounded-xl p-3 text-center hidden md:block'>
               <p className='text-[10px] text-slate-400 font-bold uppercase'>Hỗ trợ</p>
               <p className='text-sm font-bold text-blue-600'>1900 1234</p>
