@@ -159,10 +159,18 @@ export default function ExamMonitoringPage() {
 
     client.onConnect = () => {
       setConnected(true)
+      console.log('[Teacher WS] ✅ Connected to WebSocket')
 
-      client.subscribe(`/topic/exam/${examSessionId}`, (message) => {
+      // Subscribe với logging chi tiết
+      const topic = `/topic/exam/${examSessionId}`
+      console.log('[Teacher WS] 📡 Subscribing to:', topic)
+      
+      const subscription = client.subscribe(topic, (message) => {
+        console.log('[Teacher WS] 📨 Received message:', message.body)
+        
         try {
           const broadcast: StudentEventBroadcast = JSON.parse(message.body)
+          console.log('[Teacher WS] 📊 Parsed broadcast:', broadcast)
 
           const name = broadcast.username || 'Sinh viên ' + broadcast.userId
 
@@ -208,11 +216,19 @@ export default function ExamMonitoringPage() {
                 newStatus = existing?.currentStatus || 'UNKNOWN'
             }
 
+            console.log('[Teacher WS] 🔄 Updating student:', {
+              userId: broadcast.userId,
+              name,
+              event: broadcast.event.event,
+              oldStatus: existing?.currentStatus,
+              newStatus
+            })
+
             newMap.set(broadcast.userId, {
               name,
               lastEvent: broadcast,
               currentStatus: newStatus,
-              timestamp: existing?.timestamp // Giữ timestamp từ API
+              timestamp: new Date().toISOString() // Cập nhật timestamp khi nhận event
             })
             return newMap
           })
@@ -220,6 +236,7 @@ export default function ExamMonitoringPage() {
           // Cập nhật online/offline
           if (broadcast.event.event === 'ENTER' || broadcast.event.event === 'RECONNECTED') {
             setOnlineStudents((prev) => new Set(prev).add(broadcast.userId))
+            console.log('[Teacher WS] 🟢 Student online:', broadcast.userId)
           } else if (
             broadcast.event.event === 'LEAVE' ||
             broadcast.event.event === 'SUBMIT' ||
@@ -228,33 +245,42 @@ export default function ExamMonitoringPage() {
             setOnlineStudents((prev) => {
               const next = new Set(prev)
               next.delete(broadcast.userId)
+              console.log('[Teacher WS] 🔴 Student offline:', broadcast.userId)
               return next
             })
           }
         } catch (err) {
-          console.error(`Lỗi parse message: ${err}`)
+          console.error(`[Teacher WS] ❌ Parse error:`, err)
         }
       })
+      
+      console.log('[Teacher WS] 📝 Subscription created:', subscription.id)
     }
 
-    client.onStompError = () => {
+    client.onStompError = (frame) => {
       setConnected(false)
+      console.error('[Teacher WS] ❌ STOMP Error:', frame.headers['message'])
+      console.error('[Teacher WS] Error details:', frame.body)
     }
 
-    client.onWebSocketError = () => {
+    client.onWebSocketError = (error) => {
       setConnected(false)
+      console.error('[Teacher WS] ❌ WebSocket Error:', error)
     }
 
-    client.onWebSocketClose = () => {
+    client.onWebSocketClose = (event) => {
       setConnected(false)
+      console.warn('[Teacher WS] ⚠️ WebSocket closed:', event)
     }
 
+    console.log('[Teacher WS] 🚀 Activating WebSocket client...')
     client.activate()
 
     return () => {
+      console.log('[Teacher WS] 🔌 Deactivating WebSocket client...')
       client.deactivate()
     }
-  }, [token, examSessionId])
+  }, [token, examSessionId, serverPort])
 
   // Lấy danh sách sinh viên từ studentDetails
   const studentList = Array.from(studentDetails.entries()).sort((a, b) => a[0] - b[0]) // Sắp xếp theo userId

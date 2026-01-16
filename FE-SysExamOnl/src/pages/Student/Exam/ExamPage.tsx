@@ -373,20 +373,22 @@ export default function ExamPage() {
   )
 
   // === VISIBILITY CHANGE (Tab Hidden) ===
+  // NOTE: useStudentMonitoringWebSocket đã tự động xử lý FOCUS_LOST/FOCUS_REGAINED
+  // Chỉ cần gửi HTTP API log, không cần gửi WebSocket nữa
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && isExamStartedRef.current) {
-        console.log('[DEBUG] Tab hidden detected - sending EXIT event and LEAVE WebSocket')
+        console.log('[DEBUG] Tab hidden detected - sending EXIT event (HTTP only)')
         sendEventLog('EXIT')
-        sendEvent('LEAVE') // Gửi WebSocket event khi chuyển tab
+        // WebSocket FOCUS_LOST đã được gửi tự động bởi useStudentMonitoringWebSocket
       } else if (!document.hidden && isExamStartedRef.current) {
-        console.log('[DEBUG] Tab visible again - sending ENTER WebSocket')
-        sendEvent('ENTER') // Gửi WebSocket event khi quay lại tab
+        console.log('[DEBUG] Tab visible again')
+        // WebSocket FOCUS_REGAINED đã được gửi tự động bởi useStudentMonitoringWebSocket
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [sendEventLog, sendEvent])
+  }, [sendEventLog])
 
   // === BEFORE UNLOAD (Close/Reload Tab) ===
   useEffect(() => {
