@@ -1,11 +1,77 @@
-# iOS Fullscreen Support Documentation
+# iOS & Android Fullscreen Support Documentation
 
 ## Tổng quan
-Hệ thống thi trực tuyến đã được cập nhật để hỗ trợ đầy đủ chế độ toàn màn hình trên iOS Safari và các trình duyệt iOS khác.
+Hệ thống thi trực tuyến đã được cập nhật để hỗ trợ cả iOS và Android với chiến lược khác nhau:
+- **Androi### 🧪 Test trên thiết bị
+
+#### iOS (iPhone/iPad):
+1. Mở Safari trên iPhone/iPad
+2. Truy cập trang thi
+3. Nhấn "Bắt đầu thi" (icon PlayCircle)
+4. Kiểm tra:
+   - [ ] Vào thi thành công **KHÔNG** yêu cầu fullscreen
+   - [ ] Có thể làm bài bình thường
+   - [ ] Notch/dynamic island không che nội dung (safe area)
+   - [ ] Không bị bounce khi scroll
+   - [ ] Có thể thoát và nộp bài bình thường
+
+#### Android:
+1. Mở Chrome/Browser trên Android
+2. Truy cập trang thi  
+3. Nhấn "Bắt đầu thi" (icon Maximize2)
+4. Kiểm tra:
+   - [ ] **BẮT BUỘC** vào fullscreen mode
+   - [ ] Nếu không vào được fullscreen → hiện lỗi, không cho làm bài
+   - [ ] Thoát fullscreen → gửi EXIT event
+   - [ ] Hoàn thành thi → tự động thoát fullscreen
+
+### 🎯 Behavior Summary
+
+| Tính năng | Android | iOS |
+|-----------|---------|-----|
+| Fullscreen Required | ✅ Bắt buộc | ❌ Không yêu cầu |
+| Start Button Icon | Maximize2 | PlayCircle |
+| Fullscreen Warning | ⚠️ Hiện thông báo | 🔕 Không hiện |
+| Exit on Fullscreen Exit | ✅ Yes | ➖ N/A |
+| Safe Area Support | ➖ N/A | ✅ Yes |
+| Monitoring Method | Fullscreen API | Tab visibility + Events | buộc fullscreen khi làm bài thi
+- **iOS**: Không yêu cầu fullscreen, cho phép làm bài bình thường (do giới hạn của iOS Safari)
+
+## Lý do không yêu cầu fullscreen trên iOS
+
+### Giới hạn kỹ thuật của iOS:
+1. **Limited Fullscreen API**: iOS Safari có hỗ trợ fullscreen nhưng rất hạn chế
+2. **User Experience**: Fullscreen trên iOS thường gây khó chịu cho user
+3. **Keyboard Issues**: Khi hiện bàn phím, iOS có thể tự động thoát fullscreen
+4. **Alternative Detection**: iOS có cơ chế monitoring khác thay cho fullscreen
 
 ## Các thay đổi chính
 
-### 1. Hook useFullScreen.ts
+### 1. Device Detection (utils.ts)
+**Vị trí**: `src/utils/utils.ts`
+
+**Thêm mới**:
+```typescript
+// Detect iOS devices
+export const isIOSDevice = (): boolean => {
+  const userAgent = window.navigator.userAgent.toLowerCase()
+  return /iphone|ipad|ipod/.test(userAgent) || 
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
+// Detect Android devices
+export const isAndroidDevice = (): boolean => {
+  const userAgent = window.navigator.userAgent.toLowerCase()
+  return /android/.test(userAgent)
+}
+```
+
+**Giải thích**:
+- `isIOSDevice()`: Detect iPhone, iPad, iPod (bao gồm cả iPad với iOS 13+)
+- `isAndroidDevice()`: Detect các thiết bị Android
+- Dùng để quyết định có yêu cầu fullscreen hay không
+
+### 2. Hook useFullScreen.ts
 **Vị trí**: `src/hooks/useFullScreen.ts`
 
 **Cập nhật**:
@@ -88,26 +154,44 @@ body.fullscreen-mode {
 **Vị trí**: `src/pages/Student/Exam/ExamPage.tsx`
 
 **Cập nhật**:
-- ✅ Thêm `document.body.classList.add('fullscreen-mode')` khi bắt đầu thi
-- ✅ Thêm `document.body.classList.remove('fullscreen-mode')` khi kết thúc/thoát thi
 
-**Code**:
 ```typescript
+// Detect device type
+const isIOS = isIOSDevice()
+const isAndroid = isAndroidDevice()
+const requiresFullscreen = isAndroid // Only require fullscreen on Android
+
+// handleStartExam - Only request fullscreen on Android
 const handleStartExam = async () => {
-  // ... existing code ...
-  if (success) {
-    setIsExamStarted(true)
-    document.body.classList.add('fullscreen-mode') // ← Thêm
-    toast.success('Bắt đầu làm bài!')
+  // ... validation code ...
+  
+  // Only require fullscreen on Android
+  if (requiresFullscreen) {
+    const success = await requestFullscreen()
+    if (!success) {
+      toast.error('Không thể vào chế độ toàn màn hình. Vui lòng thử lại.')
+      return
+    }
+    document.body.classList.add('fullscreen-mode')
   }
+  
+  setIsExamStarted(true)
+  toast.success('Bắt đầu làm bài!')
 }
 
-const handleExitExam = async () => {
-  // ... existing code ...
-  document.body.classList.remove('fullscreen-mode') // ← Thêm
-  await exitFullscreen()
-}
+// useFullScreen hook - Only enable on Android
+const { requestFullscreen, exitFullscreen } = useFullScreen({
+  onExit: handleExit,
+  enabled: requiresFullscreen, // Only Android
+  requiredFullscreen: requiresFullscreen
+})
 ```
+
+**Giải thích**:
+- Chỉ yêu cầu fullscreen khi `requiresFullscreen === true` (Android)
+- iOS có thể bắt đầu làm bài mà không cần fullscreen
+- Fullscreen hook chỉ active trên Android
+- UI hiển thị icon khác nhau: Maximize2 (Android) vs PlayCircle (iOS)
 
 ## Kiểm tra tương thích
 
@@ -137,22 +221,34 @@ Nếu trình duyệt không hỗ trợ Fullscreen API:
 
 ## Lưu ý quan trọng
 
-### 📱 iOS Limitations
-1. **User gesture required**: iOS yêu cầu phải có user interaction (click/touch) để vào fullscreen
-2. **No programmatic fullscreen**: Không thể tự động vào fullscreen khi load trang
-3. **Different behavior**: iOS fullscreen khác Desktop (ẩn Safari UI bars)
-4. **Keyboard issues**: Keyboard có thể làm thoát fullscreen trên một số iOS version cũ
+### 📱 Device-Specific Behavior
+
+**iOS:**
+- ✅ Không yêu cầu fullscreen
+- ✅ Làm bài thi bình thường như web app
+- ✅ Safe area support cho notch/dynamic island
+- ✅ Monitoring qua tab visibility và event tracking
+- ✅ User experience tối ưu, không bị gián đoạn
+
+**Android:**
+- ✅ BẮT BUỘC fullscreen mode
+- ✅ Tự động thoát bài thi nếu thoát fullscreen
+- ✅ Fullscreen API monitoring
+- ⚠️ User phải cho phép fullscreen để làm bài
 
 ### 🔒 Security
-- Fullscreen chỉ được kích hoạt sau khi user nhấn nút "Bắt đầu thi"
-- Auto-exit nếu user thoát fullscreen (gửi EXIT event)
-- Prevent bounce/overscroll để tránh user thoát bài thi
+- Fullscreen (Android) hoặc monitoring (iOS) được kích hoạt khi bắt đầu thi
+- Auto-exit nếu user thoát fullscreen trên Android
+- Tab visibility tracking cho cả iOS và Android
+- Prevent bounce/overscroll trên cả hai platform
 
 ### 🎨 UI/UX
-- Responsive design đã được tối ưu cho mobile
+- Responsive design tối ưu cho cả iOS và Android
 - Bottom navigation bar cho mobile
 - Touch-friendly button sizes
-- Safe area padding cho notch devices
+- Safe area padding cho notch devices (iOS)
+- Icon khác nhau: Maximize2 (Android) vs PlayCircle (iOS)
+- Warning message chỉ hiện trên Android
 
 ## Troubleshooting
 
@@ -202,17 +298,28 @@ const isCurrentlyFullscreen = !!(
 
 ## Changelog
 
-### Version 1.1.0 (2026-01-16)
-- ✅ Added iOS fullscreen support
-- ✅ Added webkit prefix support
-- ✅ Added safe area insets for notch devices
-- ✅ Added fullscreen-mode body class
-- ✅ Added iOS-specific meta tags
-- ✅ Improved mobile responsive design
-- ✅ Added bottom navigation for mobile
+### Version 1.2.0 (2026-01-16) - Current
+- ✅ **BREAKING CHANGE**: iOS không còn yêu cầu fullscreen
+- ✅ Added device detection (isIOSDevice, isAndroidDevice)
+- ✅ Conditional fullscreen: Only Android requires fullscreen
+- ✅ Different UI icons: Maximize2 (Android) vs PlayCircle (iOS)
+- ✅ Conditional warning message for Android only
+- ✅ iOS monitoring via tab visibility instead of fullscreen
+- ✅ Improved user experience on iOS
+- ✅ Maintained strict monitoring on Android
+
+### Version 1.1.0 (2026-01-16) - Deprecated
+- ~~Added iOS fullscreen support~~
+- ~~Added webkit prefix support~~
+- Added safe area insets for notch devices (Still active)
+- Added fullscreen-mode body class (Android only now)
+- Added iOS-specific meta tags (Still active)
+- Improved mobile responsive design (Still active)
+- Added bottom navigation for mobile (Still active)
 
 ---
 
 **Người cập nhật**: GitHub Copilot  
 **Ngày**: 16/01/2026  
-**Status**: ✅ Ready for Production
+**Status**: ✅ Ready for Production  
+**Device Strategy**: Android = Fullscreen Required | iOS = Normal Mode
