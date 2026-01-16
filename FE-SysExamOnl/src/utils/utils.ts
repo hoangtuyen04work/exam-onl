@@ -66,3 +66,16 @@ export const loadFromLocalStorage = (examSessionId: number) => {
 export const getBaseUrl = () => {
   return (import.meta.env.VITE_API_BASE_EXPOSE as string | undefined)?.replace(/\/+$/, '') || ''
 }
+
+// Detect iOS devices
+export const isIOSDevice = (): boolean => {
+  const userAgent = window.navigator.userAgent.toLowerCase()
+  return /iphone|ipad|ipod/.test(userAgent) || 
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) // iPad with iOS 13+
+}
+
+// Detect Android devices
+export const isAndroidDevice = (): boolean => {
+  const userAgent = window.navigator.userAgent.toLowerCase()
+  return /android/.test(userAgent)
+}

@@ -8,7 +8,7 @@ import { AlertCircle, Maximize2, PlayCircle, XCircle } from 'lucide-react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { studentApi, type SubmitPayload } from '../../../api/student-api'
 import { useFullScreen } from '../../../hooks/useFullScreen'
-import { getBaseUrl, loadFromLocalStorage, saveToLocalStorage, useDebounce } from '../../../utils/utils'
+import { getBaseUrl, loadFromLocalStorage, saveToLocalStorage, useDebounce, isIOSDevice, isAndroidDevice } from '../../../utils/utils'
 import { useStudentMonitoringWebSocket } from '../../../hooks/useStudentMonitoringWebSocket' // Thêm import từ file 2
 
 export default function ExamPage() {
@@ -26,6 +26,11 @@ export default function ExamPage() {
   const [expiredAt, setExpiredAt] = useState<Date | null>(null)
   const [examName, setExamName] = useState<string>('')
   const [isTimeExpired, setIsTimeExpired] = useState(false)
+
+  // Detect device type
+  const isIOS = isIOSDevice()
+  const isAndroid = isAndroidDevice()
+  const requiresFullscreen = isAndroid // Only require fullscreen on Android
 
   // === REFS (QUAN TRỌNG: Dùng để truy cập state mới nhất trong Interval/Event) ===
   const autoSaveRef = useRef<number | null>(null)
@@ -475,14 +480,17 @@ export default function ExamPage() {
   }, [isExamStarted, sendEventLog])
 
   const handleExit = () => {
-    handleEndExamForced()
-    sendEvent('LEAVE')
+    // Only handle exit if fullscreen is required (Android)
+    if (requiresFullscreen) {
+      handleEndExamForced()
+      sendEvent('LEAVE')
+    }
   }
 
   const { requestFullscreen, exitFullscreen } = useFullScreen({
     onExit: handleExit,
-    enabled: true,
-    requiredFullscreen: true
+    enabled: requiresFullscreen, // Only enable fullscreen tracking on Android
+    requiredFullscreen: requiresFullscreen
   })
 
   // === SUBMIT EXAM ACTION ===
@@ -512,9 +520,13 @@ export default function ExamPage() {
       if (state === 'FINAL') {
         setIsExamStarted(false)
         setIsTimeExpired(true)
-        // Remove fullscreen-mode class from body
-        document.body.classList.remove('fullscreen-mode')
-        exitFullscreen()
+        
+        // Only exit fullscreen and remove class if on Android
+        if (requiresFullscreen) {
+          document.body.classList.remove('fullscreen-mode')
+          exitFullscreen()
+        }
+        
         if (autoSaveRef.current) {
           clearInterval(autoSaveRef.current)
           autoSaveRef.current = null
@@ -527,7 +539,7 @@ export default function ExamPage() {
         navigate(`/student/exam/${examSessionId}/result`, { replace: true })
       }
     },
-    [examSessionId, navigate, submitMutation, exitFullscreen, sendEvent]
+    [examSessionId, navigate, submitMutation, exitFullscreen, requiresFullscreen]
   )
 
   useEffect(() => {
@@ -566,15 +578,21 @@ export default function ExamPage() {
       return
     }
 
-    const success = await requestFullscreen()
-    if (success) {
-      setIsExamStarted(true)
-      setIsTimeExpired(false)
-      // Add fullscreen-mode class to body for iOS support
+    // Only require fullscreen on Android, iOS can start exam without fullscreen
+    if (requiresFullscreen) {
+      const success = await requestFullscreen()
+      if (!success) {
+        toast.error('Không thể vào chế độ toàn màn hình. Vui lòng thử lại.')
+        return
+      }
+      // Add fullscreen-mode class to body for Android
       document.body.classList.add('fullscreen-mode')
-      toast.success('Bắt đầu làm bài!')
     }
-  }, [exam, expiredAt, requestFullscreen, calculateTimeLeft, checkTimeExpired, submitExam])
+
+    setIsExamStarted(true)
+    setIsTimeExpired(false)
+    toast.success('Bắt đầu làm bài!')
+  }, [exam, expiredAt, requestFullscreen, calculateTimeLeft, checkTimeExpired, submitExam, requiresFullscreen])
 
   const handleExitExam = useCallback(async () => {
     sendEvent('LEAVE') // Thêm từ file 2
@@ -589,11 +607,15 @@ export default function ExamPage() {
     }
 
     setIsExamStarted(false)
-    // Remove fullscreen-mode class from body
-    document.body.classList.remove('fullscreen-mode')
-    await exitFullscreen()
+    
+    // Only exit fullscreen and remove class if on Android
+    if (requiresFullscreen) {
+      document.body.classList.remove('fullscreen-mode')
+      await exitFullscreen()
+    }
+    
     navigate('/student')
-  }, [examSessionId, answers, exitFullscreen, navigate, sendEvent, sendEventLog]) // Thêm sendEvent vào dependencies
+  }, [examSessionId, answers, exitFullscreen, navigate, sendEvent, sendEventLog, requiresFullscreen])
 
   const handleNext = useCallback(() => {
     setCurrentQuestion((prev) => Math.min(prev + 1, (exam?.questions.length || 1) - 1))
@@ -695,6 +717,11 @@ export default function ExamPage() {
                 ? 'Bạn đã làm bài trước đó. Câu trả lời đã lưu sẽ được khôi phục.'
                 : 'Sẵn sàng bắt đầu làm bài!'}
             </p>
+            {requiresFullscreen && (
+              <p className='text-blue-700 text-center text-xs md:text-sm mt-2'>
+                ⚠️ Bài thi sẽ được mở ở chế độ toàn màn hình
+              </p>
+            )}
           </div>
 
           <div className='bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6 text-xs md:text-sm space-y-2 md:space-y-3'>
@@ -738,8 +765,14 @@ export default function ExamPage() {
               disabled={!canStart}
               className='w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 md:px-8 py-2.5 md:py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 flex items-center justify-center space-x-2 shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base'
             >
-              <Maximize2 className='w-4 h-4 md:w-5 md:h-5' />
-              <span className='font-medium'>{hasSavedAnswers ? 'Tiếp tục làm bài' : 'Bắt đầu thi'}</span>
+              {requiresFullscreen ? (
+                <Maximize2 className='w-4 h-4 md:w-5 md:h-5' />
+              ) : (
+                <PlayCircle className='w-4 h-4 md:w-5 md:h-5' />
+              )}
+              <span className='font-medium'>
+                {hasSavedAnswers ? 'Tiếp tục làm bài' : 'Bắt đầu thi'}
+              </span>
             </button>
           </div>
         </div>
