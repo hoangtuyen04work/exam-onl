@@ -97,8 +97,10 @@ const ClassListPage = () => {
     setSelectedClassId(classId)
     setActiveTab(tab)
     navigate(`/student/classes/${classId}`, { replace: true })
-    // Tự động thu gọn sidebar trên mobile sau khi chọn lớp
-    setIsSidebarCollapsed(true)
+    // Thu gọn sidebar khi mở chat hoặc exams (chỉ trên mobile)
+    if (window.innerWidth < 768) {
+      setIsSidebarCollapsed(true)
+    }
   }
 
   const handleStartExam = (inviteLink: string) => {
@@ -141,22 +143,16 @@ const ClassListPage = () => {
   }
 
   return (
-    <div className='flex h-full'>
+    <div className='flex h-full relative'>
       {/* SUB-SIDEBAR - Danh sách lớp học */}
       <aside
-        className={`bg-slate-50 border-r border-slate-200 flex flex-col flex-shrink-0 z-10 transition-all duration-300 ${
-          isSidebarCollapsed ? 'w-16' : 'w-72'
-        } md:w-72`}
+        className={`bg-slate-50 border-r border-slate-200 flex flex-col flex-shrink-0 z-20 transition-all duration-300 
+          ${isSidebarCollapsed ? 'absolute top-0 left-0 h-full w-0 overflow-hidden -translate-x-full md:relative md:w-72 md:translate-x-0' : 'absolute top-0 left-0 h-full w-72 translate-x-0 md:relative md:w-72'}
+        `}
       >
-        <div
-          className={`border-b border-slate-200 bg-white transition-all ${isSidebarCollapsed ? 'p-2' : 'p-4'} md:p-6`}
-        >
+        <div className={`border-b border-slate-200 bg-white transition-all p-4 md:p-6`}>
           <div className='flex items-center justify-between mb-0 md:mb-2 gap-2'>
-            <h2
-              className={`text-lg font-bold text-slate-800 transition-all ${isSidebarCollapsed ? 'hidden' : 'block'} md:block`}
-            >
-              Lớp học của tôi
-            </h2>
+            <h2 className={`text-lg font-bold text-slate-800 transition-all block`}>Lớp học của tôi</h2>
             <div className='flex items-center gap-2'>
               <button
                 onClick={() => setShowJoinModal(true)}
@@ -167,19 +163,17 @@ const ClassListPage = () => {
               </button>
               <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className='md:hidden text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors'
-                title={isSidebarCollapsed ? 'Xem chi tiết' : 'Thu gọn'}
+                className='text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors md:hidden'
+                title='Thu gọn'
               >
-                <i className={`fas ${isSidebarCollapsed ? 'fa-bars' : 'fa-times'} text-sm`}></i>
+                <i className='fas fa-times text-sm'></i>
               </button>
             </div>
           </div>
-          <p className={`text-xs text-slate-500 transition-all ${isSidebarCollapsed ? 'hidden' : 'block'} md:block`}>
-            Bạn có {classes.length} lớp học đang tham gia
-          </p>
+          <p className={`text-xs text-slate-500 transition-all block`}>Bạn có {classes.length} lớp học đang tham gia</p>
         </div>
 
-        <div className={`flex-1 overflow-y-auto space-y-2 transition-all ${isSidebarCollapsed ? 'p-1' : 'p-3'} md:p-3`}>
+        <div className={`flex-1 overflow-y-auto space-y-2 transition-all p-3`}>
           {loading ? (
             <div className='flex items-center justify-center py-20'>
               <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600'></div>
@@ -187,14 +181,10 @@ const ClassListPage = () => {
           ) : classes.length === 0 ? (
             <div className='text-center py-16 px-4'>
               <div className='text-gray-400 text-4xl mb-3'>📚</div>
-              <p className={`text-gray-600 text-sm transition-all ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-                Chưa có lớp học nào
-              </p>
+              <p className={`text-gray-600 text-sm transition-all block`}>Chưa có lớp học nào</p>
               <button
                 onClick={() => setShowJoinModal(true)}
-                className={`mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors ${
-                  isSidebarCollapsed ? 'hidden' : 'inline-block'
-                }`}
+                className={`mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors inline-block`}
               >
                 Tham gia lớp học
               </button>
@@ -209,33 +199,24 @@ const ClassListPage = () => {
                     selectedClassId === classItem.classId
                       ? 'bg-white shadow-md border-l-4 border-blue-600'
                       : 'hover:bg-white/50 border-transparent'
-                  } ${isSidebarCollapsed ? 'p-2' : 'p-4'} md:p-4`}
-                  title={isSidebarCollapsed ? classItem.name : ''}
+                  } p-4`}
                 >
-                  <div
-                    className={`flex items-center transition-all ${
-                      isSidebarCollapsed ? 'flex-col space-x-0' : 'flex-row space-x-3'
-                    } md:flex-row md:space-x-3`}
-                  >
+                  <div className={`flex items-center transition-all flex-row space-x-3`}>
                     <div className='w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold flex-shrink-0 relative'>
                       {classItem.name.charAt(0).toUpperCase()}
-                      {classItem.totalExamSessions > 0 && isSidebarCollapsed && (
-                        <span className='absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full font-medium flex items-center justify-center md:hidden'>
+                      {classItem.totalExamSessions > 0 && (
+                        <span className='absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full font-medium flex items-center justify-center'>
                           {classItem.totalExamSessions}
                         </span>
                       )}
                     </div>
-                    <div
-                      className={`flex-1 overflow-hidden transition-all ${isSidebarCollapsed ? 'hidden' : 'block'} md:block`}
-                    >
+                    <div className={`flex-1 overflow-hidden transition-all block`}>
                       <p className='text-sm font-bold text-slate-700 truncate'>{classItem.name}</p>
                       <p className='text-[11px] text-green-500 font-medium'>● Đang hoạt động</p>
                     </div>
                     {classItem.totalExamSessions > 0 && (
                       <span
-                        className={`px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-medium transition-all ${
-                          isSidebarCollapsed ? 'hidden' : 'inline'
-                        } md:inline`}
+                        className={`px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-medium transition-all inline`}
                       >
                         {classItem.totalExamSessions}
                       </span>
@@ -249,20 +230,14 @@ const ClassListPage = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div
-            className={`border-t border-slate-200 bg-white transition-all ${isSidebarCollapsed ? 'p-2' : 'p-3'} md:p-3`}
-          >
-            <div
-              className={`flex items-center text-xs gap-1 transition-all ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} md:justify-between`}
-            >
+          <div className={`border-t border-slate-200 bg-white transition-all p-3`}>
+            <div className={`flex items-center text-xs gap-1 transition-all justify-between`}>
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
                 className='px-2 md:px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium'
               >
-                <span className={isSidebarCollapsed ? '' : 'hidden md:inline'}>←</span>
-                <span className={isSidebarCollapsed ? 'hidden' : 'inline md:hidden'}>← Trước</span>
-                <span className='hidden md:inline'>← Trước</span>
+                <span>← Trước</span>
               </button>
               <span className='text-slate-600 font-medium text-[10px] md:text-xs'>
                 {page + 1}/{totalPages}
@@ -272,9 +247,7 @@ const ClassListPage = () => {
                 disabled={page >= totalPages - 1}
                 className='px-2 md:px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium'
               >
-                <span className={isSidebarCollapsed ? '' : 'hidden md:inline'}>→</span>
-                <span className={isSidebarCollapsed ? 'hidden' : 'inline md:hidden'}>Sau →</span>
-                <span className='hidden md:inline'>Sau →</span>
+                <span>Sau →</span>
               </button>
             </div>
           </div>
@@ -282,7 +255,7 @@ const ClassListPage = () => {
       </aside>
 
       {/* MAIN CONTENT AREA - Chat hoặc Exams */}
-      <div className='flex-1 flex flex-col h-full bg-slate-50'>
+      <div className='flex-1 flex flex-col h-full bg-slate-50 relative w-full'>
         {!selectedClassId ? (
           <div className='flex-1 flex items-center justify-center p-4'>
             <div className='text-center max-w-md'>
@@ -308,6 +281,16 @@ const ClassListPage = () => {
             {/* Header của Chat/Class Detail */}
             <div className='bg-white p-3 md:p-4 border-b border-slate-200 flex justify-between items-center px-4 md:px-8 shadow-sm'>
               <div className='flex items-center space-x-2 md:space-x-4'>
+                {/* Menu Button - Hiện khi sidebar bị ẩn (chỉ mobile) */}
+                {isSidebarCollapsed && (
+                  <button
+                    onClick={() => setIsSidebarCollapsed(false)}
+                    className='w-8 h-8 md:w-10 md:h-10 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 transition-colors md:hidden'
+                    title='Xem danh sách lớp'
+                  >
+                    <i className='fas fa-bars text-base md:text-lg'></i>
+                  </button>
+                )}
                 <div className='w-8 h-8 md:w-10 md:h-10 bg-slate-100 rounded-full flex items-center justify-center text-blue-600'>
                   <i className='fas fa-comments text-base md:text-xl'></i>
                 </div>
