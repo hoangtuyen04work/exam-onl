@@ -8,7 +8,16 @@ import { vi } from 'date-fns/locale/vi'
 
 interface StudentEvent {
   examSessionId: number
-  event: 'WAITING' | 'ENTER' | 'LEAVE' | 'FOCUS_LOST' | 'FOCUS_REGAINED' | 'SUBMIT' | 'TAB_SWITCH' | 'DISCONNECTED' | 'RECONNECTED'
+  event:
+    | 'WAITING'
+    | 'ENTER'
+    | 'LEAVE'
+    | 'FOCUS_LOST'
+    | 'FOCUS_REGAINED'
+    | 'SUBMIT'
+    | 'TAB_SWITCH'
+    | 'DISCONNECTED'
+    | 'RECONNECTED'
 }
 
 interface StudentEventBroadcast {
@@ -80,7 +89,14 @@ export default function ExamMonitoringPage() {
           }
 
           // Map status từ backend sang frontend
-          let currentStatus: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'UNKNOWN' = 'UNKNOWN'
+          let currentStatus:
+            | 'WAITING'
+            | 'IN_PROGRESS'
+            | 'COMPLETED'
+            | 'FOCUS_LOST'
+            | 'LEFT'
+            | 'DISCONNECTED'
+            | 'UNKNOWN' = 'UNKNOWN'
           switch (participant.status) {
             case 'WAITING':
               currentStatus = 'WAITING'
@@ -156,7 +172,14 @@ export default function ExamMonitoringPage() {
             const existing = prev.get(broadcast.userId)
 
             // Xác định currentStatus dựa trên event
-            let newStatus: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED' | 'FOCUS_LOST' | 'LEFT' | 'DISCONNECTED' | 'UNKNOWN' = 'UNKNOWN'
+            let newStatus:
+              | 'WAITING'
+              | 'IN_PROGRESS'
+              | 'COMPLETED'
+              | 'FOCUS_LOST'
+              | 'LEFT'
+              | 'DISCONNECTED'
+              | 'UNKNOWN' = 'UNKNOWN'
             switch (broadcast.event.event) {
               case 'WAITING':
                 newStatus = 'WAITING'
@@ -338,8 +361,8 @@ export default function ExamMonitoringPage() {
                   {statusLabel}
                 </div>
                 <p className='text-lg font-semibold text-gray-800'>#{index + 1}</p>
-                <p 
-                  className='text-base font-medium text-gray-900 mt-1 cursor-help' 
+                <p
+                  className='text-base font-medium text-gray-900 mt-1 cursor-help'
                   title={details.email || 'Không có email'}
                 >
                   {details.name}
