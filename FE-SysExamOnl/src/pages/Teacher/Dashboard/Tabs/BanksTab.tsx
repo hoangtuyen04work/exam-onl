@@ -109,7 +109,7 @@ export default function QuestionPaperBank() {
       <div className='p-3 overflow-hidden'>
         <div className='max-w-7xl mx-auto space-y-4 overflow-hidden'>
           {/* HEADER - tiêu đề đã bỏ, search + tạo mới sang trái */}
-          <div className='flex items-center justify-between gap-4'>
+          <div className='flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4'>
             <div className='flex items-center gap-3'>
               <div className='hidden sm:flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm'>
                 <input
@@ -157,8 +157,37 @@ export default function QuestionPaperBank() {
               </button>
             </div>
 
-            <div className='flex items-center gap-3'>
-              {/* Giữ trống hoặc chèn các control cần thiết về phía phải nếu muốn */}
+            {/* Import/Export Actions */}
+            <div className='flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2 shadow-sm'>
+              <button
+                onClick={triggerImport}
+                className='inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-md hover:bg-green-100 transition-colors'
+                title='Nhập ngân hàng từ Excel'
+              >
+                <Upload className='w-4 h-4' />
+                <span className='hidden sm:inline text-sm font-medium'>Nhập Excel</span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type='file'
+                accept='.xlsx,.xls'
+                className='hidden'
+                onChange={handleImportFile}
+              />
+              <button
+                onClick={() => {
+                  if (selectedPaper) {
+                    handleExport(selectedPaper.bankQuestionId)
+                  } else {
+                    toast.warning('Vui lòng chọn ngân hàng cần xuất!')
+                  }
+                }}
+                className='inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors'
+                title='Xuất ngân hàng ra Excel'
+              >
+                <Download className='w-4 h-4' />
+                <span className='hidden sm:inline text-sm font-medium'>Xuất Excel</span>
+              </button>
             </div>
           </div>
 
@@ -173,22 +202,6 @@ export default function QuestionPaperBank() {
                     ({filteredPapers.length}
                     {normalizedSearch ? ` / ${papers.length}` : ''})
                   </span>
-                </div>
-                <div className='flex items-center gap-2'>
-                  <button
-                    onClick={triggerImport}
-                    className='p-2 rounded-md hover:bg-slate-50 text-slate-600'
-                    title='Nhập'
-                  >
-                    <Upload className='w-4 h-4' />
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type='file'
-                    accept='.xlsx,.xls'
-                    className='hidden'
-                    onChange={handleImportFile}
-                  />
                 </div>
               </div>
 
@@ -314,12 +327,6 @@ export default function QuestionPaperBank() {
                         <Sparkles className='w-4 h-4 mr-2 inline' /> Tạo đề với AI
                       </button>
                       <button
-                        onClick={() => handleExport(selectedPaper?.bankQuestionId)}
-                        className='px-3 py-2 rounded-md bg-white border text-slate-600 hover:bg-slate-50'
-                      >
-                        <Download className='w-4 h-4 mr-2 inline' /> Xuất
-                      </button>
-                      <button
                         onClick={() => selectedPaper && openEditModal(selectedPaper)}
                         className='px-3 py-2 rounded-md bg-white border text-slate-600 hover:bg-slate-50'
                       >
@@ -362,7 +369,6 @@ export default function QuestionPaperBank() {
                                 </div>
                               )}
                             </div>
-                            <div className='text-indigo-700 font-bold ml-4 flex-shrink-0'>{q.point} đ</div>
                           </div>
 
                           <ul className='mt-3 grid grid-cols-1 md:grid-cols-2 gap-2'>

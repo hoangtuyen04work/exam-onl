@@ -34,7 +34,6 @@ const ClassListPage = () => {
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [joinClassCode, setJoinClassCode] = useState('')
   const [joiningClass, setJoiningClass] = useState(false)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   // Exam pagination
   const [examPage, setExamPage] = useState(0)
@@ -97,10 +96,6 @@ const ClassListPage = () => {
     setSelectedClassId(classId)
     setActiveTab(tab)
     navigate(`/student/classes/${classId}`, { replace: true })
-    // Thu gọn sidebar khi mở chat hoặc exams (chỉ trên mobile)
-    if (window.innerWidth < 768) {
-      setIsSidebarCollapsed(true)
-    }
   }
 
   const handleStartExam = (inviteLink: string) => {
@@ -143,124 +138,38 @@ const ClassListPage = () => {
   }
 
   return (
-    <div className='flex h-full relative'>
+    <div className='flex h-full'>
       {/* SUB-SIDEBAR - Danh sách lớp học */}
-      <aside
-        className={`bg-slate-50 border-r border-slate-200 flex flex-col flex-shrink-0 z-20 transition-all duration-300 
-          ${isSidebarCollapsed ? 'absolute top-0 left-0 h-full w-0 overflow-hidden -translate-x-full md:relative md:w-72 md:translate-x-0' : 'absolute top-0 left-0 h-full w-72 translate-x-0 md:relative md:w-72'}
-        `}
-      >
-        <div className={`border-b border-slate-200 bg-white transition-all p-4 md:p-6`}>
-          <div className='flex items-center justify-between mb-0 md:mb-2 gap-2'>
-            <h2 className={`text-lg font-bold text-slate-800 transition-all block`}>Lớp học của tôi</h2>
-            <div className='flex items-center gap-2'>
-              <button
-                onClick={() => setShowJoinModal(true)}
-                className='text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition-colors'
-                title='Tham gia lớp học mới'
-              >
-                <i className='fas fa-plus text-sm'></i>
-              </button>
-              <button
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className='text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors md:hidden'
-                title='Thu gọn'
-              >
-                <i className='fas fa-times text-sm'></i>
-              </button>
-            </div>
+      <aside className='w-72 bg-slate-50 border-r border-slate-200 flex flex-col flex-shrink-0 z-10'>
+        <div className='p-6 border-b border-slate-200 bg-white'>
+          <div className='flex items-center justify-between mb-2'>
+            <h2 className='text-lg font-bold text-slate-800'>Lớp học của tôi</h2>
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className='text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition-colors'
+              title='Tham gia lớp học mới'
+            >
+              <i className='fas fa-plus text-sm'></i>
+            </button>
           </div>
-          <p className={`text-xs text-slate-500 transition-all block`}>Bạn có {classes.length} lớp học đang tham gia</p>
+          <p className='text-xs text-slate-500'>Bạn có {classes.length} lớp học đang tham gia</p>
         </div>
 
-        <div className={`flex-1 overflow-y-auto space-y-2 transition-all p-3`}>
+        <div className='flex-1 overflow-y-auto p-3 space-y-2'>
           {loading ? (
             <div className='flex items-center justify-center py-20'>
               <div className='animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600'></div>
             </div>
           ) : classes.length === 0 ? (
-            <div className='flex flex-col items-center justify-center h-full px-4 py-12'>
-              {/* Empty State Illustration */}
-              <div className='w-32 h-32 mb-6 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center shadow-lg'>
-                <div className='relative'>
-                  <svg className='w-16 h-16 text-blue-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={1.5}
-                      d='M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253'
-                    />
-                  </svg>
-                  <div className='absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center'>
-                    <span className='text-white text-xs'>!</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Empty State Text */}
-              <h3 className='text-lg font-bold text-slate-800 mb-2 text-center'>Chưa tham gia lớp học nào</h3>
-              <p className='text-sm text-slate-500 text-center mb-6 max-w-xs leading-relaxed'>
-                Bạn chưa tham gia lớp học nào. Hãy tham gia lớp học để bắt đầu học tập và làm bài thi!
-              </p>
-
-              {/* Action Buttons */}
-              <div className='flex flex-col gap-3 w-full max-w-xs'>
-                <button
-                  onClick={() => setShowJoinModal(true)}
-                  className='w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2'
-                >
-                  <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 6v6m0 0v6m0-6h6m-6 0H6' />
-                  </svg>
-                  <span>Tham gia lớp học</span>
-                </button>
-
-                <div className='relative'>
-                  <div className='absolute inset-0 flex items-center'>
-                    <div className='w-full border-t border-slate-200'></div>
-                  </div>
-                  <div className='relative flex justify-center text-xs'>
-                    <span className='px-2 bg-slate-50 text-slate-400'>hoặc</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={loadClasses}
-                  className='w-full px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 hover:border-blue-300 transition-all flex items-center justify-center gap-2'
-                >
-                  <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      strokeWidth={2}
-                      d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                    />
-                  </svg>
-                  <span>Làm mới</span>
-                </button>
-              </div>
-
-              {/* Help Text */}
-              <div className='mt-8 p-4 bg-blue-50 border border-blue-100 rounded-xl max-w-xs'>
-                <div className='flex items-start gap-3'>
-                  <div className='flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center'>
-                    <svg className='w-5 h-5 text-blue-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-                      />
-                    </svg>
-                  </div>
-                  <div className='flex-1'>
-                    <p className='text-xs font-medium text-blue-900 mb-1'>Cần mã lớp học?</p>
-                    <p className='text-xs text-blue-700 leading-relaxed'>
-                      Liên hệ với giảng viên của bạn để nhận mã tham gia lớp học
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <div className='text-center py-16 px-4'>
+              <div className='text-gray-400 text-4xl mb-3'>📚</div>
+              <p className='text-gray-600 text-sm'>Chưa có lớp học nào</p>
+              <button
+                onClick={() => setShowJoinModal(true)}
+                className='mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors'
+              >
+                Tham gia lớp học
+              </button>
             </div>
           ) : (
             <>
@@ -268,29 +177,22 @@ const ClassListPage = () => {
                 <div
                   key={classItem.classId}
                   onClick={() => handleClassClick(classItem.classId, 'chat')}
-                  className={`rounded-xl cursor-pointer transition-all border ${
+                  className={`p-4 rounded-xl cursor-pointer transition-all border ${
                     selectedClassId === classItem.classId
                       ? 'bg-white shadow-md border-l-4 border-blue-600'
                       : 'hover:bg-white/50 border-transparent'
-                  } p-4`}
+                  }`}
                 >
-                  <div className={`flex items-center transition-all flex-row space-x-3`}>
-                    <div className='w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold flex-shrink-0 relative'>
+                  <div className='flex items-center space-x-3'>
+                    <div className='w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold flex-shrink-0'>
                       {classItem.name.charAt(0).toUpperCase()}
-                      {classItem.totalExamSessions > 0 && (
-                        <span className='absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full font-medium flex items-center justify-center'>
-                          {classItem.totalExamSessions}
-                        </span>
-                      )}
                     </div>
-                    <div className={`flex-1 overflow-hidden transition-all block`}>
+                    <div className='flex-1 overflow-hidden'>
                       <p className='text-sm font-bold text-slate-700 truncate'>{classItem.name}</p>
                       <p className='text-[11px] text-green-500 font-medium'>● Đang hoạt động</p>
                     </div>
                     {classItem.totalExamSessions > 0 && (
-                      <span
-                        className={`px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-medium transition-all inline`}
-                      >
+                      <span className='px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-medium'>
                         {classItem.totalExamSessions}
                       </span>
                     )}
@@ -303,24 +205,24 @@ const ClassListPage = () => {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className={`border-t border-slate-200 bg-white transition-all p-3`}>
-            <div className={`flex items-center text-xs gap-1 transition-all justify-between`}>
+          <div className='p-3 border-t border-slate-200 bg-white'>
+            <div className='flex items-center justify-between text-xs'>
               <button
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={page === 0}
-                className='px-2 md:px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium'
+                className='px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium'
               >
-                <span>← Trước</span>
+                ← Trước
               </button>
-              <span className='text-slate-600 font-medium text-[10px] md:text-xs'>
-                {page + 1}/{totalPages}
+              <span className='text-slate-600 font-medium'>
+                {page + 1} / {totalPages}
               </span>
               <button
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={page >= totalPages - 1}
-                className='px-2 md:px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium'
+                className='px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium'
               >
-                <span>Sau →</span>
+                Sau →
               </button>
             </div>
           </div>
@@ -328,144 +230,15 @@ const ClassListPage = () => {
       </aside>
 
       {/* MAIN CONTENT AREA - Chat hoặc Exams */}
-      <div className='flex-1 flex flex-col h-full bg-slate-50 relative w-full'>
-        {/* Mobile Menu Button - Always visible when sidebar is collapsed */}
-        {isSidebarCollapsed && (
-          <div className='md:hidden sticky top-0 z-10 bg-white border-b border-slate-200 p-3 shadow-sm'>
-            <button
-              onClick={() => setIsSidebarCollapsed(false)}
-              className='flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg w-full justify-center'
-            >
-              <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4 6h16M4 12h16M4 18h16' />
-              </svg>
-              <span>Xem danh sách lớp học</span>
-              {classes.length > 0 && (
-                <span className='ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs font-bold'>{classes.length}</span>
-              )}
-            </button>
-          </div>
-        )}
-
+      <div className='flex-1 flex flex-col h-full bg-slate-50'>
         {!selectedClassId ? (
-          <div className='flex-1 flex items-center justify-center p-4'>
-            <div className='text-center max-w-md'>
-              {/* Icon with animation */}
-              <div className='w-32 h-32 mx-auto mb-8 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center shadow-xl relative'>
-                <div className='absolute inset-0 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 animate-pulse opacity-50'></div>
-                <svg
-                  className='w-16 h-16 text-blue-400 relative z-10'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={1.5}
-                    d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
-                  />
-                </svg>
+          <div className='flex-1 flex items-center justify-center'>
+            <div className='text-center'>
+              <div className='w-32 h-32 mx-auto mb-6 rounded-full bg-white shadow-xl flex items-center justify-center'>
+                <i className='fas fa-comments text-5xl text-slate-300'></i>
               </div>
-
-              {/* Text Content */}
-              <h2 className='text-2xl md:text-3xl font-bold text-slate-800 mb-3'>
-                {classes.length === 0 ? 'Bắt đầu học tập' : 'Chọn một lớp học'}
-              </h2>
-              <p className='text-sm md:text-base text-slate-500 mb-8 leading-relaxed'>
-                {classes.length === 0
-                  ? 'Tham gia lớp học để bắt đầu học tập và làm bài thi cùng giảng viên'
-                  : 'Chọn lớp học từ danh sách bên trái để xem chi tiết, trao đổi và làm bài thi'}
-              </p>
-
-              {/* Action Buttons */}
-              {classes.length === 0 ? (
-                <div className='flex flex-col sm:flex-row gap-3 justify-center'>
-                  <button
-                    onClick={() => setShowJoinModal(true)}
-                    className='px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2'
-                  >
-                    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M12 6v6m0 0v6m0-6h6m-6 0H6'
-                      />
-                    </svg>
-                    <span>Tham gia lớp học ngay</span>
-                  </button>
-                </div>
-              ) : (
-                <div className='flex items-center justify-center gap-4 text-sm text-slate-400'>
-                  <div className='flex items-center gap-2'>
-                    <div className='w-2 h-2 bg-blue-400 rounded-full animate-pulse'></div>
-                    <span>Sẵn sàng hỗ trợ</span>
-                  </div>
-                  <span>•</span>
-                  <div className='flex items-center gap-2'>
-                    <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z'
-                      />
-                    </svg>
-                    <span>An toàn & bảo mật</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Features (when no class selected but has classes) */}
-              {classes.length > 0 && (
-                <div className='mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4'>
-                  <div className='p-4 bg-white rounded-xl border border-slate-100 shadow-sm'>
-                    <div className='w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3'>
-                      <svg className='w-6 h-6 text-blue-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z'
-                        />
-                      </svg>
-                    </div>
-                    <h3 className='text-sm font-semibold text-slate-700 mb-1'>Trò chuyện</h3>
-                    <p className='text-xs text-slate-500'>Trao đổi với giảng viên</p>
-                  </div>
-
-                  <div className='p-4 bg-white rounded-xl border border-slate-100 shadow-sm'>
-                    <div className='w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3'>
-                      <svg className='w-6 h-6 text-green-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
-                        />
-                      </svg>
-                    </div>
-                    <h3 className='text-sm font-semibold text-slate-700 mb-1'>Bài thi</h3>
-                    <p className='text-xs text-slate-500'>Làm bài kiểm tra online</p>
-                  </div>
-
-                  <div className='p-4 bg-white rounded-xl border border-slate-100 shadow-sm'>
-                    <div className='w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3'>
-                      <svg className='w-6 h-6 text-purple-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth={2}
-                          d='M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z'
-                        />
-                      </svg>
-                    </div>
-                    <h3 className='text-sm font-semibold text-slate-700 mb-1'>Theo dõi</h3>
-                    <p className='text-xs text-slate-500'>Xem kết quả và tiến độ</p>
-                  </div>
-                </div>
-              )}
+              <h2 className='text-2xl font-bold text-slate-700 mb-2'>Chọn một lớp học</h2>
+              <p className='text-slate-500'>Chọn lớp học từ danh sách bên trái để xem chi tiết và trao đổi</p>
             </div>
           </div>
         ) : loadingDetail ? (
@@ -479,24 +252,22 @@ const ClassListPage = () => {
         ) : (
           <>
             {/* Header của Chat/Class Detail */}
-            <div className='bg-white p-3 md:p-4 border-b border-slate-200 flex justify-between items-center px-4 md:px-8 shadow-sm'>
-              <div className='flex items-center space-x-2 md:space-x-4'>
-                <div className='w-8 h-8 md:w-10 md:h-10 bg-slate-100 rounded-full flex items-center justify-center text-blue-600'>
-                  <i className='fas fa-comments text-base md:text-xl'></i>
+            <div className='bg-white p-4 border-b border-slate-200 flex justify-between items-center px-8 shadow-sm'>
+              <div className='flex items-center space-x-4'>
+                <div className='w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-blue-600'>
+                  <i className='fas fa-comments text-xl'></i>
                 </div>
                 <div>
-                  <h3 className='font-bold text-slate-800 text-sm md:text-base'>{classDetail.name}</h3>
-                  <p className='text-[10px] md:text-xs text-green-500 font-bold hidden md:block'>
-                    Giáo viên đang Online
-                  </p>
+                  <h3 className='font-bold text-slate-800'>{classDetail.name}</h3>
+                  <p className='text-xs text-green-500 font-bold'>Giáo viên đang Online</p>
                 </div>
               </div>
               <button
                 onClick={() => setActiveTab(activeTab === 'chat' ? 'exams' : 'chat')}
-                className='text-blue-600 text-xs md:text-sm font-bold bg-blue-50 px-2 md:px-4 py-2 rounded-lg hover:bg-blue-100 flex items-center gap-1 md:gap-2'
+                className='text-blue-600 text-sm font-bold bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 flex items-center gap-2'
               >
                 <i className={`fas ${activeTab === 'chat' ? 'fa-file-alt' : 'fa-comments'}`}></i>
-                <span className='hidden md:inline'>{activeTab === 'chat' ? 'Tài liệu lớp học' : 'Trở về chat'}</span>
+                {activeTab === 'chat' ? 'Tài liệu lớp học' : 'Trở về chat'}
               </button>
             </div>
 
@@ -504,7 +275,7 @@ const ClassListPage = () => {
             {activeTab === 'chat' ? (
               <div className='flex-1 flex flex-col overflow-hidden'>
                 {/* Chat Messages Area */}
-                <div className='flex-1 overflow-y-auto p-2 md:p-8 space-y-6 bg-slate-50'>
+                <div className='flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50'>
                   <ChatBox
                     classId={selectedClassId}
                     userRole='STUDENT'
@@ -514,8 +285,8 @@ const ClassListPage = () => {
                 </div>
               </div>
             ) : (
-              <div className='flex-1 overflow-y-auto p-4 md:p-8'>
-                <h2 className='text-xl md:text-2xl font-bold mb-4 md:mb-6 text-slate-800'>Danh sách bài thi</h2>
+              <div className='flex-1 overflow-y-auto p-8'>
+                <h2 className='text-2xl font-bold mb-6 text-slate-800'>Danh sách bài thi</h2>
                 {classDetail.examSessions.length === 0 ? (
                   <div className='text-center py-16'>
                     <div className='w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-lg flex items-center justify-center'>
@@ -524,40 +295,41 @@ const ClassListPage = () => {
                     <p className='text-slate-600 text-lg'>Chưa có bài thi nào</p>
                   </div>
                 ) : (
-                  <>
-                    {/* Mobile Card View */}
-                    <div className='md:hidden space-y-3'>
-                      {classDetail.examSessions
-                        .slice(examPage * examsPerPage, (examPage + 1) * examsPerPage)
-                        .map((exam) => {
-                          const now = new Date()
-                          const startTime = new Date(exam.startAt)
-                          const endTime = new Date(exam.expiredAt)
-                          const isUpcoming = startTime > now
-                          const isActive = startTime <= now && endTime >= now
-                          const isExpired = endTime < now
-                          const canStart = isActive && exam.inviteLink
+                  <div className='bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden'>
+                    <table className='w-full text-left'>
+                      <thead className='bg-slate-50 border-b border-slate-200'>
+                        <tr>
+                          <th className='p-5 font-bold text-slate-600 text-sm'>Bài kiểm tra</th>
+                          <th className='p-5 font-bold text-slate-600 text-sm'>Thời gian</th>
+                          <th className='p-5 font-bold text-slate-600 text-sm text-center'>Trạng thái</th>
+                          <th className='p-5 font-bold text-slate-600 text-sm text-right'>Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className='divide-y divide-slate-100'>
+                        {classDetail.examSessions
+                          .slice(examPage * examsPerPage, (examPage + 1) * examsPerPage)
+                          .map((exam) => {
+                            const now = new Date()
+                            const startTime = new Date(exam.startAt)
+                            const endTime = new Date(exam.expiredAt)
+                            const isUpcoming = startTime > now
+                            const isActive = startTime <= now && endTime >= now
+                            const isExpired = endTime < now
+                            const canStart = isActive && exam.inviteLink
 
-                          return (
-                            <div
-                              key={exam.classExamSessionId}
-                              className='bg-white rounded-xl border border-slate-200 shadow-sm p-4'
-                            >
-                              {/* Exam Name */}
-                              <div className='mb-3'>
-                                <h3 className='font-bold text-slate-800 text-base'>{exam.examSessionName}</h3>
-                                {exam.description && <p className='text-xs text-slate-500 mt-1'>{exam.description}</p>}
-                              </div>
-
-                              {/* Time Info */}
-                              <div className='mb-3 pb-3 border-b border-slate-100'>
-                                <div className='flex items-center gap-2 text-sm text-slate-600 mb-1'>
-                                  <i className='fas fa-calendar text-xs'></i>
-                                  <span>{new Date(exam.startAt).toLocaleDateString('vi-VN')}</span>
-                                </div>
-                                <div className='flex items-center gap-2 text-xs text-slate-500'>
-                                  <i className='fas fa-clock text-xs'></i>
-                                  <span>
+                            return (
+                              <tr key={exam.classExamSessionId} className='hover:bg-slate-50 transition'>
+                                <td className='p-5'>
+                                  <div className='font-bold text-slate-700'>{exam.examSessionName}</div>
+                                  {exam.description && (
+                                    <div className='text-xs text-slate-500 mt-1'>{exam.description}</div>
+                                  )}
+                                </td>
+                                <td className='p-5'>
+                                  <div className='text-slate-500 text-sm'>
+                                    {new Date(exam.startAt).toLocaleDateString('vi-VN')}
+                                  </div>
+                                  <div className='text-xs text-slate-400'>
                                     {new Date(exam.startAt).toLocaleTimeString('vi-VN', {
                                       hour: '2-digit',
                                       minute: '2-digit'
@@ -567,129 +339,45 @@ const ClassListPage = () => {
                                       hour: '2-digit',
                                       minute: '2-digit'
                                     })}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Status & Action */}
-                              <div className='flex items-center justify-between'>
-                                <div>
+                                  </div>
+                                </td>
+                                <td className='p-5 text-center'>
                                   {isActive && (
-                                    <span className='bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold text-xs border border-green-200 inline-flex items-center gap-1'>
-                                      <span className='w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse'></span>
+                                    <span className='bg-green-100 text-green-700 px-4 py-1.5 rounded-full font-bold text-sm border border-green-200 shadow-sm inline-flex items-center gap-1'>
+                                      <span className='w-2 h-2 bg-green-500 rounded-full animate-pulse'></span>
                                       Đang diễn ra
                                     </span>
                                   )}
                                   {isUpcoming && (
-                                    <span className='bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-xs border border-blue-200'>
+                                    <span className='bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full font-bold text-sm border border-blue-200 shadow-sm'>
                                       Sắp diễn ra
                                     </span>
                                   )}
                                   {isExpired && (
-                                    <span className='bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-bold text-xs border border-gray-200'>
+                                    <span className='bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full font-bold text-sm border border-gray-200 shadow-sm'>
                                       Đã kết thúc
                                     </span>
                                   )}
-                                </div>
-                                {canStart && (
-                                  <button
-                                    onClick={() => handleStartExam(exam.inviteLink)}
-                                    className='bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors'
-                                  >
-                                    Làm bài
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                    </div>
+                                </td>
+                                <td className='p-5 text-right'>
+                                  {canStart && (
+                                    <button
+                                      onClick={() => handleStartExam(exam.inviteLink)}
+                                      className='text-blue-600 font-bold hover:underline'
+                                    >
+                                      Bắt đầu làm bài
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                    </table>
 
-                    {/* Desktop Table View */}
-                    <div className='hidden md:block bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden'>
-                      <table className='w-full text-left'>
-                        <thead className='bg-slate-50 border-b border-slate-200'>
-                          <tr>
-                            <th className='p-5 font-bold text-slate-600 text-sm'>Bài kiểm tra</th>
-                            <th className='p-5 font-bold text-slate-600 text-sm'>Thời gian</th>
-                            <th className='p-5 font-bold text-slate-600 text-sm text-center'>Trạng thái</th>
-                            <th className='p-5 font-bold text-slate-600 text-sm text-right'>Thao tác</th>
-                          </tr>
-                        </thead>
-                        <tbody className='divide-y divide-slate-100'>
-                          {classDetail.examSessions
-                            .slice(examPage * examsPerPage, (examPage + 1) * examsPerPage)
-                            .map((exam) => {
-                              const now = new Date()
-                              const startTime = new Date(exam.startAt)
-                              const endTime = new Date(exam.expiredAt)
-                              const isUpcoming = startTime > now
-                              const isActive = startTime <= now && endTime >= now
-                              const isExpired = endTime < now
-                              const canStart = isActive && exam.inviteLink
-
-                              return (
-                                <tr key={exam.classExamSessionId} className='hover:bg-slate-50 transition'>
-                                  <td className='p-5'>
-                                    <div className='font-bold text-slate-700'>{exam.examSessionName}</div>
-                                    {exam.description && (
-                                      <div className='text-xs text-slate-500 mt-1'>{exam.description}</div>
-                                    )}
-                                  </td>
-                                  <td className='p-5'>
-                                    <div className='text-slate-500 text-sm'>
-                                      {new Date(exam.startAt).toLocaleDateString('vi-VN')}
-                                    </div>
-                                    <div className='text-xs text-slate-400'>
-                                      {new Date(exam.startAt).toLocaleTimeString('vi-VN', {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}{' '}
-                                      -{' '}
-                                      {new Date(exam.expiredAt).toLocaleTimeString('vi-VN', {
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </div>
-                                  </td>
-                                  <td className='p-5 text-center'>
-                                    {isActive && (
-                                      <span className='bg-green-100 text-green-700 px-4 py-1.5 rounded-full font-bold text-sm border border-green-200 shadow-sm inline-flex items-center gap-1'>
-                                        <span className='w-2 h-2 bg-green-500 rounded-full animate-pulse'></span>
-                                        Đang diễn ra
-                                      </span>
-                                    )}
-                                    {isUpcoming && (
-                                      <span className='bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full font-bold text-sm border border-blue-200 shadow-sm'>
-                                        Sắp diễn ra
-                                      </span>
-                                    )}
-                                    {isExpired && (
-                                      <span className='bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full font-bold text-sm border border-gray-200 shadow-sm'>
-                                        Đã kết thúc
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className='p-5 text-right'>
-                                    {canStart && (
-                                      <button
-                                        onClick={() => handleStartExam(exam.inviteLink)}
-                                        className='text-blue-600 font-bold hover:underline'
-                                      >
-                                        Bắt đầu làm bài
-                                      </button>
-                                    )}
-                                  </td>
-                                </tr>
-                              )
-                            })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Pagination for both Mobile & Desktop */}
+                    {/* Pagination */}
                     {classDetail.examSessions.length > examsPerPage && (
-                      <div className='mt-4 md:mt-0 md:px-4 md:py-3 md:border-t md:border-slate-200 md:bg-slate-50'>
+                      <div className='px-4 py-3 border-t border-slate-200 bg-slate-50'>
                         <ReactPaginate
                           previousLabel='← Trước'
                           nextLabel='Sau →'
@@ -714,7 +402,7 @@ const ClassListPage = () => {
                         />
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             )}
